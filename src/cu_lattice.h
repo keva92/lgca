@@ -1,5 +1,5 @@
 /*
- * CUDA_Lattice.h
+ * cu_lattice.h
  *
  *  Created on: Apr 4, 2016
  *      Author: Kerstin Vater
@@ -7,16 +7,16 @@
  *              dimensions parallelized by means of Nvidia CUDA.
  */
 
-#ifndef CUDALATTICE_H_
-#define CUDALATTICE_H_
+#ifndef CU_LATTICE_H_
+#define CU_LATTICE_H_
 
 // CUDA include files
 #include "curand.h"
 #include "curand_kernel.h"
 
 // User-defined include files
-#include "cuda_utils.h"
-#include "Lattice.h"
+#include "cuda_utils.cuh"
+#include "lattice.h"
 
 class CUDA_Lattice: public Lattice {
 
@@ -117,4 +117,4 @@ public:
     void post_process();
 };
 
-#endif /* CUDALATTICE_H_ */
+#endif /* CU_LATTICE_H_ */

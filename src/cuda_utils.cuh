@@ -1,5 +1,7 @@
-#ifndef om_cuda_tools_
-#define om_cuda_tools_
+#ifndef CUDA_UTILS_H_
+#define CUDA_UTILS_H_
+
+#include <cuda_runtime_api.h>
 
 #include <stdio.h>
 #include <stdlib.h>

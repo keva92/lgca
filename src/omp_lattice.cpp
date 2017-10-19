@@ -1,5 +1,5 @@
 /*
- * OMP_Lattice.C
+ * omp_lattice.cpp
  *
  *  Created on: Apr 4, 2016
  *      Author: Kerstin Vater
@@ -11,8 +11,8 @@
 #include <omp.h>
 
 // User-defined include files
-#include "OMP_Lattice.h"
-#include "cuda_utils.h"
+#include "omp_lattice.h"
+#include "cuda_utils.cuh"
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.

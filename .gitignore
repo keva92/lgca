@@ -1,0 +1,5 @@
+bin/
+build/
+res/
+*.user
+*.old

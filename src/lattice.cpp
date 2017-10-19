@@ -1,5 +1,5 @@
 /*
- * lattice.cu
+ * lattice.cpp
  *
  *  Created on: Dec 9, 2015
  *      Author: Kerstin Vater
@@ -8,7 +8,8 @@
  *
  */
 
-#include "Lattice.h"
+#include "lattice.h"
+
 #include <omp.h>
 
 // Creates a lattice gas cellular automaton object of the specified properties.
@@ -130,7 +131,7 @@ Lattice::Lattice(const string test_case,
 
     } else {
 
-    	bf_dir = NULL;
+        bf_dir = NULL;
     }
 
     // Set the number of cells in x direction.
@@ -364,7 +365,7 @@ void Lattice::write_results(const unsigned int step, const string format) {
 	if (format == "vti") {
 
 	    // Create file name.
-	    sprintf(name, "./res/res_");
+        sprintf(name, "../res/res_");
 	    sprintf(s_iter, "%d", step);
 	    strcpy(end, format.c_str());
 	    strcat(name, s_iter);
@@ -375,6 +376,7 @@ void Lattice::write_results(const unsigned int step, const string format) {
 
         // Open the result file.
         file = fopen(name, "w");
+        assert(file);
 
         fprintf(file, "<VTKFile "
              "type=\"ImageData\" "

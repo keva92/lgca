@@ -22,37 +22,38 @@ using namespace TCLAP;
 typedef float real;
 
 // Gets values from the command line.
-static inline void get_vals_from_cmd(int argc, char **argv,
-                                     string* test_case,
-                                     real* Re, real* Ma,
-                                     int* n_dir,
-                                     int* s_max,
-                                     int* coarse_graining_radius,
-                                     int* write_steps,
-                                     int* body_force_steps, int* body_force_intensity,
-                                     int* device,
-                                     int* max_block_size,
-                                     string* parallel_type,
-                                     string* output_format) {
+static inline void
+get_vals_from_cmd(int argc, char **argv,
+                  string* test_case,
+                  real* Re, real* Ma,
+                  int* n_dir,
+                  int* s_max,
+                  int* coarse_graining_radius,
+                  int* write_steps,
+                  int* body_force_steps, int* body_force_intensity,
+                  int* device,
+                  int* max_block_size,
+                  string* parallel_type,
+                  string* output_format) {
 
     // Define the command line object.
     CmdLine cmd("Command description message", ' ', "0.9");
 
     // Define value arguments and add them to the command line.
-    ValueArg<string> caseArg("t", "testcase", "Test case.", true, "pipe",
+    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "pipe",
     		"string (\"pipe\", \"box\", \"karman\", \"periodic\", \"collision\", \"diffusion\", \"sloshing\" or \"hourglass\") (default: \"pipe\")");
     cmd.add(caseArg);
 
-    ValueArg<real> ReArg("r", "Re", "Reynolds number.", true, 80.0, "real gt 0 (default: 80.0)");
+    ValueArg<real>  ReArg("r", "Re", "Reynolds number.", false, 80.0, "real gt 0 (default: 80.0)");
     cmd.add(ReArg);
 
-    ValueArg<real> MaArg("m", "Ma", "Mach number.", true, 0.1, "real gt 0 (default: 0.1)");
+    ValueArg<real> MaArg("m", "Ma", "Mach number.", false, 0.1, "real gt 0 (default: 0.1)");
     cmd.add(MaArg);
 
-    ValueArg<int> ndirArg("d", "ndir", "Number of lattice directions.", true, 6, "int 4 (HPP) or int 6 (FHP) (default: FHP)");
+    ValueArg<int> ndirArg("d", "ndir", "Number of lattice directions.", false, 6, "int 4 (HPP) or int 6 (FHP) (default: FHP)");
     cmd.add(ndirArg);
 
-    ValueArg<int> smaxArg("s", "smax", "Number of simulated time steps.", true, 200, "int gte 0 (default: 200)");
+    ValueArg<int> smaxArg("s", "smax", "Number of simulated time steps.", false, 200, "int gte 0 (default: 200)");
     cmd.add(smaxArg);
 
     ValueArg<int> cgArg("c", "cgradius", "Coarse graining radius.", false, 15, "int gte 0 (default: 15)");
@@ -73,7 +74,7 @@ static inline void get_vals_from_cmd(int argc, char **argv,
     ValueArg<int> blockSizeArg("", "blocksize", "Maximum block size in x direction.", false, 256, "int gt 0 (default: 256)");
     cmd.add(blockSizeArg);
 
-    ValueArg<string> parallelArg("p", "parallel", "Parallelization type.", true, "CUDA", "string (\"CUDA\" or \"openMP\") (default: \"CUDA\")");
+    ValueArg<string> parallelArg("p", "parallel", "Parallelization type.", false, "openMP", "string (\"CUDA\" or \"openMP\") (default: \"CUDA\")");
     cmd.add(parallelArg);
 
     ValueArg<string> outputArg("o", "output", "Output file format.", false, "vti", "string (\"vti\" or \"png\") (default: \"vti\")");

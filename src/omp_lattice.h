@@ -1,5 +1,5 @@
 /*
- * OMP_Lattice.h
+ * omp_lattice.h
  *
  *  Created on: Apr 4, 2016
  *      Author: Kerstin Vater
@@ -10,7 +10,7 @@
 #ifndef OMP_LATTICE_H_
 #define OMP_LATTICE_H_
 
-#include "Lattice.h"
+#include "lattice.h"
 
 class OMP_Lattice: public Lattice {
 

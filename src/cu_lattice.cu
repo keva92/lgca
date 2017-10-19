@@ -1,5 +1,5 @@
 /*
- * CUDA_Lattice.h
+ * cu_lattice.cu
  *
  *  Created on: Apr 4, 2016
  *      Author: Kerstin Vater
@@ -7,7 +7,7 @@
  *              dimensions parallelized by means of Nvidia CUDA.
  */
 
-#include "CUDA_Lattice.h"
+#include "cu_lattice.h"
 
 __device__ real cu_random(int seed, int offset) {
 

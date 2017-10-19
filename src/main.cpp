@@ -1,5 +1,5 @@
 /*
- * main.cu
+ * main.cpp
  *
  *  Created on: Nov 26, 2015
  *      Author: Kerstin Vater
@@ -16,8 +16,8 @@
 #include <vector>
 
 // User-defined include files
-#include "CUDA_Lattice.h"
-#include "OMP_Lattice.h"
+#include "cu_lattice.h"
+#include "omp_lattice.h"
 
 // Namespaces
 using namespace std;
