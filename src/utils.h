@@ -11,21 +11,15 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-// TCLAP include files
+#include "lgca_common.h"
+
 #include "tclap/CmdLine.h"
-
-// Namespaces
-using namespace std;
-using namespace TCLAP;
-
-// Define real number precision to use.
-typedef float real;
 
 // Gets values from the command line.
 static inline void
 get_vals_from_cmd(int argc, char **argv,
                   string* test_case,
-                  real* Re, real* Ma,
+                  Real* Re, Real* Ma,
                   int* n_dir,
                   int* s_max,
                   int* coarse_graining_radius,
@@ -37,32 +31,33 @@ get_vals_from_cmd(int argc, char **argv,
                   string* output_format) {
 
     // Define the command line object.
-    CmdLine cmd("Command description message", ' ', "0.9");
+    TCLAP::CmdLine cmd("Command description message", ' ', "0.9");
 
     // Define value arguments and add them to the command line.
-    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "pipe",
+    using TCLAP::ValueArg;
+    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "collision",
     		"string (\"pipe\", \"box\", \"karman\", \"periodic\", \"collision\", \"diffusion\", \"sloshing\" or \"hourglass\") (default: \"pipe\")");
     cmd.add(caseArg);
 
-    ValueArg<real>  ReArg("r", "Re", "Reynolds number.", false, 80.0, "real gt 0 (default: 80.0)");
+    ValueArg<Real>  ReArg("r", "Re", "Reynolds number.", false, 80.0, "real gt 0 (default: 80.0)");
     cmd.add(ReArg);
 
-    ValueArg<real> MaArg("m", "Ma", "Mach number.", false, 0.1, "real gt 0 (default: 0.1)");
+    ValueArg<Real> MaArg("m", "Ma", "Mach number.", false, 0.1, "real gt 0 (default: 0.1)");
     cmd.add(MaArg);
 
     ValueArg<int> ndirArg("d", "ndir", "Number of lattice directions.", false, 6, "int 4 (HPP) or int 6 (FHP) (default: FHP)");
     cmd.add(ndirArg);
 
-    ValueArg<int> smaxArg("s", "smax", "Number of simulated time steps.", false, 200, "int gte 0 (default: 200)");
+    ValueArg<int> smaxArg("s", "smax", "Number of simulated time steps.", false, 10, "int gte 0 (default: 10)");
     cmd.add(smaxArg);
 
     ValueArg<int> cgArg("c", "cgradius", "Coarse graining radius.", false, 15, "int gte 0 (default: 15)");
     cmd.add(cgArg);
 
-    ValueArg<int> writeArg("w", "writesteps", "Number of steps after which the post-processed results are written to a file.", false, 100, "int gt 0 (default: 100)");
+    ValueArg<int> writeArg("w", "writesteps", "Number of steps after which the post-processed results are written to a file.", false, 1, "int gt 0 (default: 1)");
     cmd.add(writeArg);
 
-    ValueArg<int> forceArg("b", "bfsteps", "Number of steps after which a body force is applied to the particles.", false, 100, "int gt 0 (default: 100)");
+    ValueArg<int> forceArg("b", "bfsteps", "Number of steps after which a body force is applied to the particles.", false, 1, "int gt 0 (default: 1)");
     cmd.add(forceArg);
 
     ValueArg<int> bfIntArg("i", "bfint", "Intensity of the body force.", false, 250, "int gte 0 (default: 250)");
@@ -115,9 +110,9 @@ static inline void print_startup_message() {
 }
 
 // Returns a random real number within [0.0 and 1.0].
-inline real random_uniform() {
+inline Real random_uniform() {
 
-    return (static_cast <real> (rand()) / static_cast <real> (RAND_MAX));
+    return (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX));
 }
 
 // Generates random boolean values with 50:50 distribution.
@@ -126,22 +121,22 @@ inline bool random_bool() {
 	return (random() > 0.5);
 }
 
-inline real interpolate(real val, real y0, real x0, real y1, real x1) {
+inline Real interpolate(Real val, Real y0, Real x0, Real y1, Real x1) {
 
     return ((val - x0) * (y1 - y0) / (x1 - x0) + y0);
 }
 
-inline vector<real> rgb(real min, real max, real val) {
+inline std::vector<Real> rgb(Real min, Real max, Real val) {
 
-    real range = max - min;
+    Real range = max - min;
 
     assert(range > 1.0e-06);
 
-    vector<real> rgb_code(3, 0.0);
+    std::vector<Real> rgb_code(3, 0.0);
 
-    real red   = 0.0;
-    real green = 0.0;
-    real blue  = 0.0;
+    Real red   = 0.0;
+    Real green = 0.0;
+    Real blue  = 0.0;
 
     if (val <= min) {
 
@@ -173,7 +168,7 @@ inline vector<real> rgb(real min, real max, real val) {
         green = interpolate(val, 1.0, min + 0.75 * range, 0.0, max);
         blue  = 0.0;
 
-    } else if (val >= max ){
+    } else if (val >= max ) {
 
         red   = 1.0;
         green = 0.0;

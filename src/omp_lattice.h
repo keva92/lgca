@@ -46,8 +46,8 @@ private:
 	char* mirrored_dir_y;
 
 	// Lattice vector components in the different directions.
-	real* lattice_vec_x;
-	real* lattice_vec_y;
+    Real* lattice_vec_x;
+    Real* lattice_vec_y;
 
 	// Computes cell quantities of interest as a post-processing procedure.
 	void cell_post_process();
@@ -66,7 +66,7 @@ public:
 	// Creates an openMP parallelized lattice gas cellular automaton object
 	// of the specified properties.
 	OMP_Lattice(const string test_case,
-                const real Re, const real Ma_s,
+                const Real Re, const Real Ma_s,
                 const int n_dir,
                 const int coarse_graining_radius);
 
@@ -79,7 +79,7 @@ public:
     void collide_and_propagate(unsigned int step);
 
     // Computes the mean velocity of the lattice.
-    vector<real> get_mean_velocity();
+    std::vector<Real> get_mean_velocity();
 
     // Applies a body force in the specified direction (x or y) and with the
     // specified intensity to the particles. E.g., if the intensity is equal 100,

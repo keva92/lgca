@@ -3,8 +3,8 @@
 
 #include <cuda_runtime_api.h>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #ifndef __USE_POSIX199309
 #define __USE_POSIX199309

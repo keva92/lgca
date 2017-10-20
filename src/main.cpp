@@ -7,23 +7,25 @@
  *
  */
 
-// C++ include files
-#include <stdlib.h>
-#include <iostream>
-#include <fstream>
-#include <malloc.h>
-#include <math.h>
-#include <vector>
+#include "lgca_common.h"
 
-// User-defined include files
 #include "cu_lattice.h"
 #include "omp_lattice.h"
+#include "lgca_io_vti.h"
 
-// Namespaces
-using namespace std;
-
-// Define real number precision to use.
-typedef float real;
+#include <vtkNew.h>
+#include <vtkImageData.h>
+#include <vtkImageDataGeometryFilter.h>
+#include <vtkImageMapper.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkActor.h>
+#include <vtkProperty.h>
+#include <vtkRenderer.h>
+#include <vtkScalarBarActor.h>
+#include <vtkTextProperty.h>
+#include <vtkLookupTable.h>
+#include <vtkRenderWindow.h>
+#include <vtkImageViewer.h>
 
 // Main function (CPU/host code)
 int main(int argc, char **argv) {
@@ -38,8 +40,8 @@ int main(int argc, char **argv) {
           	  	  	  	  	  	  	  	 // diffusion,
           	  	  	  	  	  	  	  	 // sloshing,
           	  	  	  	  	  	  	  	 // hourglass).
-          real   Re;                     // Reynolds number.
-          real   Ma;                     // Mach number.
+          Real   Re;                     // Reynolds number.
+          Real   Ma;                     // Mach number.
           int    n_dir;                  // Number of lattice directions.
           int    s_max;                  // Number of simulated time steps.
           int    coarse_graining_radius; // Coarse graining radius.
@@ -92,7 +94,7 @@ int main(int argc, char **argv) {
     }
     printf("...done.\n\n");
 
-    // Apply boundary conditions.
+    // Apply boundary conditions -------------------------------------------------------------------
     printf("Apply boundary conditions...\n");
 
     if (test_case == "pipe") {
@@ -127,7 +129,9 @@ int main(int argc, char **argv) {
 
     printf("...done.\n\n");
 
-    // Initialize the lattice gas automaton with particles.
+
+    // Initialize the lattice gas automaton with particles -----------------------------------------
+
     printf("Initialize the lattice gas automaton...\n");
 
     if ((test_case == "pipe") || (test_case == "karman") || (test_case == "box") || (test_case == "periodic")) {
@@ -179,14 +183,70 @@ int main(int argc, char **argv) {
     init_timer(time_measure);
 
     // Define variables for performance measure.
-    real time_start;
-    real time_end;
+    Real time_start;
+    Real time_end;
 
-    vector<real> mean_velocity;
+    std::vector<Real> mean_velocity;
 
     // Calculate the number of particles to revert in the context of body force
     // in order to accelerate the flow.
     int forcing = lattice->get_initial_forcing();
+
+    // Setup on-line visualization -----------------------------------------------------------------
+    lgca::IoVti vtiIoHandler(lattice);
+
+//    vtkNew<vtkImageViewer> viewer;
+//    viewer->SetInputData(vtiIoHandler.image());
+//    viewer->GetRenderWindow()->SetSize(1024, 576); // WXGA
+//    viewer->GetRenderer()->ResetCamera();
+//    viewer->Render();
+
+    vtkNew<vtkImageDataGeometryFilter> geomFilter;
+    geomFilter->SetInputData(vtiIoHandler.image());
+    geomFilter->Update();
+    vtkNew<vtkPolyDataMapper> mapper;
+    mapper->SetInputConnection(geomFilter->GetOutputPort());
+    mapper->SetArrayName("Cell density");
+    double scalarRange[2];
+    geomFilter->GetOutput()->GetScalarRange(scalarRange);
+    mapper->SetScalarRange(scalarRange);
+    vtkNew<vtkActor> actor;
+    actor->SetMapper(mapper.GetPointer());
+    vtkNew<vtkRenderer> ren;
+    ren->AddActor(actor.GetPointer());
+    ren->SetBackground(1.0, 1.0, 1.0);
+    ren->SetBackground2(0.2, 0.3, 0.5);
+    ren->GradientBackgroundOn();
+    vtkNew<vtkScalarBarActor> scalarBar;
+    vtkNew<vtkTextProperty> text;
+    text->SetFontFamilyToArial();
+    text->SetFontSize(10);
+    text->BoldOff();
+    text->ItalicOff();
+    text->ShadowOff();
+    scalarBar->SetTitle(mapper->GetArrayName());
+    scalarBar->SetNumberOfLabels(4);
+    scalarBar->SetTitleTextProperty(text.GetPointer());
+    scalarBar->SetLabelTextProperty(text.GetPointer());
+    scalarBar->SetBarRatio(0.2);
+    ren->AddActor2D(scalarBar.GetPointer());
+    vtkNew<vtkLookupTable> lut;
+    lut->SetTableRange(mapper->GetScalarRange());
+    lut->SetHueRange(2.0/3.0, 0.0); // Blue to red rainbow
+    lut->SetSaturationRange(1.0, 1.0);
+    lut->SetValueRange(1.0, 1.0);
+    lut->Build();
+    mapper->SetLookupTable(lut.GetPointer());
+    scalarBar->SetLookupTable(lut.GetPointer());
+    vtkNew<vtkRenderWindow> renWin;
+    renWin->AddRenderer(ren.GetPointer());
+    renWin->SetSize(1024, 576); // WXGA
+    ren->ResetCamera();
+    renWin->Render();
+    sleep(3);
+
+
+    // Time loop -----------------------------------------------------------------------------------
 
     printf("Starting calculation...\n");
 
@@ -226,6 +286,10 @@ int main(int argc, char **argv) {
 
             // Write results of current time step to file.
             lattice->write_results(step, output_format);
+
+            // Update render window.
+            renWin->Render();
+            sleep(3);
 
 #ifdef DEBUG
 
@@ -280,7 +344,7 @@ int main(int argc, char **argv) {
     printf("\n");
 
     // Stop time measurement.
-    real total_elapsed_time = get_timer(time_measure);
+    Real total_elapsed_time = get_timer(time_measure);
 
     printf("Total elapsed time: %e s for %d simulation steps.\n", total_elapsed_time, s_max);
     printf("Average MNUPS: %d\n", (int) ((lattice->get_n_x() * lattice->get_n_y() * s_max) / (total_elapsed_time * 1.0e06)));

@@ -7,17 +7,17 @@
  *              dimensions parallelized by means of openMP.
  */
 
-// C++ include files
-#include <omp.h>
+#include "lgca_common.h"
 
-// User-defined include files
 #include "omp_lattice.h"
 #include "cuda_utils.cuh"
+
+#include <omp.h>
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.
 OMP_Lattice::OMP_Lattice(const string test_case,
-                         const real Re, const real Ma_s,
+                         const Real Re, const Real Ma_s,
                          const int n_dir,
                          const int coarse_graining_radius)
 
@@ -246,16 +246,16 @@ OMP_Lattice::OMP_Lattice(const string test_case,
 	}
 
 	// Lattice vector components in the different directions.
-	lattice_vec_x = new real[n_dir];
-	lattice_vec_y = new real[n_dir];
+    lattice_vec_x = new Real[n_dir];
+    lattice_vec_y = new Real[n_dir];
 
     // Set the components of the lattice vectors for the different directions.
     //
     // Loop over all directions.
     for (int dir = 0; dir < n_dir; ++dir) {
 
-        lattice_vec_x[dir] = cos(2.0 * M_PI / ((real) n_dir) * ((real) dir));
-        lattice_vec_y[dir] = sin(2.0 * M_PI / ((real) n_dir) * ((real) dir));
+        lattice_vec_x[dir] = cos(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
+        lattice_vec_y[dir] = sin(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
     }
 }
 
@@ -863,8 +863,8 @@ void OMP_Lattice::cell_post_process()
 
         // Initialize the cell quantities to be computed.
         int  cell_density    = 0;
-        real cell_momentum_x = 0.0;
-        real cell_momentum_y = 0.0;
+        Real cell_momentum_x = 0.0;
+        Real cell_momentum_y = 0.0;
 
         // Loop over all nodes in the cell.
 #pragma unroll
@@ -880,7 +880,7 @@ void OMP_Lattice::cell_post_process()
         }
 
         // Write the computed cell quantities to the related data arrays.
-        cell_density_cpu [cell          ] = (real) cell_density;
+        cell_density_cpu [cell          ] = (Real) cell_density;
         cell_momentum_cpu[cell          ] =        cell_momentum_x;
         cell_momentum_cpu[cell + n_cells] =        cell_momentum_y;
 
@@ -898,9 +898,9 @@ void OMP_Lattice::mean_post_process()
         int pos_x = cell % n_x;
 
         // Initialize the coarse grained quantities to be computed.
-        real mean_density    = 0.0;
-        real mean_momentum_x = 0.0;
-        real mean_momentum_y = 0.0;
+        Real mean_density    = 0.0;
+        Real mean_momentum_x = 0.0;
+        Real mean_momentum_y = 0.0;
 
         // Initialize the number of actual existing coarse graining neighbor cells.
         int n_exist_neighbors = 0;
@@ -935,9 +935,9 @@ void OMP_Lattice::mean_post_process()
         }
 
         // Write the computed coarse grained quantities to the related data arrays.
-        mean_density_cpu [cell          ] = mean_density    / ((real) n_exist_neighbors);
-        mean_momentum_cpu[cell          ] = mean_momentum_x / ((real) n_exist_neighbors);
-        mean_momentum_cpu[cell + n_cells] = mean_momentum_y / ((real) n_exist_neighbors);
+        mean_density_cpu [cell          ] = mean_density    / ((Real) n_exist_neighbors);
+        mean_momentum_cpu[cell          ] = mean_momentum_x / ((Real) n_exist_neighbors);
+        mean_momentum_cpu[cell + n_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
 
     } /* FOR cell */
 }
@@ -949,10 +949,10 @@ void OMP_Lattice::allocate_memory()
     cu_verify(cudaMallocHost((void **) &node_state_cpu,          n_nodes * sizeof(char)));
     cu_verify(cudaMallocHost((void **) &node_state_tmp_cpu,      n_nodes * sizeof(char)));
     cu_verify(cudaMallocHost((void **) &cell_type_cpu,           n_cells * sizeof(char)));
-    cu_verify(cudaMallocHost((void **) &cell_density_cpu,        n_cells * sizeof(real)));
-    cu_verify(cudaMallocHost((void **) &mean_density_cpu,        n_cells * sizeof(real)));
-    cu_verify(cudaMallocHost((void **) &cell_momentum_cpu, dim * n_cells * sizeof(real)));
-    cu_verify(cudaMallocHost((void **) &mean_momentum_cpu, dim * n_cells * sizeof(real)));
+    cu_verify(cudaMallocHost((void **) &cell_density_cpu,        n_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &mean_density_cpu,        n_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &cell_momentum_cpu, dim * n_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &mean_momentum_cpu, dim * n_cells * sizeof(Real)));
 }
 
 // Frees the memory for the arrays on the host (CPU).
@@ -1023,12 +1023,12 @@ void OMP_Lattice::setup_parallel()
 }
 
 // Computes the mean velocity of the lattice.
-vector<real> OMP_Lattice::get_mean_velocity() {
+std::vector<Real> OMP_Lattice::get_mean_velocity() {
 
-    vector<real> mean_velocity(dim, 0.0);
+    std::vector<Real> mean_velocity(dim, 0.0);
 
-    real sum_x_vel = 0.0;
-    real sum_y_vel = 0.0;
+    Real sum_x_vel = 0.0;
+    Real sum_y_vel = 0.0;
 
     unsigned int counter = 0;
 
@@ -1040,7 +1040,7 @@ vector<real> OMP_Lattice::get_mean_velocity() {
 
         	counter++;
 
-        	real cell_density = cell_density_cpu[n];
+            Real cell_density = cell_density_cpu[n];
 
 			if (cell_density > 1.0e-06) {
 
@@ -1067,8 +1067,8 @@ vector<real> OMP_Lattice::get_mean_velocity() {
     }
 
     // Divide the summed up x and y components by the total number of fluid cells.
-    mean_velocity[0] = sum_x_vel / (real) counter;
-    mean_velocity[1] = sum_y_vel / (real) counter;
+    mean_velocity[0] = sum_x_vel / (Real) counter;
+    mean_velocity[1] = sum_y_vel / (Real) counter;
 
     return mean_velocity;
 }

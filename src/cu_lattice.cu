@@ -9,7 +9,7 @@
 
 #include "cu_lattice.h"
 
-__device__ real cu_random(int seed, int offset) {
+__device__ Real cu_random(int seed, int offset) {
 
     // CUDA's random number library uses curandState_t to keep
     // track of the seed value we will store a random state for
@@ -615,8 +615,8 @@ __global__ void apply_body_force_kernel(int   forcing,
     // Each thread is looking for one particle to revert.
 
 	// Lattice vector components in the different directions.
-	real lattice_vec_x[n_dir];
-	real lattice_vec_y[n_dir];
+    Real lattice_vec_x[n_dir];
+    Real lattice_vec_y[n_dir];
 
 	// Mirrored direction indices for each lattice direction with respect
 	// to the x and y axis.
@@ -628,8 +628,8 @@ __global__ void apply_body_force_kernel(int   forcing,
 	// Loop over all directions.
 	for (int dir = 0; dir < n_dir; ++dir) {
 
-		lattice_vec_x[dir] = cos(2.0 * M_PI / ((real) n_dir) * ((real) dir));
-		lattice_vec_y[dir] = sin(2.0 * M_PI / ((real) n_dir) * ((real) dir));
+        lattice_vec_x[dir] = cos(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
+        lattice_vec_y[dir] = sin(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
 	}
 
 	// Set the model based values according to the number of lattice directions.
@@ -863,8 +863,8 @@ template <int n_dir>
 __global__ void cell_post_process_kernel(const int     n_x,
                                          const int     n_cells,
                                          const char*   node_state_gpu,
-                                         real*         cell_density_gpu,
-                                         real*         cell_momentum_gpu) {
+                                         Real*         cell_density_gpu,
+                                         Real*         cell_momentum_gpu) {
 
     // Each thread is working on one cell of the lattice.
 
@@ -884,16 +884,16 @@ __global__ void cell_post_process_kernel(const int     n_x,
     if (active) {
 
     	// Lattice vector components in the different directions.
-    	real lattice_vec_x[n_dir];
-    	real lattice_vec_y[n_dir];
+        Real lattice_vec_x[n_dir];
+        Real lattice_vec_y[n_dir];
 
         // Set the components of the lattice vectors for the different directions.
         //
         // Loop over all directions.
         for (int dir = 0; dir < n_dir; ++dir) {
 
-            lattice_vec_x[dir] = cos(2.0 * M_PI / ((real) n_dir) * ((real) dir));
-            lattice_vec_y[dir] = sin(2.0 * M_PI / ((real) n_dir) * ((real) dir));
+            lattice_vec_x[dir] = cos(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
+            lattice_vec_y[dir] = sin(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
         }
 
         // Get index of the cell to work on.
@@ -917,8 +917,8 @@ __global__ void cell_post_process_kernel(const int     n_x,
 
         // Initialize the cell quantities to be computed.
         int  cell_density    = 0;
-        real cell_momentum_x = 0.0;
-        real cell_momentum_y = 0.0;
+        Real cell_momentum_x = 0.0;
+        Real cell_momentum_y = 0.0;
 
         // Loop over all nodes in the cell.
 #pragma unroll
@@ -934,7 +934,7 @@ __global__ void cell_post_process_kernel(const int     n_x,
         }
 
         // Write the computed cell quantities to the related data arrays.
-        cell_density_gpu [cell          ] = (real) cell_density;
+        cell_density_gpu [cell          ] = (Real) cell_density;
         cell_momentum_gpu[cell          ] =        cell_momentum_x;
         cell_momentum_gpu[cell + n_cells] =        cell_momentum_y;
     }
@@ -944,10 +944,10 @@ __global__ void cell_post_process_kernel(const int     n_x,
 __global__ void mean_post_process_kernel(const int   n_x,
                                          const int   n_cells,
                                          const int   coarse_graining_radius,
-                                         const real* cell_density_gpu,
-                                         const real* cell_momentum_gpu,
-                                               real* mean_density_gpu,
-                                               real* mean_momentum_gpu) {
+                                         const Real* cell_density_gpu,
+                                         const Real* cell_momentum_gpu,
+                                               Real* mean_density_gpu,
+                                               Real* mean_momentum_gpu) {
 
     // Each thread is working on one cell of the lattice.
 
@@ -970,9 +970,9 @@ __global__ void mean_post_process_kernel(const int   n_x,
         int cell = n_x * blockIdx.y + pos_x;
 
         // Initialize the coarse grained quantities to be computed.
-        real mean_density    = 0.0;
-        real mean_momentum_x = 0.0;
-        real mean_momentum_y = 0.0;
+        Real mean_density    = 0.0;
+        Real mean_momentum_x = 0.0;
+        Real mean_momentum_y = 0.0;
 
         // Initialize the number of actual existing coarse graining neighbor cells.
         int n_exist_neighbors = 0;
@@ -1007,16 +1007,16 @@ __global__ void mean_post_process_kernel(const int   n_x,
         }
 
         // Write the computed coarse grained quantities to the related data arrays.
-        mean_density_gpu [cell          ] = mean_density    / ((real) n_exist_neighbors);
-        mean_momentum_gpu[cell          ] = mean_momentum_x / ((real) n_exist_neighbors);
-        mean_momentum_gpu[cell + n_cells] = mean_momentum_y / ((real) n_exist_neighbors);
+        mean_density_gpu [cell          ] = mean_density    / ((Real) n_exist_neighbors);
+        mean_momentum_gpu[cell          ] = mean_momentum_x / ((Real) n_exist_neighbors);
+        mean_momentum_gpu[cell + n_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
     }
 }
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.
 CUDA_Lattice::CUDA_Lattice(const string test_case,
-                           const real Re, const real Ma_s,
+                           const Real Re, const Real Ma_s,
                            const int n_dir,
                            const int coarse_graining_radius,
                            const int device = 0)
@@ -1053,7 +1053,7 @@ void CUDA_Lattice::set_grid_and_block_size(int max_block_size = 256) {
 
     if (n_x > max_block_size) {
 
-        grid_size_x  = (int) (ceil((real)n_x / (real)max_block_size) + 0.5);
+        grid_size_x  = (int) (ceil((Real)n_x / (Real)max_block_size) + 0.5);
         block_size_x = max_block_size;
         if (n_x % max_block_size != 0) {
             printf("WARNING in Lattice::set_grid_and_block_size(): "
@@ -1088,10 +1088,10 @@ void CUDA_Lattice::set_grid_and_block_size(int max_block_size = 256) {
 void CUDA_Lattice::copy_data_from_device() {
 
     cu_verify(cudaMemcpy(node_state_cpu,    node_state_gpu,          n_nodes * sizeof(char), cudaMemcpyDeviceToHost));
-    cu_verify(cudaMemcpy(cell_density_cpu,  cell_density_gpu,        n_cells * sizeof(real), cudaMemcpyDeviceToHost));
-    cu_verify(cudaMemcpy(mean_density_cpu,  mean_density_gpu,        n_cells * sizeof(real), cudaMemcpyDeviceToHost));
-    cu_verify(cudaMemcpy(cell_momentum_cpu, cell_momentum_gpu, dim * n_cells * sizeof(real), cudaMemcpyDeviceToHost));
-    cu_verify(cudaMemcpy(mean_momentum_cpu, mean_momentum_gpu, dim * n_cells * sizeof(real), cudaMemcpyDeviceToHost));
+    cu_verify(cudaMemcpy(cell_density_cpu,  cell_density_gpu,        n_cells * sizeof(Real), cudaMemcpyDeviceToHost));
+    cu_verify(cudaMemcpy(mean_density_cpu,  mean_density_gpu,        n_cells * sizeof(Real), cudaMemcpyDeviceToHost));
+    cu_verify(cudaMemcpy(cell_momentum_cpu, cell_momentum_gpu, dim * n_cells * sizeof(Real), cudaMemcpyDeviceToHost));
+    cu_verify(cudaMemcpy(mean_momentum_cpu, mean_momentum_gpu, dim * n_cells * sizeof(Real), cudaMemcpyDeviceToHost));
 }
 
 // Copies all data arrays from the host (CPU) to the device (GPU).
@@ -1107,19 +1107,19 @@ void CUDA_Lattice::allocate_memory() {
     // Allocate host memory.
     cu_verify(cudaMallocHost((void **) &node_state_cpu,          n_nodes * sizeof(char)));
     cu_verify(cudaMallocHost((void **) &cell_type_cpu,           n_cells * sizeof(char)));
-    cu_verify(cudaMallocHost((void **) &cell_density_cpu,        n_cells * sizeof(real)));
-    cu_verify(cudaMallocHost((void **) &mean_density_cpu,        n_cells * sizeof(real)));
-    cu_verify(cudaMallocHost((void **) &cell_momentum_cpu, dim * n_cells * sizeof(real)));
-    cu_verify(cudaMallocHost((void **) &mean_momentum_cpu, dim * n_cells * sizeof(real)));
+    cu_verify(cudaMallocHost((void **) &cell_density_cpu,        n_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &mean_density_cpu,        n_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &cell_momentum_cpu, dim * n_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &mean_momentum_cpu, dim * n_cells * sizeof(Real)));
 
     // Allocate device memory.
     cu_verify(cudaMalloc((void **) &node_state_gpu,          n_nodes * sizeof(char)));
     cu_verify(cudaMalloc((void **) &node_state_tmp_gpu,      n_nodes * sizeof(char)));
     cu_verify(cudaMalloc((void **) &cell_type_gpu,           n_cells * sizeof(char)));
-    cu_verify(cudaMalloc((void **) &cell_density_gpu,        n_cells * sizeof(real)));
-    cu_verify(cudaMalloc((void **) &mean_density_gpu,        n_cells * sizeof(real)));
-    cu_verify(cudaMalloc((void **) &cell_momentum_gpu, dim * n_cells * sizeof(real)));
-    cu_verify(cudaMalloc((void **) &mean_momentum_gpu, dim * n_cells * sizeof(real)));
+    cu_verify(cudaMalloc((void **) &cell_density_gpu,        n_cells * sizeof(Real)));
+    cu_verify(cudaMalloc((void **) &mean_density_gpu,        n_cells * sizeof(Real)));
+    cu_verify(cudaMalloc((void **) &cell_momentum_gpu, dim * n_cells * sizeof(Real)));
+    cu_verify(cudaMalloc((void **) &mean_momentum_gpu, dim * n_cells * sizeof(Real)));
 }
 
 // Frees the memory for the arrays on the host (CPU) and device (GPU).
@@ -1428,12 +1428,12 @@ void CUDA_Lattice::setup_parallel()
 }
 
 // TODO: Computes the mean velocity of the lattice.
-vector<real> CUDA_Lattice::get_mean_velocity()
+std::vector<Real> CUDA_Lattice::get_mean_velocity()
 {
-    vector<real> mean_velocity(dim, 0.0);
+    std::vector<Real> mean_velocity(dim, 0.0);
 
-    real sum_x_vel = 0.0;
-    real sum_y_vel = 0.0;
+    Real sum_x_vel = 0.0;
+    Real sum_y_vel = 0.0;
 
     unsigned int counter = 0;
 
@@ -1445,7 +1445,7 @@ vector<real> CUDA_Lattice::get_mean_velocity()
 
         	counter++;
 
-        	real cell_density = cell_density_cpu[n];
+            Real cell_density = cell_density_cpu[n];
 
 			if (cell_density > 1.0e-06) {
 
@@ -1472,8 +1472,8 @@ vector<real> CUDA_Lattice::get_mean_velocity()
     }
 
     // Divide the summed up x and y components by the total number of fluid cells.
-    mean_velocity[0] = sum_x_vel / (real) counter;
-    mean_velocity[1] = sum_y_vel / (real) counter;
+    mean_velocity[0] = sum_x_vel / (Real) counter;
+    mean_velocity[1] = sum_y_vel / (Real) counter;
 
     return mean_velocity;
 }

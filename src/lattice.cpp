@@ -14,7 +14,7 @@
 
 // Creates a lattice gas cellular automaton object of the specified properties.
 Lattice::Lattice(const string test_case,
-                 const real Re, const real Ma_s,
+                 const Real Re, const Real Ma_s,
                  const int n_dir,
                  const int coarse_graining_radius) {
 
@@ -68,7 +68,7 @@ Lattice::Lattice(const string test_case,
     } else if (test_case == "karman") {
 
         // Get the cylinder diameter in case of a Karman vortex street.
-        real diameter = (Re * nu_s) / u;
+        Real diameter = (Re * nu_s) / u;
         n_y = (int)(3.0 * diameter + 0.5);
 
     } else if (test_case == "collision") {
@@ -131,7 +131,7 @@ Lattice::Lattice(const string test_case,
 
     } else {
 
-        bf_dir = NULL;
+        bf_dir = 0;
     }
 
     // Set the number of cells in x direction.
@@ -296,7 +296,7 @@ void Lattice::apply_bc_karman_vortex_street() {
     // Define the position and size of the barrier.
     int  center_x = n_x / 6;
     int  center_y = n_y / 2 + 1 / 10 * n_y;
-    real diameter = n_y / 3;
+    Real diameter = n_y / 3;
 
     // Loop over all cells.
 #pragma omp parallel for
@@ -306,7 +306,7 @@ void Lattice::apply_bc_karman_vortex_street() {
         int pos_x = cell % n_x;
         int pos_y = cell / n_x;
 
-        real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
+        Real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
 
         if (dist < (diameter / 2.0)) {
 
@@ -339,7 +339,7 @@ void Lattice::init_single_collision() {
         abort();
 	}
 
-    vector<int> occupied_nodes;
+    std::vector<int> occupied_nodes;
     occupied_nodes.push_back(n_x * n_y / 4 + 1);
     occupied_nodes.push_back(occupied_nodes[0] + (n_x - 9) + inverse_dir * n_cells);
 
@@ -610,11 +610,11 @@ void Lattice::write_results(const unsigned int step, const string format) {
 
             pngwriter png(n_x, n_y, 0, name);
 
-            real density;
+            Real density;
 
             // Get the minimum and maximum field data values.
-            real min = 0.0;
-            real max = (real)n_dir;
+            Real min = 0.0;
+            Real max = (Real)n_dir;
 
             // Write mean density from lattice to file.
             //
@@ -638,7 +638,7 @@ void Lattice::write_results(const unsigned int step, const string format) {
                 }
 #endif
                 // Calculate rgb code.
-                vector<real> rgb_code = rgb(min, max, density);
+                std::vector<Real> rgb_code = rgb(min, max, density);
 
                 // Write color data to file.
                 png.plot(pos_x+1, pos_y+1, rgb_code[0], rgb_code[1], rgb_code[2]);
@@ -662,11 +662,11 @@ void Lattice::write_results(const unsigned int step, const string format) {
 
             pngwriter png(n_x, n_y, 0, name);
 
-            real x_vel;
+            Real x_vel;
 
             // Get the minimum and maximum field data values.
-            real min = - 1.0 * u;
-            real max =   3.0 * u;
+            Real min = - 1.0 * u;
+            Real max =   3.0 * u;
 
             // Write mean velocity in x direction from lattice to file.
             //
@@ -698,7 +698,7 @@ void Lattice::write_results(const unsigned int step, const string format) {
     #endif
 
                 // Calculate rgb code.
-                vector<real> rgb_code = rgb(min, max, x_vel);
+                std::vector<Real> rgb_code = rgb(min, max, x_vel);
 
                 // Write color data to file.
                 png.plot(pos_x+1, pos_y+1, rgb_code[0], rgb_code[1], rgb_code[2]);
@@ -720,7 +720,7 @@ void Lattice::write_results(const unsigned int step, const string format) {
 }
 
 // Initializes the lattice gas automaton with single particles at defined nodes.
-void Lattice::init_single(const vector<int> occupied_nodes) {
+void Lattice::init_single(const std::vector<int> occupied_nodes) {
 
     // Initialize the lattice with zeros.
     init_zero();
@@ -876,7 +876,7 @@ int Lattice::get_initial_forcing()
 // in order to compensate boundary layer shear force.
 int Lattice::get_equilibrium_forcing()
 {
-	real forcing = (8.0 * nu_s * Ma_s * c_s) / pow((real)n_y, 2.0);
+    Real forcing = (8.0 * nu_s * Ma_s * c_s) / pow((Real)n_y, 2.0);
 
 	return ceil(0.5 * n_cells * forcing);
 }
@@ -888,7 +888,7 @@ void Lattice::init_diffusion()
     // Define the position and size of the center area.
     int  center_x = n_x / 2;
     int  center_y = n_y / 2;
-    real diameter = n_y / 4;
+    Real diameter = n_y / 4;
 
 	// Loop over all cells.
 #pragma omp parallel for
@@ -898,7 +898,7 @@ void Lattice::init_diffusion()
 		int pos_x = cell % n_x;
 		int pos_y = cell / n_x;
 
-		real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
+        Real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
 
 	    // Check weather the cell is a fluid cell in the center area of the domain.
 	    if (cell_type_cpu[cell] == 0 &&

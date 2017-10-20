@@ -10,13 +10,13 @@
 #ifndef CU_LATTICE_H_
 #define CU_LATTICE_H_
 
-// CUDA include files
-#include "curand.h"
-#include "curand_kernel.h"
+#include "lgca_common.h"
 
-// User-defined include files
 #include "cuda_utils.cuh"
 #include "lattice.h"
+
+#include <curand.h>
+#include <curand_kernel.h>
 
 class CUDA_Lattice: public Lattice {
 
@@ -55,10 +55,10 @@ private:
     char* node_state_tmp_gpu;
 
     // Density values (0th momentum) related to the single cells (non-averaged).
-    real* cell_density_gpu;
+    Real* cell_density_gpu;
 
     // Coarse grained density values (averaged over neighbor cells).
-    real* mean_density_gpu;
+    Real* mean_density_gpu;
 
     // Vector valued quantities are stored in one-dimensional arrays in the
     // following sense:
@@ -66,10 +66,10 @@ private:
     // [X_COMP_CELL_1|X_COMP_CELL_2|X_COMP_CELL_3|...|Y_COMP_CELL_1|Y_COMP_CELL_2|...]
 
     // Momentum vectors (1st momentum) related to the single cells (non-averaged).
-    real* cell_momentum_gpu;
+    Real* cell_momentum_gpu;
 
     // Coarse grained momentum vectors (averaged over neighbor cells).
-    real* mean_momentum_gpu;
+    Real* mean_momentum_gpu;
 
     // Allocates the memory for the arrays on the host (CPU) and device (GPU).
     void allocate_memory();
@@ -83,7 +83,7 @@ private:
 public:
 
 	CUDA_Lattice(const string test_case,
-                 const real Re, const real Ma_s,
+                 const Real Re, const Real Ma_s,
                  const int n_dir,
                  const int coarse_graining_radius,
                  const int device);
@@ -104,7 +104,7 @@ public:
     void collide_and_propagate(unsigned int step);
 
     // Computes the mean velocity of the lattice.
-    vector<real> get_mean_velocity();
+    std::vector<Real> get_mean_velocity();
 
     // Calls the CUDA kernel which applies a body force in the specified
     // direction (x or y) and with the specified intensity to the particles.
