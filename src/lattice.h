@@ -246,6 +246,12 @@ public:
           Real* mean_density()       { assert(mean_density_cpu); return mean_density_cpu; }
     const Real* mean_density() const { assert(mean_density_cpu); return mean_density_cpu; }
 
+          Real* cell_momentum()       { assert(cell_momentum_cpu); return cell_momentum_cpu; }
+    const Real* cell_momentum() const { assert(cell_momentum_cpu); return cell_momentum_cpu; }
+
+          Real* mean_momentum()       { assert(mean_momentum_cpu); return mean_momentum_cpu; }
+    const Real* mean_momentum() const { assert(mean_momentum_cpu); return mean_momentum_cpu; }
+
     Real cell_density(const int x, const int y) { assert(cell_density_cpu); return cell_density_cpu[y * n_x + x]; }
     Real mean_density(const int x, const int y) { assert(mean_density_cpu); return mean_density_cpu[y * n_x + x]; }
 };

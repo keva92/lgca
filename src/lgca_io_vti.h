@@ -25,9 +25,11 @@ public:
     IoVti(Lattice* lattice);
     virtual ~IoVti() { mImageData->Delete(); }
 
+    // Update image data object.
     void update();
-    void read();
-    void write();
+
+    // Write current image data to file.
+    void write(const unsigned int step);
 
           Lattice* lattice()       { assert(mLattice); return mLattice; }
     const Lattice* lattice() const { assert(mLattice); return mLattice; }

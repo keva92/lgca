@@ -78,9 +78,7 @@ Lattice::Lattice(const string test_case,
 
     } else if (test_case == "diffusion" ||
     		   test_case == "periodic"  ||
-    		   test_case == "box"       ||
-    		   test_case == "sloshing"  ||
-    		   test_case == "hourglass") {
+               test_case == "box") {
 
     	n_y = (int)Re;
 
@@ -352,10 +350,10 @@ void Lattice::write_results(const unsigned int step, const string format) {
     // Set flags which data should be written to file.
     bool write_cell_density  = true;
     bool write_mean_density  = true;
-    bool write_cell_momentum = false;
-    bool write_mean_momentum = false;
-    bool write_cell_velocity = false;
-    bool write_mean_velocity = false;
+    bool write_cell_momentum = true;
+    bool write_mean_momentum = true;
+    bool write_cell_velocity = true;
+    bool write_mean_velocity = true;
 
 	// Create a file.
 	FILE* file;

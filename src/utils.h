@@ -35,8 +35,8 @@ get_vals_from_cmd(int argc, char **argv,
 
     // Define value arguments and add them to the command line.
     using TCLAP::ValueArg;
-    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "collision",
-    		"string (\"pipe\", \"box\", \"karman\", \"periodic\", \"collision\", \"diffusion\", \"sloshing\" or \"hourglass\") (default: \"pipe\")");
+    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "box",
+            "string (\"pipe\", \"box\", \"karman\", \"periodic\", \"collision\", \"diffusion\") (default: \"pipe\")");
     cmd.add(caseArg);
 
     ValueArg<Real>  ReArg("r", "Re", "Reynolds number.", false, 80.0, "real gt 0 (default: 80.0)");
@@ -48,16 +48,16 @@ get_vals_from_cmd(int argc, char **argv,
     ValueArg<int> ndirArg("d", "ndir", "Number of lattice directions.", false, 6, "int 4 (HPP) or int 6 (FHP) (default: FHP)");
     cmd.add(ndirArg);
 
-    ValueArg<int> smaxArg("s", "smax", "Number of simulated time steps.", false, 10, "int gte 0 (default: 10)");
+    ValueArg<int> smaxArg("s", "smax", "Number of simulated time steps.", false, 50, "int gte 0 (default: 50)");
     cmd.add(smaxArg);
 
     ValueArg<int> cgArg("c", "cgradius", "Coarse graining radius.", false, 15, "int gte 0 (default: 15)");
     cmd.add(cgArg);
 
-    ValueArg<int> writeArg("w", "writesteps", "Number of steps after which the post-processed results are written to a file.", false, 1, "int gt 0 (default: 1)");
+    ValueArg<int> writeArg("w", "writesteps", "Number of steps after which the post-processed results are written to a file.", false, 10, "int gt 0 (default: 10)");
     cmd.add(writeArg);
 
-    ValueArg<int> forceArg("b", "bfsteps", "Number of steps after which a body force is applied to the particles.", false, 1, "int gt 0 (default: 1)");
+    ValueArg<int> forceArg("b", "bfsteps", "Number of steps after which a body force is applied to the particles.", false, 100, "int gt 0 (default: 100)");
     cmd.add(forceArg);
 
     ValueArg<int> bfIntArg("i", "bfint", "Intensity of the body force.", false, 250, "int gte 0 (default: 250)");

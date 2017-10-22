@@ -27,6 +27,8 @@
 #include <vtkRenderWindow.h>
 #include <vtkImageViewer.h>
 
+#include <tbb/task_group.h>
+
 // Main function (CPU/host code)
 int main(int argc, char **argv) {
 
@@ -69,7 +71,7 @@ int main(int argc, char **argv) {
 
     srand48(time(NULL));
 
-    // Create a new time measurement instance.
+    // Create some time measurement instances.
     Timer *time_measure = new Timer();
 
     // Print startup message.
@@ -193,13 +195,8 @@ int main(int argc, char **argv) {
     int forcing = lattice->get_initial_forcing();
 
     // Setup on-line visualization -----------------------------------------------------------------
+    lattice->post_process();
     lgca::IoVti vtiIoHandler(lattice);
-
-//    vtkNew<vtkImageViewer> viewer;
-//    viewer->SetInputData(vtiIoHandler.image());
-//    viewer->GetRenderWindow()->SetSize(1024, 576); // WXGA
-//    viewer->GetRenderer()->ResetCamera();
-//    viewer->Render();
 
     vtkNew<vtkImageDataGeometryFilter> geomFilter;
     geomFilter->SetInputData(vtiIoHandler.image());
@@ -242,91 +239,97 @@ int main(int argc, char **argv) {
     renWin->AddRenderer(ren.GetPointer());
     renWin->SetSize(1024, 576); // WXGA
     ren->ResetCamera();
-    renWin->Render();
-    sleep(3);
 
 
     // Time loop -----------------------------------------------------------------------------------
+
+//    tbb::task_group task_group;
 
     printf("Starting calculation...\n");
 
     // Loop over the simulations steps.
     for (unsigned int step = 0; step <= s_max; ++step) {
 
-        if (step % body_force_steps == 0 ||
-            step % write_steps      == 0)
-        {
-            // Compute quantities of interest as a post-processing procedure.
-            lattice->post_process();
+//        task_group.run([&]{
 
-            // Copy results back to host.
-            if (parallel_type == "CUDA") lattice->copy_data_from_device();
+            if (step % body_force_steps == 0 ||
+                step % write_steps      == 0)
+            {
+                // Compute quantities of interest as a post-processing procedure.
+                lattice->post_process();
 
-            // Get current mean velocity in x and y direction.
-            mean_velocity = lattice->get_mean_velocity();
-        }
+                // Copy results back to host.
+                if (parallel_type == "CUDA") lattice->copy_data_from_device();
 
-        if (step % write_steps == 0) {
-
-            printf("\n");
-            printf("Executing step %d...\n", step);
-
-            // Print current mean velocity in x and y direction.
-            printf("Current mean velocity: (%6.4f, %6.4f)\n", mean_velocity[0], mean_velocity[1]);
-
-            // Get current performance.
-            if (step > 0) {
-
-                // Get time.
-                time_end = get_timer(time_measure);
-
-                // Print current performance.
-                printf("Current MNUPS: %d\n", (int) ((lattice->get_n_x() * lattice->get_n_y() * write_steps) / ((time_end - time_start) * 1.0e06)));
+                // Get current mean velocity in x and y direction.
+                mean_velocity = lattice->get_mean_velocity();
             }
 
-            // Write results of current time step to file.
-            lattice->write_results(step, output_format);
+            if (step % write_steps == 0) {
 
-            // Update render window.
-            renWin->Render();
-            sleep(3);
+                printf("\n");
+                printf("Executing step %d...\n", step);
+
+                // Print current mean velocity in x and y direction.
+                printf("Current mean velocity: (%6.4f, %6.4f)\n", mean_velocity[0], mean_velocity[1]);
+
+                // Get current performance.
+                if (step > 0) {
+
+                    // Get time.
+                    time_end = get_timer(time_measure);
+
+                    // Print current performance.
+                    printf("Current MNUPS: %d\n", (int) ((lattice->get_n_x() * lattice->get_n_y() * write_steps) / ((time_end - time_start) * 1.0e06)));
+                }
+
+                // Update image data object.
+//                vtiIoHandler.update();
+
+                // Write results of current time step to file.
+//                lattice->write_results(step, output_format);
+//                vtiIoHandler.write(step);
+
+                // Update render window.
+//                renWin->Render();
+//                sleep(1);
 
 #ifdef DEBUG
 
-            // Check weather the number of particles in the lattice has changed.
-            printf("There are %d particles in the lattice.\n", lattice->get_n_particles());
+                // Check weather the number of particles in the lattice has changed.
+                printf("There are %d particles in the lattice.\n", lattice->get_n_particles());
 
-            // Print the lattice to the screen.
-            lattice->print();
+                // Print the lattice to the screen.
+                lattice->print();
 #endif
 
-            // Get time.
-            time_start = get_timer(time_measure);
-        }
+                // Get time.
+                time_start = get_timer(time_measure);
+            }
+//        }); // task_group.run
 
-        // Call the CUDA kernel which performs the collision and propagation step
-        // on the lattice gas automaton.
-        lattice->collide_and_propagate(step);
+//        task_group.run([&]{
 
-        if ((body_force_intensity > 1.0e-06) &&
-        	(mean_velocity[0] < lattice->get_u()) &&
-        	(test_case == "pipe" || test_case == "karman")) {
+            // Call the CUDA kernel which performs the collision and propagation step
+            // on the lattice gas automaton.
+            lattice->collide_and_propagate(step);
 
-        	// Reduce the forcing once the flow has been accelerated strong enough.
-        	if (mean_velocity[0] > 0.9 * lattice->get_u()) forcing = lattice->get_equilibrium_forcing();
+            if ((body_force_intensity > 1.0e-06) &&
+                (mean_velocity[0] < lattice->get_u()) &&
+                (test_case == "pipe" || test_case == "karman")) {
 
-            // Apply a body force to the particles.
-            lattice->apply_body_force(forcing);
-        }
+                // Reduce the forcing once the flow has been accelerated strong enough.
+                if (mean_velocity[0] > 0.9 * lattice->get_u()) forcing = lattice->get_equilibrium_forcing();
 
-        if ((body_force_intensity > 1.0e-06) &&
-        	(test_case == "sloshing" || test_case == "hourglass")) {
+                // Apply a body force to the particles.
+                lattice->apply_body_force(forcing);
+            }
 
-            // Apply a body force to the particles.
-            lattice->apply_body_force(body_force_intensity);
-        }
-
+//        }); // task_group.run
     }
+
+//    task_group.wait();
+
     printf("\n");
 
     // Get the number of particles in the lattice.
