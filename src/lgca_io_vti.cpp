@@ -57,7 +57,7 @@ IoVti::IoVti(Lattice* lattice) : mLattice(lattice)
     cell_momentum->Delete();
 
     // Set active array for on-line visualization
-    mImageData->GetCellData()->SetActiveScalars("Cell density");
+    mImageData->GetCellData()->SetActiveScalars("Mean density");
 
     // Mark image data object as modified
     this->update();

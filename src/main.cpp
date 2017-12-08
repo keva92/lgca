@@ -39,9 +39,7 @@ int main(int argc, char **argv) {
           	  	  	  	  	  	  	  	 // box,
                                          // Karman vortex street,
           	  	  	  	  	  	  	  	 // single collision,
-          	  	  	  	  	  	  	  	 // diffusion,
-          	  	  	  	  	  	  	  	 // sloshing,
-          	  	  	  	  	  	  	  	 // hourglass).
+                                         // diffusion).
           Real   Re;                     // Reynolds number.
           Real   Ma;                     // Mach number.
           int    n_dir;                  // Number of lattice directions.
@@ -52,8 +50,8 @@ int main(int argc, char **argv) {
           int    body_force_intensity;   // Intensity of the body force.
           int    device;                 // Number of the device to use.
           int    max_block_size;         // Maximum block size in x direction.
-          string parallel_type;          // Parallelization type (CUDA, openMP).
-          string output_format;          // Output format (png or vti).
+          string parallel_type;          // Parallelization type (CUDA, OpenMP).
+          string output_format;          // Output format (live or vti).
 
     // Get values from the command line.
     get_vals_from_cmd(argc, argv,
@@ -67,7 +65,7 @@ int main(int argc, char **argv) {
                       &device,
                       &max_block_size,
                       &parallel_type,
-                      & output_format);
+                      &output_format);
 
     srand48(time(NULL));
 
@@ -85,7 +83,7 @@ int main(int argc, char **argv) {
 
     	lattice = new CUDA_Lattice(test_case, Re, Ma, n_dir, coarse_graining_radius, device);
 
-    } else if (parallel_type == "openMP") {
+    } else if (parallel_type == "OMP") {
 
     	lattice = new OMP_Lattice(test_case, Re, Ma, n_dir, coarse_graining_radius);
 
@@ -107,7 +105,7 @@ int main(int argc, char **argv) {
 
         lattice->apply_bc_karman_vortex_street();
 
-    } else if (test_case == "box" || test_case == "diffusion" || test_case == "sloshing") {
+    } else if (test_case == "box" || test_case == "diffusion") {
 
     	lattice->apply_bc_reflecting("back");
 
@@ -119,10 +117,6 @@ int main(int argc, char **argv) {
 
     	lattice->apply_bc_periodic();
 
-    } else if (test_case == "hourglass") {
-
-    	// lattice->apply_bc_hourglass();
-
     } else {
 
         printf("ERROR in main(): Invalid test case %s.\n", test_case.c_str());
@@ -133,7 +127,6 @@ int main(int argc, char **argv) {
 
 
     // Initialize the lattice gas automaton with particles -----------------------------------------
-
     printf("Initialize the lattice gas automaton...\n");
 
     if ((test_case == "pipe") || (test_case == "karman") || (test_case == "box") || (test_case == "periodic")) {
@@ -147,14 +140,6 @@ int main(int argc, char **argv) {
     } else if (test_case == "diffusion") {
 
     	lattice->init_diffusion();
-
-    } else if (test_case == "sloshing") {
-
-    	lattice->init_sloshing();
-
-    } else if (test_case == "hourglass") {
-
-    	// lattice->init_hourglass();
 
     } else {
 
@@ -284,15 +269,15 @@ int main(int argc, char **argv) {
                 }
 
                 // Update image data object.
-//                vtiIoHandler.update();
+                vtiIoHandler.update();
 
                 // Write results of current time step to file.
 //                lattice->write_results(step, output_format);
 //                vtiIoHandler.write(step);
 
                 // Update render window.
-//                renWin->Render();
-//                sleep(1);
+                renWin->Render();
+                sleep(1);
 
 #ifdef DEBUG
 

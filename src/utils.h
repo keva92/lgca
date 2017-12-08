@@ -35,32 +35,32 @@ get_vals_from_cmd(int argc, char **argv,
 
     // Define value arguments and add them to the command line.
     using TCLAP::ValueArg;
-    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "box",
+    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "pipe",
             "string (\"pipe\", \"box\", \"karman\", \"periodic\", \"collision\", \"diffusion\") (default: \"pipe\")");
     cmd.add(caseArg);
 
     ValueArg<Real>  ReArg("r", "Re", "Reynolds number.", false, 80.0, "real gt 0 (default: 80.0)");
     cmd.add(ReArg);
 
-    ValueArg<Real> MaArg("m", "Ma", "Mach number.", false, 0.1, "real gt 0 (default: 0.1)");
+    ValueArg<Real> MaArg("m", "Ma", "Mach number.", false, 0.2, "real gt 0 (default: 0.2");
     cmd.add(MaArg);
 
-    ValueArg<int> ndirArg("d", "ndir", "Number of lattice directions.", false, 6, "int 4 (HPP) or int 6 (FHP) (default: FHP)");
+    ValueArg<int> ndirArg("d", "n-dir", "Number of lattice directions.", false, 6, "int 4 (HPP) or int 6 (FHP) (default: FHP)");
     cmd.add(ndirArg);
 
-    ValueArg<int> smaxArg("s", "smax", "Number of simulated time steps.", false, 50, "int gte 0 (default: 50)");
+    ValueArg<int> smaxArg("s", "steps", "Number of simulated time steps.", false, 50, "int gte 0 (default: 50)");
     cmd.add(smaxArg);
 
-    ValueArg<int> cgArg("c", "cgradius", "Coarse graining radius.", false, 15, "int gte 0 (default: 15)");
+    ValueArg<int> cgArg("c", "cg-radius", "Coarse graining radius.", false, 15, "int gte 0 (default: 15)");
     cmd.add(cgArg);
 
-    ValueArg<int> writeArg("w", "writesteps", "Number of steps after which the post-processed results are written to a file.", false, 10, "int gt 0 (default: 10)");
+    ValueArg<int> writeArg("w", "write-steps", "Number of steps after which the post-processed results are written to a file.", false, 10, "int gt 0 (default: 10)");
     cmd.add(writeArg);
 
-    ValueArg<int> forceArg("b", "bfsteps", "Number of steps after which a body force is applied to the particles.", false, 100, "int gt 0 (default: 100)");
+    ValueArg<int> forceArg("", "bf-steps", "Number of steps after which a body force is applied to the particles.", false, 100, "int gt 0 (default: 100)");
     cmd.add(forceArg);
 
-    ValueArg<int> bfIntArg("i", "bfint", "Intensity of the body force.", false, 250, "int gte 0 (default: 250)");
+    ValueArg<int> bfIntArg("", "bf-int", "Intensity of the body force.", false, 250, "int gte 0 (default: 250)");
     cmd.add(bfIntArg);
 
     ValueArg<int> deviceArg("", "device", "Number of the device to use.", false, 0, "int gte 0 (default: 0)");
@@ -69,10 +69,10 @@ get_vals_from_cmd(int argc, char **argv,
     ValueArg<int> blockSizeArg("", "blocksize", "Maximum block size in x direction.", false, 256, "int gt 0 (default: 256)");
     cmd.add(blockSizeArg);
 
-    ValueArg<string> parallelArg("p", "parallel", "Parallelization type.", false, "openMP", "string (\"CUDA\" or \"openMP\") (default: \"CUDA\")");
+    ValueArg<string> parallelArg("p", "parallel", "Parallelization type.", false, "OMP", "string (\"CUDA\" or \"OMP\") (default: \"OMP\")");
     cmd.add(parallelArg);
 
-    ValueArg<string> outputArg("o", "output", "Output file format.", false, "vti", "string (\"vti\" or \"png\") (default: \"vti\")");
+    ValueArg<string> outputArg("o", "output", "Output mode.", false, "live", "string (\"live\" or \"vti\") (default: \"live\")");
     cmd.add(outputArg);
 
     // Parse the args.
