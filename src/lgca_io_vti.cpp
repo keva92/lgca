@@ -1,9 +1,20 @@
 /*
- * lgca_io_vti.cpp
+ * This file is part of LGCA, an implementation of a Lattice Gas Cellular Automaton
+ * (https://github.com/keva92/lgca).
  *
- *  Created on: Oct 19, 2017
- *      Author: Kerstin Vater
- * Description:
+ * Copyright (c) 2015-2017 Kerstin Vater, Niklas Kühl, Christian F. Janßen.
+ *
+ * LGCA is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * LGCA is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "lgca_io_vti.h"
@@ -22,7 +33,7 @@
 
 namespace lgca {
 
-IoVti::IoVti(Lattice* lattice) : mLattice(lattice)
+IoVti::IoVti(Lattice* lattice, const std::string scalars) : mLattice(lattice)
 {
     mImageData = vtkImageData::New();
     assert(mLattice);
@@ -57,7 +68,7 @@ IoVti::IoVti(Lattice* lattice) : mLattice(lattice)
     cell_momentum->Delete();
 
     // Set active array for on-line visualization
-    mImageData->GetCellData()->SetActiveScalars("Mean density");
+    mImageData->GetCellData()->SetActiveScalars(scalars.c_str());
 
     // Mark image data object as modified
     this->update();

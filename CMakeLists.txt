@@ -22,6 +22,8 @@ set(VTK_DIR "/opt/vtk/VTK-8.0.1/build")
 find_package(VTK 8.0 REQUIRED)
 include(${VTK_USE_FILE})
 
+find_package(Qt5Widgets REQUIRED)
+
 # Pass options to GCC
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -march=native")
@@ -43,9 +45,18 @@ include_directories(
   ${FREETYPE_INCLUDE_DIRS}
 )
 
-# Add application source files
-file(GLOB LGCA_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp ${PROJECT_SOURCE_DIR}/src/*.cu)
-file(GLOB LGCA_HEADERS  ${PROJECT_SOURCE_DIR}/src/*.h ${PROJECT_SOURCE_DIR}/src/*.cuh)
+# Compile and install CUDA PTX files
+file(GLOB LIB_LGCA_CUDA_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cu)
+file(GLOB LIB_LGCA_CUDA_HEADERS  ${PROJECT_SOURCE_DIR}/src/*.cuh)
+add_library(CudaPTX OBJECT ${PROJECT_SOURCE_DIR}/src/cu_lattice.cu)
+set_property(TARGET CudaPTX PROPERTY CUDA_PTX_COMPILATION ON)
+install(TARGETS CudaPTX
+   OBJECTS DESTINATION ${PROJECT_SOURCE_DIR}/ptx
+)
+
+# Add library source files
+file(GLOB LIB_LGCA_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB LIB_LGCA_HEADERS  ${PROJECT_SOURCE_DIR}/src/*.h)
 file(GLOB PNGWRITER_SOURCES ${PROJECT_SOURCE_DIR}/lib/pngwriter/*.cc)
 file(GLOB PNGWRITER_HEADERS ${PROJECT_SOURCE_DIR}/lib/pngwriter/*.h)
 file(GLOB TCLAP_HEADERS ${PROJECT_SOURCE_DIR}/lib/tclap/*.h)
@@ -55,21 +66,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
   ${PROJECT_SOURCE_DIR}/bin
 )
 
-# Specify target and source files to compile it from
-add_executable(
-  ${PROJECT_NAME}
-  ${LGCA_SOURCES} ${LGCA_HEADERS}
-  ${PNGWRITER_SOURCES} ${PNGWRITER_HEADERS}
-  ${TCLAP_HEADERS}
-)
+#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/pipe)
+#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/karman)
+#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/diffusion)
+#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/box)
+add_subdirectory(${PROJECT_SOURCE_DIR}/apps/single)
+#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/periodic)
 
-# Specify target and libraries to link it with
-target_link_libraries(
-  ${PROJECT_NAME}
-  ${CUDA_LIBRARIES}
-  ${OpenMP_C_LIBRARIES} ${OpenMP_CXX_LIBRARIES}
-  ${TBB_LIBRARIES}
-  ${PNG_LIBRARIES}
-  ${FREETYPE_LIBRARIES}
-  ${VTK_LIBRARIES}
-)
+
+

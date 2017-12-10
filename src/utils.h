@@ -1,11 +1,20 @@
 /*
- * utils.h
+ * This file is part of LGCA, an implementation of a Lattice Gas Cellular Automaton
+ * (https://github.com/keva92/lgca).
  *
- *  Created on: Dec 10, 2015
- *      Author: Kerstin Vater
- * Description: This file defines some useful functions when working with
- *              cellular lattice gas automatons.
+ * Copyright (c) 2015-2017 Kerstin Vater, Niklas Kühl, Christian F. Janßen.
  *
+ * LGCA is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * LGCA is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef UTILS_H_
@@ -18,7 +27,6 @@
 // Gets values from the command line.
 static inline void
 get_vals_from_cmd(int argc, char **argv,
-                  string* test_case,
                   Real* Re, Real* Ma,
                   int* n_dir,
                   int* s_max,
@@ -35,9 +43,6 @@ get_vals_from_cmd(int argc, char **argv,
 
     // Define value arguments and add them to the command line.
     using TCLAP::ValueArg;
-    ValueArg<string> caseArg("t", "testcase", "Test case.", false, "pipe",
-            "string (\"pipe\", \"box\", \"karman\", \"periodic\", \"collision\", \"diffusion\") (default: \"pipe\")");
-    cmd.add(caseArg);
 
     ValueArg<Real>  ReArg("r", "Re", "Reynolds number.", false, 80.0, "real gt 0 (default: 80.0)");
     cmd.add(ReArg);
@@ -79,7 +84,6 @@ get_vals_from_cmd(int argc, char **argv,
     cmd.parse(argc, argv);
 
     // Get the value parsed by each arg.
-    *test_case              = caseArg.getValue();
     *Re                     = ReArg.getValue();
     *Ma                     = MaArg.getValue();
     *n_dir                  = ndirArg.getValue();

@@ -16,29 +16,3 @@
  * You should have received a copy of the GNU General Public License
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef LGCA_COMMON_H_
-#define LGCA_COMMON_H_
-
-#include <cstdlib>
-#include <cstdio>
-#include <iostream>
-#include <fstream>
-#include <cmath>
-#include <vector>
-#include <string>
-#include <cassert>
-#include <chrono>
-
-using std::cout;
-using std::endl;
-using std::flush;
-using std::string;
-
-using std::chrono::steady_clock;
-using std::chrono::duration;
-
-// Define floating-point precision.
-typedef float Real;
-
-#endif /* LGCA_COMMON_H_ */

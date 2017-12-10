@@ -75,22 +75,22 @@ __global__ void collide_and_propagate_kernel(const int   n_x,
         // propagation step.
         // Note that for the FHP model there is a difference in the offsets depending
         // on weather the cell is located in a row with even or odd index.
-    	int offset_to_neighbor[n_dir];
+        int offset_to_neighbor[n_dir];
 
         // Memory offset to related cells of the opposite boundary in the different
         // directions in case of periodic boundaries.
-    	int offset_to_eastern_boundary[n_dir];
-    	int offset_to_northern_boundary[n_dir];
-    	int offset_to_western_boundary[n_dir];
-    	int offset_to_southern_boundary[n_dir];
+        int offset_to_eastern_boundary[n_dir];
+        int offset_to_northern_boundary[n_dir];
+        int offset_to_western_boundary[n_dir];
+        int offset_to_southern_boundary[n_dir];
 
-    	// Inverse direction indices for each lattice direction.
-    	char inverse_dir[n_dir];
+        // Inverse direction indices for each lattice direction.
+        char inverse_dir[n_dir];
 
         // Mirrored direction indices for each lattice direction with respect
         // to the x and y axis.
-    	char mirrored_dir_x[n_dir];
-    	char mirrored_dir_y[n_dir];
+        char mirrored_dir_x[n_dir];
+        char mirrored_dir_y[n_dir];
 
         // Set the components of the lattice vectors for the different directions.
         //
@@ -512,7 +512,7 @@ __global__ void collide_and_propagate_kernel(const int   n_x,
             case 1:
             {
                 // Loop over all directions.
-            	// #pragma unroll
+                // #pragma unroll
                 for (int dir = 0; dir < n_dir; ++dir) {
 
                     // Exchange the states of the nodes with the the states of
@@ -565,11 +565,11 @@ __global__ void collide_and_propagate_kernel(const int   n_x,
         // #pragma unroll
         for (int dir = 0; dir < n_dir; dir++)
         {
-        	// Reset the memory offset.
-        	int offset = 0;
+            // Reset the memory offset.
+            int offset = 0;
 
-        	// Construct the correct memory offset.
-        	//
+            // Construct the correct memory offset.
+            //
             // Apply a default offset value.
             offset += offset_to_neighbor[dir];
 
@@ -595,9 +595,9 @@ __global__ void collide_and_propagate_kernel(const int   n_x,
                 offset += offset_to_northern_boundary[dir];
             }
 
-			// Push the states of the cell to its "neighbor" cells in the
-			// different directions.
-			node_state_tmp_gpu[node_idx[dir] + offset] = node_state_tmp[dir];
+            // Push the states of the cell to its "neighbor" cells in the
+            // different directions.
+            node_state_tmp_gpu[node_idx[dir] + offset] = node_state_tmp[dir];
         }
     }
 }
@@ -614,73 +614,73 @@ __global__ void apply_body_force_kernel(int   forcing,
 
     // Each thread is looking for one particle to revert.
 
-	// Lattice vector components in the different directions.
+    // Lattice vector components in the different directions.
     Real lattice_vec_x[n_dir];
     Real lattice_vec_y[n_dir];
 
-	// Mirrored direction indices for each lattice direction with respect
-	// to the x and y axis.
-	char mirrored_dir_x[n_dir];
-	char mirrored_dir_y[n_dir];
+    // Mirrored direction indices for each lattice direction with respect
+    // to the x and y axis.
+    char mirrored_dir_x[n_dir];
+    char mirrored_dir_y[n_dir];
 
-	// Set the components of the lattice vectors for the different directions.
-	//
-	// Loop over all directions.
-	for (int dir = 0; dir < n_dir; ++dir) {
+    // Set the components of the lattice vectors for the different directions.
+    //
+    // Loop over all directions.
+    for (int dir = 0; dir < n_dir; ++dir) {
 
         lattice_vec_x[dir] = cos(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
         lattice_vec_y[dir] = sin(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
-	}
+    }
 
-	// Set the model based values according to the number of lattice directions.
-	switch (n_dir) {
+    // Set the model based values according to the number of lattice directions.
+    switch (n_dir) {
 
-		// HPP model.
-		case 4:
-		{
-			mirrored_dir_x[0] = 0;
-			mirrored_dir_x[1] = 3;
-			mirrored_dir_x[2] = 2;
-			mirrored_dir_x[3] = 1;
+        // HPP model.
+        case 4:
+        {
+            mirrored_dir_x[0] = 0;
+            mirrored_dir_x[1] = 3;
+            mirrored_dir_x[2] = 2;
+            mirrored_dir_x[3] = 1;
 
-			mirrored_dir_y[0] = 2;
-			mirrored_dir_y[1] = 1;
-			mirrored_dir_y[2] = 0;
-			mirrored_dir_y[3] = 3;
+            mirrored_dir_y[0] = 2;
+            mirrored_dir_y[1] = 1;
+            mirrored_dir_y[2] = 0;
+            mirrored_dir_y[3] = 3;
 
-			break;
-		}
+            break;
+        }
 
-		// FHP model.
-		case 6:
-		{
-			mirrored_dir_x[0] = 0;
-			mirrored_dir_x[1] = 5;
-			mirrored_dir_x[2] = 4;
-			mirrored_dir_x[3] = 3;
-			mirrored_dir_x[4] = 2;
-			mirrored_dir_x[5] = 1;
+        // FHP model.
+        case 6:
+        {
+            mirrored_dir_x[0] = 0;
+            mirrored_dir_x[1] = 5;
+            mirrored_dir_x[2] = 4;
+            mirrored_dir_x[3] = 3;
+            mirrored_dir_x[4] = 2;
+            mirrored_dir_x[5] = 1;
 
-			mirrored_dir_y[0] = 3;
-			mirrored_dir_y[1] = 2;
-			mirrored_dir_y[2] = 1;
-			mirrored_dir_y[3] = 0;
-			mirrored_dir_y[4] = 5;
-			mirrored_dir_y[5] = 4;
+            mirrored_dir_y[0] = 3;
+            mirrored_dir_y[1] = 2;
+            mirrored_dir_y[2] = 1;
+            mirrored_dir_y[3] = 0;
+            mirrored_dir_y[4] = 5;
+            mirrored_dir_y[5] = 4;
 
-			break;
-		}
+            break;
+        }
 
 #ifdef DEBUG
-		default:
-		{
-			printf("ERROR in Lattice(): Invalid number of directions %d!\n", n_dir);
-			abort();
-			break;
-		}
+        default:
+        {
+            printf("ERROR in Lattice(): Invalid number of directions %d!\n", n_dir);
+            abort();
+            break;
+        }
 #endif
 
-	}
+    }
 
     // Set a maximum number of iterations to find particles which can be reverted.
     const int it_max = 2 * n_cells;
@@ -694,141 +694,141 @@ __global__ void apply_body_force_kernel(int   forcing,
     // Loop over all cells.
     do
     {
-		// TODO: Get the index of a random cell.
-		int cell = (int)truncf(cu_random(seed, threadIdx.x) * n_cells);
-		printf("cell = %d", cell);
-		it++;
+        // TODO: Get the index of a random cell.
+        int cell = (int)truncf(cu_random(seed, threadIdx.x) * n_cells);
+        printf("cell = %d", cell);
+        it++;
 
-		// Get the type of the cell, i.e. fluid or solid.
-		// Note that body forces are applied to fluid cells only.
-		char cell_type = cell_type_gpu[cell];
+        // Get the type of the cell, i.e. fluid or solid.
+        // Note that body forces are applied to fluid cells only.
+        char cell_type = cell_type_gpu[cell];
 
-		// Check weather the cell working on is a fluid cell.
-		if (cell_type == 0) {
+        // Check weather the cell working on is a fluid cell.
+        if (cell_type == 0) {
 
-			// Define an array for the global indices of the nodes in the cell.
-			int node_idx[n_dir];
+            // Define an array for the global indices of the nodes in the cell.
+            int node_idx[n_dir];
 
-			// Define an array for the states of the nodes in the cell.
-			char node_state[n_dir];
+            // Define an array for the states of the nodes in the cell.
+            char node_state[n_dir];
 
-			// The thread working on the cell has to know about the states of the
-			// nodes within the cell, therefore looping over all directions and
-			// look it up.
-		#pragma unroll
-			for (int dir = 0; dir < n_dir; ++dir) {
+            // The thread working on the cell has to know about the states of the
+            // nodes within the cell, therefore looping over all directions and
+            // look it up.
+        #pragma unroll
+            for (int dir = 0; dir < n_dir; ++dir) {
 
-				node_idx[dir] = cell + dir * n_cells;
-				node_state[dir] = node_state_gpu[node_idx[dir]];
-			}
+                node_idx[dir] = cell + dir * n_cells;
+                node_state[dir] = node_state_gpu[node_idx[dir]];
+            }
 
-			// Create a temporary array to copy the node states into.
-			char node_state_tmp[n_dir];
+            // Create a temporary array to copy the node states into.
+            char node_state_tmp[n_dir];
 
-			// Copy the current states of the nodes to the temporary array.
-		#pragma unroll
-			for (int dir = 0; dir < n_dir; ++dir) {
+            // Copy the current states of the nodes to the temporary array.
+        #pragma unroll
+            for (int dir = 0; dir < n_dir; ++dir) {
 
-				node_state_tmp[dir] = node_state[dir];
-			}
+                node_state_tmp[dir] = node_state[dir];
+            }
 
-			if (n_dir == 4) {
+            if (n_dir == 4) {
 
-				if (bf_dir == 'x' && (node_state[0] == 0) && (node_state[2] == 1)) {
+                if (bf_dir == 'x' && (node_state[0] == 0) && (node_state[2] == 1)) {
 
-					node_state_tmp[0] = 1;
-					node_state_tmp[2] = 0;
+                    node_state_tmp[0] = 1;
+                    node_state_tmp[2] = 0;
 
-					reverted_particles++;
+                    reverted_particles++;
 
-				} else if (bf_dir == 'y' && (node_state[1] == 1) && (node_state[3] == 0)) {
+                } else if (bf_dir == 'y' && (node_state[1] == 1) && (node_state[3] == 0)) {
 
-					node_state_tmp[1] = 0;
-					node_state_tmp[3] = 1;
+                    node_state_tmp[1] = 0;
+                    node_state_tmp[3] = 1;
 
-					reverted_particles++;
-				}
-			}
+                    reverted_particles++;
+                }
+            }
 
-			else if (n_dir == 6) {
+            else if (n_dir == 6) {
 
-				if (bf_dir == 'x' && (node_state[0] == 0) && (node_state[3] == 1)) {
+                if (bf_dir == 'x' && (node_state[0] == 0) && (node_state[3] == 1)) {
 
-					node_state_tmp[0] = 1;
-					node_state_tmp[3] = 0;
+                    node_state_tmp[0] = 1;
+                    node_state_tmp[3] = 0;
 
-					reverted_particles++;
+                    reverted_particles++;
 
-				} else if (bf_dir == 'y') {
+                } else if (bf_dir == 'y') {
 
-					if ((node_state[1] == 1) && (node_state[5] == 0)) {
+                    if ((node_state[1] == 1) && (node_state[5] == 0)) {
 
-						node_state_tmp[1] = 0;
-						node_state_tmp[5] = 1;
+                        node_state_tmp[1] = 0;
+                        node_state_tmp[5] = 1;
 
-						reverted_particles++;
-					}
+                        reverted_particles++;
+                    }
 
-					if ((node_state[2] == 1) && (node_state[4] == 0)) {
+                    if ((node_state[2] == 1) && (node_state[4] == 0)) {
 
-						node_state_tmp[2] = 0;
-						node_state_tmp[4] = 1;
+                        node_state_tmp[2] = 0;
+                        node_state_tmp[4] = 1;
 
-						reverted_particles++;
-					}
-				}
-			}
+                        reverted_particles++;
+                    }
+                }
+            }
 
-	//            // Loop over all directions.
-	//#pragma unroll
-	//            for (int dir = 0; dir < n_dir; ++dir) {
-	//
-	//                // Body force acting in x direction.
-	//                if (bf_dir == 'x') {
-	//
-	//					// TODO: Exchange the states of the nodes with the the states of
-	//					//       the mirrored directions along the y axis if feasible.
-	//					if ((fabs(lattice_vec_x[dir] - 1.0) < 1.0e-06) &&
-	//						(node_state[dir] < node_state[mirrored_dir_y[dir]])) {
-	//
-	//						node_state_tmp[dir                ] = node_state[mirrored_dir_y[dir]];
-	//						node_state_tmp[mirrored_dir_y[dir]] = node_state[dir                ];
-	//					}
-	//                }
-	//
-	//                // Body force acting in y direction.
-	//                else if (bf_dir == 'y') {
-	//
-	//					// TODO: Exchange the states of the nodes with the the states of
-	//					//       the mirrored directions along the x axis if feasible.
-	//					if ((lattice_vec_y[dir] < 1.0e-06) &&
-	//						(node_state[dir] < node_state[mirrored_dir_x[dir]])) {
-	//
-	//						node_state_tmp[dir                ] = node_state[mirrored_dir_x[dir]];
-	//						node_state_tmp[mirrored_dir_x[dir]] = node_state[dir                ];
-	//					}
-	//                }
-	//
-	//#ifdef DEBUG
-	//                // Invalid body force direction.
-	//                else {
-	//
-	//                    printf("ERROR in apply_body_force(): "
-	//                           "Invalid body force direction %c.\n", bf_dir);
-	//                }
-	//#endif
-	//            }
+    //            // Loop over all directions.
+    //#pragma unroll
+    //            for (int dir = 0; dir < n_dir; ++dir) {
+    //
+    //                // Body force acting in x direction.
+    //                if (bf_dir == 'x') {
+    //
+    //					// TODO: Exchange the states of the nodes with the the states of
+    //					//       the mirrored directions along the y axis if feasible.
+    //					if ((fabs(lattice_vec_x[dir] - 1.0) < 1.0e-06) &&
+    //						(node_state[dir] < node_state[mirrored_dir_y[dir]])) {
+    //
+    //						node_state_tmp[dir                ] = node_state[mirrored_dir_y[dir]];
+    //						node_state_tmp[mirrored_dir_y[dir]] = node_state[dir                ];
+    //					}
+    //                }
+    //
+    //                // Body force acting in y direction.
+    //                else if (bf_dir == 'y') {
+    //
+    //					// TODO: Exchange the states of the nodes with the the states of
+    //					//       the mirrored directions along the x axis if feasible.
+    //					if ((lattice_vec_y[dir] < 1.0e-06) &&
+    //						(node_state[dir] < node_state[mirrored_dir_x[dir]])) {
+    //
+    //						node_state_tmp[dir                ] = node_state[mirrored_dir_x[dir]];
+    //						node_state_tmp[mirrored_dir_x[dir]] = node_state[dir                ];
+    //					}
+    //                }
+    //
+    //#ifdef DEBUG
+    //                // Invalid body force direction.
+    //                else {
+    //
+    //                    printf("ERROR in apply_body_force(): "
+    //                           "Invalid body force direction %c.\n", bf_dir);
+    //                }
+    //#endif
+    //            }
 
-			// Write the new node states back to the data array.
-			//
-			// Loop over all directions.
-		#pragma unroll
-			for(int dir = 0; dir < n_dir; dir++)
-			{
-				node_state_gpu[node_idx[dir]] = node_state_tmp[dir];
-			}
+            // Write the new node states back to the data array.
+            //
+            // Loop over all directions.
+        #pragma unroll
+            for(int dir = 0; dir < n_dir; dir++)
+            {
+                node_state_gpu[node_idx[dir]] = node_state_tmp[dir];
+            }
 
-		} /* IF cell_type */
+        } /* IF cell_type */
 
     } while ((reverted_particles < 1) && (it < it_max));
 }
@@ -836,26 +836,26 @@ __global__ void apply_body_force_kernel(int   forcing,
 // Computes the mean velocity of the lattice.
 __global__ void get_mean_velocity_kernel(int *g_idata, int *g_odata) {
 
-	extern __shared__ int sdata[];
+    extern __shared__ int sdata[];
 
-	// Each thread loads one element from global to shared memory.
-	unsigned int tid = threadIdx.x;
-	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-	sdata[tid] = g_idata[i];
-	__syncthreads();
+    // Each thread loads one element from global to shared memory.
+    unsigned int tid = threadIdx.x;
+    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    sdata[tid] = g_idata[i];
+    __syncthreads();
 
-	// Do reduction in shared memory.
-	for (unsigned int s = 1; s < blockDim.x; s *= 2) {
+    // Do reduction in shared memory.
+    for (unsigned int s = 1; s < blockDim.x; s *= 2) {
 
-		if (tid % (2*s) == 0) {
+        if (tid % (2*s) == 0) {
 
-			sdata[tid] += sdata[tid + s];
-		}
-		__syncthreads();
-	}
+            sdata[tid] += sdata[tid + s];
+        }
+        __syncthreads();
+    }
 
-	// Write result for this block to global memory.
-	if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+    // Write result for this block to global memory.
+    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 
 // Computes cell quantities of interest as a post-processing procedure.
@@ -883,7 +883,7 @@ __global__ void cell_post_process_kernel(const int     n_x,
     // Start calculation only for activated threads working on valid cells.
     if (active) {
 
-    	// Lattice vector components in the different directions.
+        // Lattice vector components in the different directions.
         Real lattice_vec_x[n_dir];
         Real lattice_vec_y[n_dir];
 
@@ -1021,7 +1021,7 @@ CUDA_Lattice::CUDA_Lattice(const string test_case,
                            const int coarse_graining_radius,
                            const int device = 0)
 
-			               : Lattice(test_case, Re, Ma_s, n_dir, coarse_graining_radius) {
+                           : Lattice(test_case, Re, Ma_s, n_dir, coarse_graining_radius) {
 
     // Set the device to use for the simulation.
     int n_devices;
@@ -1037,7 +1037,7 @@ CUDA_Lattice::CUDA_Lattice(const string test_case,
 // Deletes the CUDA parallelized lattice gas cellular automaton object.
 CUDA_Lattice::~CUDA_Lattice() {
 
-	free_memory();
+    free_memory();
 }
 
 // Sets (proper) grid and block sizes for the GPU computation.
@@ -1057,7 +1057,7 @@ void CUDA_Lattice::set_grid_and_block_size(int max_block_size = 256) {
         block_size_x = max_block_size;
         if (n_x % max_block_size != 0) {
             printf("WARNING in Lattice::set_grid_and_block_size(): "
-            	   "There are inactive threads in some blocks!\n");
+                   "There are inactive threads in some blocks!\n");
         }
     }
 
@@ -1078,7 +1078,7 @@ void CUDA_Lattice::set_grid_and_block_size(int max_block_size = 256) {
     } else {
 
         printf("ERROR in Lattice::set_grid_and_block_size():"
-        	   "Invalid grid and/or block dimensions. "
+               "Invalid grid and/or block dimensions. "
                "Please check device properties.");
         abort();
     }
@@ -1207,19 +1207,19 @@ void CUDA_Lattice::collide_and_propagate(unsigned int step) {
 // direction (x or y) to the particles.
 void CUDA_Lattice::apply_body_force(const int forcing) {
 
-	const int max_block_size = 256;
+    const int max_block_size = 256;
 
     // Set the grid and block size.
-	int grid_size_x = forcing / max_block_size + 1;
+    int grid_size_x = forcing / max_block_size + 1;
 
-	int block_size_x = 1;
-	if (forcing > 0)   block_size_x = forcing;
-	if (forcing > 256) block_size_x = max_block_size;
+    int block_size_x = 1;
+    if (forcing > 0)   block_size_x = forcing;
+    if (forcing > 256) block_size_x = max_block_size;
 
     dim3 grid_size (grid_size_x,  1, 1);
     dim3 block_size(block_size_x, 1, 1);
 
-	// Get device properties.
+    // Get device properties.
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, device);
 
@@ -1237,7 +1237,7 @@ void CUDA_Lattice::apply_body_force(const int forcing) {
     } else {
 
         printf("ERROR in CUDA_Lattice::apply_body_force():"
-        	   "Invalid grid and/or block dimensions. "
+               "Invalid grid and/or block dimensions. "
                "Please check device properties.");
         abort();
     }
@@ -1423,8 +1423,8 @@ void CUDA_Lattice::post_process() {
 // Sets (proper) parallelization parameters.
 void CUDA_Lattice::setup_parallel()
 {
-	// Sets (proper) grid and block size for the GPU computation.
-	set_grid_and_block_size(256);
+    // Sets (proper) grid and block size for the GPU computation.
+    set_grid_and_block_size(256);
 }
 
 // TODO: Computes the mean velocity of the lattice.
@@ -1443,28 +1443,28 @@ std::vector<Real> CUDA_Lattice::get_mean_velocity()
 
         if (cell_type_cpu[n] == 0) {
 
-        	counter++;
+            counter++;
 
             Real cell_density = cell_density_cpu[n];
 
-			if (cell_density > 1.0e-06) {
+            if (cell_density > 1.0e-06) {
 
-				sum_x_vel += cell_momentum_cpu[n          ] / cell_density;
-				sum_y_vel += cell_momentum_cpu[n + n_cells] / cell_density;
-			}
+                sum_x_vel += cell_momentum_cpu[n          ] / cell_density;
+                sum_y_vel += cell_momentum_cpu[n + n_cells] / cell_density;
+            }
 
 #ifdef DEBUG
 
-			else if (fabs(cell_density) < 1.0e-06) {
+            else if (fabs(cell_density) < 1.0e-06) {
 
-				// Do nothing.
+                // Do nothing.
 
-			} else if (cell_density < -1.0e-06) {
+            } else if (cell_density < -1.0e-06) {
 
-				printf("ERROR in get_mean_velocity(): "
-					   "Negative cell density detected.");
-				abort();
-			}
+                printf("ERROR in get_mean_velocity(): "
+                       "Negative cell density detected.");
+                abort();
+            }
 
 #endif
 

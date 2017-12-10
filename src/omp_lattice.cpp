@@ -1,10 +1,20 @@
 /*
- * omp_lattice.cpp
+ * This file is part of LGCA, an implementation of a Lattice Gas Cellular Automaton
+ * (https://github.com/keva92/lgca).
  *
- *  Created on: Apr 4, 2016
- *      Author: Kerstin Vater
- * Description: This class defines a lattice gas cellular automaton in two
- *              dimensions parallelized by means of openMP.
+ * Copyright (c) 2015-2017 Kerstin Vater, Niklas Kühl, Christian F. Janßen.
+ *
+ * LGCA is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * LGCA is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "lgca_common.h"
@@ -13,6 +23,8 @@
 #include "cuda_utils.cuh"
 
 #include <omp.h>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.
@@ -281,10 +293,13 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
             }
 #endif
 
-            // Loop over all cells.
-#pragma omp parallel for
-	for (unsigned int cell = 0; cell < n_cells; ++cell)
-	{
+    // Loop over all cells.
+//#pragma omp parallel for
+//	for (unsigned int cell = 0; cell < n_cells; ++cell)
+//	{
+    tbb::parallel_for(tbb::blocked_range<int>(0, n_cells), [&](const tbb::blocked_range<int>& r) {
+    for (int cell = r.begin(); cell != r.end(); ++cell)
+    {
 		// Calculate the position of the cell in x direction (column index).
 		int pos_x = cell % n_x;
 
@@ -662,7 +677,8 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 			node_state_tmp_cpu[node_idx[dir] + offset] = node_state_tmp[dir];
 		}
 
-	} /* FOR cell */
+    } /* FOR cell */
+    });
 
     // Update the node states.
     char* node_state_cpu_tmp = node_state_cpu;
@@ -841,90 +857,83 @@ void OMP_Lattice::post_process() {
 // Computes cell quantities of interest as a post-processing procedure.
 void OMP_Lattice::cell_post_process()
 {
-    // Loop over all cells.
-#pragma omp parallel for
-    for (unsigned int cell = 0; cell < n_cells; ++cell)
+    // Loop over lattice cells
+//#pragma omp parallel for
+//    for (int cell = 0; cell < n_cells; ++cell)
+//    {
+    tbb::parallel_for(tbb::blocked_range<int>(0, n_cells), [&](const tbb::blocked_range<int>& r) {
+    for (int cell = r.begin(); cell != r.end(); ++cell)
     {
-        // Define an array for the global indices of the nodes in a cell.
-        int node_idx[n_dir];
-
-        // Define an array for the states of the nodes in a cell.
-        char node_state[n_dir];
-
-        // The thread working on the cell has to know about the states of the
-        // nodes within the cell, therefore looping over all directions and
-        // look it up.
-#pragma unroll
-        for (int dir = 0; dir < n_dir; ++dir) {
-
-            node_idx[dir] = cell + dir * n_cells;
-            node_state[dir] = node_state_cpu[node_idx[dir]];
-        }
-
-        // Initialize the cell quantities to be computed.
-        int  cell_density    = 0;
+        // Initialize the cell quantities to be computed
+        char cell_density    = 0;
         Real cell_momentum_x = 0.0;
         Real cell_momentum_y = 0.0;
 
-        // Loop over all nodes in the cell.
+        // Loop over nodes within the current cell
 #pragma unroll
         for (int dir = 0; dir < n_dir; ++dir) {
 
-            // Sum up the node states.
-            cell_density += node_state[dir];
+            int node_idx = cell + dir * n_cells;
+            char node_state = node_state_out_cpu[node_idx];
 
-            // Sum up the node states multiplied by the lattice vector component
-            // for the current direction.
-            cell_momentum_x += node_state[dir] * lattice_vec_x[dir];
-            cell_momentum_y += node_state[dir] * lattice_vec_y[dir];
+            // Sum up the node states
+            cell_density += node_state;
+
+            // Sum up the node states multiplied by the lattice vector component for the current
+            // direction
+            cell_momentum_x += node_state * lattice_vec_x[dir];
+            cell_momentum_y += node_state * lattice_vec_y[dir];
         }
 
-        // Write the computed cell quantities to the related data arrays.
+        // Write the computed cell quantities to the related data arrays
         cell_density_cpu [cell          ] = (Real) cell_density;
         cell_momentum_cpu[cell          ] =        cell_momentum_x;
         cell_momentum_cpu[cell + n_cells] =        cell_momentum_y;
 
-    } /* FOR cell */
+    } // for cell
+    });
 }
 
-// Computes coarse grained quantities of interest as a post-processing procedure.
+// Computes coarse grained quantities of interest as a post-processing procedure
 void OMP_Lattice::mean_post_process()
 {
-    // Loop over all cells.
-#pragma omp parallel for
-    for (unsigned int cell = 0; cell < n_cells; ++cell)
+    // Loop over all cells
+//#pragma omp parallel for
+//    for (unsigned int cell = 0; cell < n_cells; ++cell)
+//    {
+    tbb::parallel_for(tbb::blocked_range<int>(0, n_cells), [&](const tbb::blocked_range<int>& r) {
+    for (int cell = r.begin(); cell != r.end(); ++cell)
     {
-        // Calculate the position of the cell in x direction.
+        // Calculate the position of the cell in x direction
         int pos_x = cell % n_x;
 
-        // Initialize the coarse grained quantities to be computed.
+        // Initialize the coarse grained quantities to be computed
         Real mean_density    = 0.0;
         Real mean_momentum_x = 0.0;
         Real mean_momentum_y = 0.0;
 
-        // Initialize the number of actual existing coarse graining neighbor cells.
+        // Initialize the number of actual existing coarse graining neighbor cells
         int n_exist_neighbors = 0;
 
-        // The thread working on the cell has to know the cell quantities of the
-        // coarse graining neighbor cells, therefore looping over all neighbor
-        // cells and look it up.
+        // The thread working on the cell has to know the cell quantities of the coarse graining
+        // neighbor cells, therefore looping over all neighbor cells and look it up
 #pragma unroll
         for (int y = -coarse_graining_radius; y <= coarse_graining_radius; ++y) {
 
             for (int x = -coarse_graining_radius; x <= coarse_graining_radius; ++x) {
 
-                // Get the index of the coarse graining neighbor cell.
+                // Get the index of the coarse graining neighbor cell
                 int neighbor_idx = cell + y * n_x + x;
 
-                // Get the position of the coarse graining neighbor cell in x direction.
+                // Get the position of the coarse graining neighbor cell in x direction
                 int pos_x_neighbor = neighbor_idx % n_x;
 
-                // Check weather the coarse graining neighbor cell is valid.
-                if ((neighbor_idx >= 0) &&
+                // Check weather the coarse graining neighbor cell is valid
+                if ((neighbor_idx >= 0) &
                     (neighbor_idx < n_cells) &&
                     (abs(pos_x_neighbor - pos_x) <= coarse_graining_radius)) {
 
-                    // Increase the number of existing coarse graining neighbor cells.
+                    // Increase the number of existing coarse graining neighbor cells
                     n_exist_neighbors++;
 
                     mean_density    += cell_density_cpu [neighbor_idx          ];
@@ -934,12 +943,13 @@ void OMP_Lattice::mean_post_process()
             }
         }
 
-        // Write the computed coarse grained quantities to the related data arrays.
+        // Write the computed coarse grained quantities to the related data arrays
         mean_density_cpu [cell          ] = mean_density    / ((Real) n_exist_neighbors);
         mean_momentum_cpu[cell          ] = mean_momentum_x / ((Real) n_exist_neighbors);
         mean_momentum_cpu[cell + n_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
 
-    } /* FOR cell */
+    } // for cell
+    });
 }
 
 // Allocates the memory for the arrays on the host (CPU).
@@ -948,6 +958,7 @@ void OMP_Lattice::allocate_memory()
     // Allocate host memory.
     cu_verify(cudaMallocHost((void **) &node_state_cpu,          n_nodes * sizeof(char)));
     cu_verify(cudaMallocHost((void **) &node_state_tmp_cpu,      n_nodes * sizeof(char)));
+    cu_verify(cudaMallocHost((void **) &node_state_out_cpu,      n_nodes * sizeof(char)));
     cu_verify(cudaMallocHost((void **) &cell_type_cpu,           n_cells * sizeof(char)));
     cu_verify(cudaMallocHost((void **) &cell_density_cpu,        n_cells * sizeof(Real)));
     cu_verify(cudaMallocHost((void **) &mean_density_cpu,        n_cells * sizeof(Real)));
@@ -961,6 +972,7 @@ void OMP_Lattice::free_memory()
     // Free CPU memory.
     cu_verify(cudaFreeHost(node_state_cpu));
     cu_verify(cudaFreeHost(node_state_tmp_cpu));
+    cu_verify(cudaFreeHost(node_state_out_cpu));
     cu_verify(cudaFreeHost(cell_type_cpu));
     cu_verify(cudaFreeHost(cell_density_cpu));
     cu_verify(cudaFreeHost(mean_density_cpu));
@@ -985,6 +997,7 @@ void OMP_Lattice::free_memory()
 
 	node_state_cpu                   = NULL;
 	node_state_tmp_cpu               = NULL;
+    node_state_out_cpu               = NULL;
 	cell_type_cpu                    = NULL;
 	cell_density_cpu                 = NULL;
 	mean_density_cpu                 = NULL;
@@ -1017,7 +1030,7 @@ void OMP_Lattice::setup_parallel()
 		if (omp_get_thread_num() == 0)
 		{
 			// Only execute in master thread.
-			printf("openMP configuration parameters: Executing calculation with %d threads.\n\n", omp_get_num_threads());
+            printf("OMP configuration parameters: Executing calculation with %d threads.\n\n", omp_get_num_threads());
 		}
 	}
 }

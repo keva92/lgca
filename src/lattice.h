@@ -1,10 +1,20 @@
 /*
- * lattice.h
+ * This file is part of LGCA, an implementation of a Lattice Gas Cellular Automaton
+ * (https://github.com/keva92/lgca).
  *
- *  Created on: Dec 9, 2015
- *      Author: Kerstin Vater
- * Description: This class defines a lattice gas cellular automaton in two
- *              dimensions.
+ * Copyright (c) 2015-2017 Kerstin Vater, Niklas Kühl, Christian F. Janßen.
+ *
+ * LGCA is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * LGCA is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef LATTICE_H_
@@ -96,14 +106,16 @@ protected:
     // 2 - solid cell, reflecting, bounce forward
     char* cell_type_cpu;
 
-    // One-dimensional arrays of integers which contains the states
-    // of the nodes, i.e. the occupation numbers, of the cellular automaton
-    // in the following sense:
+    // One-dimensional arrays of integers which contains the states of the nodes, i.e. the
+    // occupation numbers of the cellular automaton in the following sense:
     //
     // [DIR_1_CELL_1|DIR_1_CELL_2|DIR_1_CELL_3|...|DIR_2_CELL_1|DIR_2_CELL_2|...]
     //
-    // Array on the CPU.
+    // Array on the CPU
     char* node_state_cpu;
+
+    // Temporary buffer for post-processing and visualization
+    char* node_state_out_cpu;
 
     // Density values (0th momentum) related to the single cells (non-averaged).
     Real* cell_density_cpu;
@@ -185,18 +197,11 @@ public:
     // in the center area of the domain.
     void init_diffusion();
 
-    // Initializes the lattice gas automaton with some random distributed particles
-    // in one quarter of a rectangular tank.
-    void init_sloshing();
-
     // Returns the number of particles in the lattice.
     unsigned int get_n_particles();
 
     // Prints the lattice to the screen.
     void print();
-
-    // Writes results of current time step to file.
-    void write_results(const unsigned int step, const string format);
 
     // Prints information about the lattice object to screen.
     void print_info();
@@ -234,6 +239,8 @@ public:
 
     // Copies all data arrays from the device (GPU) back to the host (CPU).
     virtual void copy_data_from_device();
+
+    virtual void copy_data_to_output_buffer();
 
     // Get functions.
     Real get_u()   { return u; }

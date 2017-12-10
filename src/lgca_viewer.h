@@ -17,28 +17,31 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LGCA_COMMON_H_
-#define LGCA_COMMON_H_
+#ifndef LGCA_VIEW_H_
+#define LGCA_VIEW_H_
 
-#include <cstdlib>
-#include <cstdio>
-#include <iostream>
-#include <fstream>
-#include <cmath>
-#include <vector>
-#include <string>
-#include <cassert>
-#include <chrono>
+#include <QMainWindow>
 
-using std::cout;
-using std::endl;
-using std::flush;
-using std::string;
+class LgcaView : public QMainWindow
+{
+    Q_OBJECT
 
-using std::chrono::steady_clock;
-using std::chrono::duration;
+public:
 
-// Define floating-point precision.
-typedef float Real;
+  LgcaView();
+  ~LgcaView();
 
-#endif /* LGCA_COMMON_H_ */
+public slots:
+
+  virtual void slotOpenFile();
+  virtual void slotExit();
+
+protected:
+
+protected slots:
+
+private:
+
+};
+
+#endif /* LGCA_VIEW_H_ */

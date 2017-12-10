@@ -1,11 +1,20 @@
 /*
- * lattice.cpp
+ * This file is part of LGCA, an implementation of a Lattice Gas Cellular Automaton
+ * (https://github.com/keva92/lgca).
  *
- *  Created on: Dec 9, 2015
- *      Author: Kerstin Vater
- * Description: This class defines a lattice gas cellular automaton in two
- *              dimensions.
+ * Copyright (c) 2015-2017 Kerstin Vater, Niklas Kühl, Christian F. Janßen.
  *
+ * LGCA is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * LGCA is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "lattice.h"
@@ -22,9 +31,7 @@ Lattice::Lattice(const string test_case,
 	//					  box,
 	//					  Karman vortex street,
 	//                    single collision,
-	//                    diffusion,
-	//                    sloshing,
-	//                    hourglass).
+    //                    diffusion).
     this->test_case = test_case;
 
     // Set the number of lattice directions defining the model under usage.
@@ -94,8 +101,6 @@ Lattice::Lattice(const string test_case,
     // Define the number of cells in x direction.
     if (test_case == "pipe"      ||
         test_case == "karman"    ||
-        test_case == "sloshing"  ||
-        test_case == "hourglass" ||
         test_case == "collision") {
 
     	n_x = 2 * n_y;
@@ -118,14 +123,9 @@ Lattice::Lattice(const string test_case,
 
     // Set the body force direction according to the test case.
     if (test_case == "pipe"   ||
-        test_case == "karman" ||
-        test_case == "hourglass") {
+        test_case == "karman") {
 
     	bf_dir = 'x';
-
-    } else if (test_case == "sloshing") {
-
-    	bf_dir = 'y';
 
     } else {
 
@@ -344,379 +344,6 @@ void Lattice::init_single_collision() {
     init_single(occupied_nodes);
 }
 
-// Writes results of current time step to file.
-void Lattice::write_results(const unsigned int step, const string format) {
-
-    // Set flags which data should be written to file.
-    bool write_cell_density  = true;
-    bool write_mean_density  = true;
-    bool write_cell_momentum = true;
-    bool write_mean_momentum = true;
-    bool write_cell_velocity = true;
-    bool write_mean_velocity = true;
-
-	// Create a file.
-	FILE* file;
-	char name[100], end[100], s_iter[100];
-
-	// Write vti file.
-	if (format == "vti") {
-
-	    // Create file name.
-        sprintf(name, "../res/res_");
-	    sprintf(s_iter, "%d", step);
-	    strcpy(end, format.c_str());
-	    strcat(name, s_iter);
-	    strcat(name, ".");
-	    strcat(name, end);
-
-	    printf("Writing results to file %s...\n", name);
-
-        // Open the result file.
-        file = fopen(name, "w");
-        assert(file);
-
-        fprintf(file, "<VTKFile "
-             "type=\"ImageData\" "
-             "version=\"0.1\" "
-             "byte_order=\"LittleEndian\" "
-             "compressor=\"vtkZLibDataCompressor\">\n");
-
-        fprintf(file, "  <ImageData "
-             "WholeExtent=\"0 %d 0 %d 0 0\" "
-             "Origin=\"0 0 0\" "
-             "Spacing=\"1.0 1.0 1.0\">\n",
-             (n_x - 1), (n_y - 1));
-
-        fprintf(file, "  <Piece Extent="
-             "\"0 %d 0 %d 0 0\">\n",
-             (n_x - 1), (n_y - 1));
-
-        fprintf(file, "    <PointData>\n");
-
-        if (write_cell_density == true) {
-
-            // Write cell density values from lattice to file.
-            fprintf(file, "      <DataArray "
-                 "type=\"Float32\" "
-                 "Name=\"Cell Density\" "
-                 "format=\"ascii\">\n", n_dir);
-
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell) {
-
-                fprintf(file, "      %f\n", cell_density_cpu[cell]);
-            }
-
-            fprintf(file, "      </DataArray>\n");
-        }
-
-        if (write_mean_density == true) {
-
-            // Write mean density values from lattice to file.
-            fprintf(file, "      <DataArray "
-                 "type=\"Float32\" "
-                 "Name=\"Mean Density\" "
-                 "format=\"ascii\">\n", n_dir);
-
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell) {
-
-                if (mean_density_cpu[cell] > -1.0e-06) {
-
-                    fprintf(file, "      %f\n", mean_density_cpu[cell]);
-                }
-#ifdef DEBUG
-                else {
-
-                    printf("ERROR in write_results(): "
-                           "Negative mean density detected.");
-                    abort();
-                }
-#endif
-            }
-
-            fprintf(file, "      </DataArray>\n");
-        }
-
-        if (write_cell_momentum == true) {
-
-            // Write cell momentum vectors from lattice to file.
-            fprintf(file, "      <DataArray "
-                 "type=\"Float32\" "
-                 "Name=\"Cell Momentum\" "
-                 "NumberOfComponents=\"3\" "
-                 "format=\"ascii\">\n");
-
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell) {
-
-                fprintf(file, "      ");
-
-                fprintf(file, "%f ", cell_momentum_cpu[cell]);
-                fprintf(file, "%f ", cell_momentum_cpu[cell + n_cells]);
-                fprintf(file, "%f ", 0.0); // Print zero as third component.
-
-                fprintf(file, "\n");
-            }
-
-            fprintf(file, "      </DataArray>\n");
-        }
-
-        if (write_mean_momentum == true) {
-
-            // Write mean momentum vectors from lattice to file.
-            fprintf(file, "      <DataArray "
-                 "type=\"Float32\" "
-                 "Name=\"Mean Momentum\" "
-                 "NumberOfComponents=\"3\" "
-                 "format=\"ascii\">\n");
-
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell) {
-
-                fprintf(file, "      ");
-
-                fprintf(file, "%f ", mean_momentum_cpu[cell]);
-                fprintf(file, "%f ", mean_momentum_cpu[cell + n_cells]);
-                fprintf(file, "%f ", 0.0); // Print zero as third component.
-
-                fprintf(file, "\n");
-            }
-
-            fprintf(file, "      </DataArray>\n");
-        }
-
-        if (write_cell_velocity == true) {
-
-            // Write cell velocity vectors from lattice to file.
-            fprintf(file, "      <DataArray "
-                 "type=\"Float32\" "
-                 "Name=\"Cell Velocity\" "
-                 "NumberOfComponents=\"3\" "
-                 "format=\"ascii\">\n");
-
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell) {
-
-                fprintf(file, "      ");
-
-                if (cell_density_cpu[cell] > 1.0e-06) {
-
-                    fprintf(file, "%f ", cell_momentum_cpu[cell          ] / cell_density_cpu[cell]);
-                    fprintf(file, "%f ", cell_momentum_cpu[cell + n_cells] / cell_density_cpu[cell]);
-
-                } else if (fabs(cell_density_cpu[cell]) < 1.0e-06) {
-
-                    fprintf(file, "%f ", 0.0);
-                    fprintf(file, "%f ", 0.0);
-                }
-
-        #ifdef DEBUG
-
-                else {
-
-                    printf("ERROR in write_results(): "
-                           "Negative cell density detected.");
-                    abort();
-                }
-
-        #endif
-
-                fprintf(file, "%f ", 0.0); // Print zero as third component.
-
-                fprintf(file, "\n");
-            }
-
-            fprintf(file, "      </DataArray>\n");
-        }
-
-        if (write_mean_velocity == true) {
-
-            // Write mean velocity vectors from lattice to file.
-            fprintf(file, "      <DataArray "
-                 "type=\"Float32\" "
-                 "Name=\"Mean Velocity\" "
-                 "NumberOfComponents=\"3\" "
-                 "format=\"ascii\">\n");
-
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell) {
-
-                fprintf(file, "      ");
-
-                if (mean_density_cpu[cell] > 1.0e-06) {
-
-                    fprintf(file, "%f ", mean_momentum_cpu[cell]           / mean_density_cpu[cell]);
-                    fprintf(file, "%f ", mean_momentum_cpu[cell + n_cells] / mean_density_cpu[cell]);
-
-                } else if (fabs(mean_density_cpu[cell]) < 1-0e-06) {
-
-                    fprintf(file, "%f ", 0.0);
-                    fprintf(file, "%f ", 0.0);
-
-                }
-
-        #ifdef DEBUG
-
-                else {
-
-                    printf("ERROR in write_results(): "
-                           "Negative mean density detected.");
-                    abort();
-                }
-
-        #endif
-
-                fprintf(file, "%f ", 0.0); // Print zero as third component.
-
-                fprintf(file, "\n");
-            }
-
-            fprintf(file, "      </DataArray>\n");
-        }
-
-        fprintf(file, "    </PointData>\n");
-
-        fprintf(file, "    <CellData>\n");
-
-        fprintf(file, "    </CellData>\n");
-
-        fprintf(file, "  </Piece>\n");
-
-        fprintf(file, "  </ImageData>\n");
-
-        fprintf(file, "</VTKFile>\n");
-
-        // Close the result file.
-        fclose(file);
-
-    // Write png file.
-	} else if (format == "png") {
-
-        if (write_mean_density == true) {
-
-            // Create file name.
-            sprintf(name, "./res/mean_dens_");
-            sprintf(s_iter, "%d", step);
-            strcpy(end, format.c_str());
-            strcat(name, s_iter);
-            strcat(name, ".");
-            strcat(name, end);
-
-            printf("Writing results to file %s...\n", name);
-
-            pngwriter png(n_x, n_y, 0, name);
-
-            Real density;
-
-            // Get the minimum and maximum field data values.
-            Real min = 0.0;
-            Real max = (Real)n_dir;
-
-            // Write mean density from lattice to file.
-            //
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell)
-            {
-                // Get row and column index of the current cell.
-                int pos_x = cell % n_x;
-                int pos_y = cell / n_x;
-
-                if (mean_density_cpu[cell] > -1.0e-06) {
-
-                    density = mean_density_cpu[cell];
-                }
-#ifdef DEBUG
-                else {
-
-                    printf("ERROR in write_results(): "
-                           "Negative mean density detected.");
-                    abort();
-                }
-#endif
-                // Calculate rgb code.
-                std::vector<Real> rgb_code = rgb(min, max, density);
-
-                // Write color data to file.
-                png.plot(pos_x+1, pos_y+1, rgb_code[0], rgb_code[1], rgb_code[2]);
-            }
-
-            // Close the result file.
-            png.close();
-        }
-
-	    if (write_mean_velocity == true) {
-
-            // Create file name.
-            sprintf(name, "./res/mean_vel_x_");
-            sprintf(s_iter, "%d", step);
-            strcpy(end, format.c_str());
-            strcat(name, s_iter);
-            strcat(name, ".");
-            strcat(name, end);
-
-            printf("Writing results to file %s...\n", name);
-
-            pngwriter png(n_x, n_y, 0, name);
-
-            Real x_vel;
-
-            // Get the minimum and maximum field data values.
-            Real min = - 1.0 * u;
-            Real max =   3.0 * u;
-
-            // Write mean velocity in x direction from lattice to file.
-            //
-            // Loop over all cells.
-            for (int cell = 0; cell < n_cells; ++cell)
-            {
-                // Get row and column index of the current cell.
-                int pos_x = cell % n_x;
-                int pos_y = cell / n_x;
-
-                if (mean_density_cpu[cell] > 1.0e-06) {
-
-                    x_vel = mean_momentum_cpu[cell] / mean_density_cpu[cell];
-
-                } else if (fabs(mean_density_cpu[cell]) < 1.0e-06) {
-
-                    x_vel = 0.0;
-                }
-
-    #ifdef DEBUG
-
-                else {
-
-                    printf("ERROR in write_results(): "
-                           "Negative mean density detected.");
-                    abort();
-                }
-
-    #endif
-
-                // Calculate rgb code.
-                std::vector<Real> rgb_code = rgb(min, max, x_vel);
-
-                // Write color data to file.
-                png.plot(pos_x+1, pos_y+1, rgb_code[0], rgb_code[1], rgb_code[2]);
-            }
-
-            // Close the result file.
-            png.close();
-	    }
-
-	// Invalid file extension.
-	} else {
-
-        printf("ERROR in write_results(): "
-               "Invalid file extension %s.", format.c_str());
-        abort();
-	}
-
-	printf("...done.\n");
-}
-
 // Initializes the lattice gas automaton with single particles at defined nodes.
 void Lattice::init_single(const std::vector<int> occupied_nodes) {
 
@@ -861,6 +488,13 @@ void Lattice::copy_data_from_device()
 	// Implemented in CUDA_Lattice.
 }
 
+void Lattice::copy_data_to_output_buffer()
+{
+    std::memcpy(/*dest=*/(void*)node_state_out_cpu,
+                /*src=*/(const void*)node_state_cpu,
+                /*bytes=*/n_nodes * sizeof(char));
+}
+
 // Computes the number of particles to revert in the context of body force
 // in order to accelerate the flow.
 int Lattice::get_initial_forcing()
@@ -901,35 +535,6 @@ void Lattice::init_diffusion()
 	    // Check weather the cell is a fluid cell in the center area of the domain.
 	    if (cell_type_cpu[cell] == 0 &&
 	    	dist                < (diameter / 2.0))
-	    {
-            // Loop over all nodes in the fluid cell.
-            for (int dir = 0; dir < n_dir; ++dir) {
-
-                // Set random states for the nodes in the fluid cell.
-            	node_state_cpu[cell + dir * n_cells] =
-            	        (random_uniform() > (1.0 - (1.0 / n_dir)));
-            }
-	    }
-	}
-}
-
-// Initializes the lattice gas automaton with some random distributed particles
-// in one quarter of a rectangular tank.
-void Lattice::init_sloshing()
-{
-	// Define the width of the water column.
-	const int width = n_x / 4;
-
-	// Loop over all cells.
-#pragma omp parallel for
-	for (int cell = 0; cell < n_cells; ++cell) {
-
-		// Get the x position of the current cell.
-		int pos_x = cell % n_x;
-
-	    // Check weather the cell is a fluid cell in the center area of the domain.
-	    if (cell_type_cpu[cell] == 0 &&
-	    	pos_x                < width )
 	    {
             // Loop over all nodes in the fluid cell.
             for (int dir = 0; dir < n_dir; ++dir) {
