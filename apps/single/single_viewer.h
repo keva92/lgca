@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LGCA_VIEWER_H_
-#define LGCA_VIEWER_H_
+#ifndef LGCA_SINGLE_VIEWER_H_
+#define LGCA_SINGLE_VIEWER_H_
 
 #include "lgca_common.h"
 
@@ -26,7 +26,7 @@
 
 // Forward Qt class declarations
 namespace Ui {
-    class LgcaView;
+    class SingleView;
 }
 
 namespace lgca {
@@ -35,28 +35,36 @@ namespace lgca {
 class IoVti;
 class Lattice;
 
-class LgcaView : public QMainWindow
+class SingleView : public QMainWindow
 {
     Q_OBJECT
 
 public:
 
-    explicit LgcaView(QWidget *parent = 0);
-    ~LgcaView();
+    explicit SingleView(QWidget *parent = 0);
+    ~SingleView();
 
 signals:
+
+
 
 public slots:
 
     void run();
+    void stop();
 
 private:
 
-    Ui::LgcaView*   m_ui;
+    Ui::SingleView* m_ui;
     Lattice*        m_lattice;
-    IoVti*    m_vtiIoHandler;
+    IoVti*          m_vti_io_handler;
+
+    int             m_mnups;
+    int             m_num_particles;
+
+    const int       m_write_steps = 1; // Number of steps after which results are post-processed and visualized or written to file
 };
 
 } // namespace lgca
 
-#endif /* LGCA_VIEWER_H_ */
+#endif /* LGCA_SINGLE_VIEWER_H_ */

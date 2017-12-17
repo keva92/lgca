@@ -19,11 +19,13 @@
 
 #include "lgca_common.h"
 
-#include "lgca_viewer.h"
+#include "single_viewer.h"
+
 #include "lgca_bitset.h"
 
 #include <QApplication>
 #include <QSurfaceFormat>
+#include <QStyleFactory>
 #include <QVTKOpenGLWidget.h>
 
 // Main function (CPU/host code)
@@ -34,9 +36,9 @@ int main(int argc, char **argv) {
 
     // QT Stuff
     QApplication app(argc, argv);
-    QApplication::setStyle("fusion");
+    QApplication::setStyle(QStyleFactory::create("Fusion"));
 
-    lgca::LgcaView viewer;
+    lgca::SingleView viewer;
     viewer.show();
 
     return app.exec();

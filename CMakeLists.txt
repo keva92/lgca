@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
+set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
+
 project(lgca LANGUAGES CXX CUDA)
 
 # Instruct CMake to run moc and uic automatically when needed
@@ -14,7 +16,7 @@ set(CMAKE_CUDA_STANDARD 11)
 set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
 find_package(CUDA 8.0 REQUIRED)
 
-set(CMAKE_MODULE_PATH /opt/vtk/VTK-8.0.1/CMake)
+set(CMAKE_MODULE_PATH "/opt/vtk/VTK-8.0.1/CMake")
 find_package(TBB REQUIRED)
 find_package(OpenMP REQUIRED)
 
@@ -55,7 +57,6 @@ install(TARGETS CudaPTX
 # Add library source files
 file(GLOB LIB_LGCA_SOURCES  ${PROJECT_SOURCE_DIR}/src/*.cpp)
 file(GLOB LIB_LGCA_HEADERS  ${PROJECT_SOURCE_DIR}/src/*.h)
-file(GLOB LIB_LGCA_UIS      ${PROJECT_SOURCE_DIR}/src/*.ui)
 file(GLOB TCLAP_HEADERS     ${PROJECT_SOURCE_DIR}/lib/tclap/*.h)
 
 # Set executable output path
@@ -63,7 +64,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
   ${PROJECT_SOURCE_DIR}/bin
 )
 
-#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/pipe)
+add_subdirectory(${PROJECT_SOURCE_DIR}/apps/pipe)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/apps/karman)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/apps/diffusion)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/apps/box)

@@ -76,7 +76,7 @@ public:
         void do_assign(bool x) { x? do_set() : do_reset(); }
     };
 
-    Bitset() : m_num_bits(0), m_num_blocks(0) {}
+    Bitset() : m_bits(nullptr), m_mutexes(nullptr), m_num_bits(0), m_num_blocks(0) {}
 
     // Allocate a block of memory for an array of getNumBlocks(size) elements,
     // each of them sizeof(Block) bytes long, and initialize all its bits to zero
@@ -84,22 +84,28 @@ public:
         : m_num_bits(size), m_num_blocks(get_num_blocks(size))
     {
         m_bits = (Block*)calloc(m_num_blocks, sizeof(Block));
+        m_mutexes = new Mutex[m_num_blocks];
     }
 
     ~Bitset()
     {
         free(m_bits);
+        m_bits = nullptr;
+
+        delete[] m_mutexes;
+        m_mutexes = nullptr;
     }
 
     // Resize bitset and set all its bits to zero
     inline void resize(size_t size)
     {
-        if (m_num_bits > 0) free(m_bits);
+        if (m_bits) { free(m_bits); delete[] m_mutexes; };
 
         m_num_bits   = size;
         m_num_blocks = get_num_blocks(size);
 
         m_bits = (Block*)calloc(m_num_blocks, sizeof(Block));
+        m_mutexes = new Mutex[m_num_blocks];
     }
 
     // Return the value of the bit at position pos
@@ -112,7 +118,7 @@ public:
     // Return a reference to the bit at position pos
     inline reference operator[](size_t pos)
     {
-        return reference(m_bits[block_idx(pos)], m_mutex, bit_idx(pos));
+        return reference(m_bits[block_idx(pos)], m_mutexes[block_idx(pos)], bit_idx(pos));
     }
 
     // Set the bit at position pos to the value value
@@ -206,11 +212,10 @@ private:
 
     // Bits are represented as a linear array of Blocks, and the size of a Block is 64 bits
     Block* m_bits;
+    Mutex* m_mutexes;
 
     size_t m_num_bits;
     size_t m_num_blocks;
-
-    Mutex m_mutex; // TODO Protect one word by one mutex
 
 }; // class Bitset
 

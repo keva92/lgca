@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "lgca_viewer.h"
-#include "ui_lgca_viewer.h"
+#include "pipe_viewer.h"
+#include "ui_pipe_viewer.h"
 
 #include "utils.h"
 #include "cuda_utils.cuh"
@@ -48,9 +48,9 @@
 
 namespace lgca {
 
-LgcaView::LgcaView(QWidget *parent) :
+PipeView::PipeView(QWidget *parent) :
     QMainWindow(parent),
-    m_ui(new Ui::LgcaView)
+    m_ui(new Ui::PipeView)
 {
     m_ui->setupUi(this);
 
@@ -66,35 +66,34 @@ LgcaView::LgcaView(QWidget *parent) :
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    printf("Create lattice gas automaton object and allocate memory...\n");
-    m_lattice = new OMP_Lattice(/*case=*/"collision", Re, Ma, n_dir, coarse_graining_radius);
-    printf("...done.\n\n");
+    m_lattice = new OMP_Lattice(/*case=*/"pipe", Re, Ma, n_dir, coarse_graining_radius);
 
     // Apply boundary conditions
-    printf("Apply boundary conditions...\n");
     m_lattice->apply_bc_pipe();
-    printf("...done.\n\n");
 
     // Initialize the lattice gas automaton with particles
-    printf("Initialize the lattice gas automaton...\n");
-    m_lattice->init_single_collision();
+    m_lattice->init_random();
+    m_num_particles = m_lattice->get_n_particles();
 
     // Necessary to set up on-line visualization
     m_lattice->copy_data_to_output_buffer();
     m_lattice->post_process();
-    printf("...done.\n\n");
+
+    // Calculate the number of particles to revert in the context of body force in order to
+    // accelerate the flow.
+    m_forcing = m_lattice->get_initial_forcing();
 
     // Set (proper) parallelization parameters
     m_lattice->setup_parallel();
 
-    m_vtiIoHandler = new IoVti(m_lattice, "Cell density");
+    m_vti_io_handler = new IoVti(m_lattice, "Mean density");
 
     vtkNew<vtkImageDataGeometryFilter> geomFilter;
-    geomFilter->SetInputData(m_vtiIoHandler->image());
+    geomFilter->SetInputData(m_vti_io_handler->image());
     geomFilter->Update();
     vtkNew<vtkPolyDataMapper> mapper;
     mapper->SetInputConnection(geomFilter->GetOutputPort());
-    mapper->SetArrayName("Cell density");
+    mapper->SetArrayName("Mean density");
     double scalarRange[2];
     geomFilter->GetOutput()->GetScalarRange(scalarRange);
     mapper->SetScalarRange(scalarRange);
@@ -134,96 +133,89 @@ LgcaView::LgcaView(QWidget *parent) :
     m_ui->qvtkWidget->show();
 
     connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
+    connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
 }
 
-LgcaView::~LgcaView()
+PipeView::~PipeView()
 {
-    delete m_vtiIoHandler;
+    delete m_vti_io_handler;
     delete m_lattice;
     delete m_ui;
 }
 
-void LgcaView::run()
+void PipeView::run()
 {
-    int write_steps = 1; // Number of steps after which the post-processed results are visualized or written to file
-
-    // Get the number of particles in the lattice
-    unsigned int n_particles_start = m_lattice->get_n_particles();
-
     tbb::task_group task_group;
 
-    printf("Starting calculation...\n");
+    // Simulation
+    task_group.run([&]{
 
-    auto total_start = steady_clock::now();
+        // Get current mean velocity in x and y direction
+        m_mean_velocity = m_lattice->get_mean_velocity();
 
-    // Loop over bunches of simulation time steps
-    int step_count = 0;
-    for (int step = 0; step < 10; ++step) {
+        if (m_mean_velocity[0] < m_lattice->u()) {
 
-        // Simulation
-        task_group.run([&]{
+            // Reduce the forcing once the flow has been accelerated strong enough
+            if (m_mean_velocity[0] > 0.9 * m_lattice->u())
+                m_forcing = m_lattice->get_equilibrium_forcing();
 
-            auto sim_start = steady_clock::now();
+            // Apply a body force to the particles
+            m_lattice->apply_body_force(m_forcing);
+        }
 
-            for (int s = 0; s < write_steps; ++s, ++step_count) {
+        auto sim_start = steady_clock::now();
 
-                // Perform the collision and propagation step on the lattice gas automaton
-                m_lattice->collide_and_propagate(s);
-            }
+        for (int s = 0; s < m_write_steps; ++s) {
 
-            // Print current simulation performance
-            auto sim_end = steady_clock::now();
-            auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
-            fprintf(stderr, "Current MNUPS: %d\n", (int)((m_lattice->num_cells() * write_steps)
-                                                       / (sim_time * 1.0e06)));
+            // Perform the collision and propagation step on the lattice gas automaton
+            m_lattice->collide_and_propagate(s);
+        }
 
-            // Copy results to a temporary buffer for post-processing and visualization
-            m_lattice->copy_data_to_output_buffer();
-        });
+        // Print current simulation performance
+        auto sim_end = steady_clock::now();
+        auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
+        m_mnups = (int)((m_lattice->num_cells() * m_write_steps) / (sim_time * 1.0e06));
+        fprintf(stderr, "Current MNUPS: %d\n", m_mnups);
 
-        // Visualization
-        task_group.run_and_wait([&]{
+        // Print current mean velocity in x and y direction
+        fprintf(stderr, "Current mean velocity: (%6.4f, %6.4f)\n", m_mean_velocity[0], m_mean_velocity[1]);
 
-            // Compute quantities of interest as a post-processing procedure
-            m_lattice->post_process();
+        // Copy results to a temporary buffer for post-processing and visualization
+        m_lattice->copy_data_to_output_buffer();
+    });
 
-            // Update image data object
-            m_vtiIoHandler->update();
+    // Visualization
+    task_group.run_and_wait([&]{
 
-            // Update render window
-            m_ui->qvtkWidget->GetRenderWindow()->Render();
-            sleep(1);
-        });
+        // Compute quantities of interest as a post-processing procedure
+        m_lattice->post_process();
 
-    } // for steps
+        // Update image data object
+        m_vti_io_handler->update();
 
-    auto total_end = steady_clock::now();
+        // Update render window
+        m_ui->qvtkWidget->GetRenderWindow()->Render();
+    });
 
-    printf("\n");
+    QTimer::singleShot(0, this, SLOT(run()));
+}
 
+void PipeView::stop()
+{
     // Get the number of particles in the lattice.
-    unsigned int n_particles_end = m_lattice->get_n_particles();
+    unsigned int num_particles_end = m_lattice->get_n_particles();
 
     // Check weather the number of particles has changed.
-    if ((n_particles_end - n_particles_start) == 0) {
+    if ((num_particles_end - m_num_particles) == 0) {
 
         printf("Error check PASSED: There is no difference in the number of particles.\n");
 
-    } else if ((n_particles_end - n_particles_start) != 0) {
+    } else if ((num_particles_end - m_num_particles) != 0) {
 
-        printf("Error check FAILED: There is a difference in the number of particles of %d.\n", n_particles_end - n_particles_start);
+        printf("Error check FAILED: There is a difference in the number of particles of %d.\n", num_particles_end - m_num_particles);
     }
-    printf("\n");
 
-    auto total_time = std::chrono::duration_cast<duration<double>>(total_end - total_start).count();
-
-    printf("Total elapsed time: %e s for %d simulation steps.\n", total_time, step_count);
-    printf("Average MNUPS: %d\n", (int)((m_lattice->num_cells() * step_count)
-                                      / (total_time * 1.0e06)));
-    printf("\n");
-
-    printf("Terminate program...\n");
-    printf("...done.\n");
+    qApp->quit();
 }
 
 } // namespace lgca
