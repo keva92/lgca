@@ -24,10 +24,10 @@
 
 #include <vtkImageData.h>
 
+namespace lgca {
+
 // Forward declarations
 class Lattice;
-
-namespace lgca {
 
 class IoVti
 {

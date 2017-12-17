@@ -17,10 +17,23 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LGCA_VIEW_H_
-#define LGCA_VIEW_H_
+#ifndef LGCA_VIEWER_H_
+#define LGCA_VIEWER_H_
+
+#include "lgca_common.h"
 
 #include <QMainWindow>
+
+// Forward Qt class declarations
+namespace Ui {
+    class LgcaView;
+}
+
+namespace lgca {
+
+// Forward declarations
+class IoVti;
+class Lattice;
 
 class LgcaView : public QMainWindow
 {
@@ -28,20 +41,22 @@ class LgcaView : public QMainWindow
 
 public:
 
-  LgcaView();
-  ~LgcaView();
+    explicit LgcaView(QWidget *parent = 0);
+    ~LgcaView();
+
+signals:
 
 public slots:
 
-  virtual void slotOpenFile();
-  virtual void slotExit();
-
-protected:
-
-protected slots:
+    void run();
 
 private:
 
+    Ui::LgcaView*   m_ui;
+    Lattice*        m_lattice;
+    IoVti*    m_vtiIoHandler;
 };
 
-#endif /* LGCA_VIEW_H_ */
+} // namespace lgca
+
+#endif /* LGCA_VIEWER_H_ */

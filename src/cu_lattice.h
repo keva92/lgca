@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CU_LATTICE_H_
-#define CU_LATTICE_H_
+#ifndef LGCA_CU_LATTICE_H_
+#define LGCA_CU_LATTICE_H_
 
 #include "lgca_common.h"
 
@@ -27,6 +27,8 @@
 
 #include <curand.h>
 #include <curand_kernel.h>
+
+namespace lgca {
 
 class CUDA_Lattice: public Lattice {
 
@@ -92,10 +94,10 @@ private:
 
 public:
 
-	CUDA_Lattice(const string test_case,
-                 const Real Re, const Real Ma_s,
-                 const int n_dir,
-                 const int coarse_graining_radius,
+    CUDA_Lattice(const string m_test_case,
+                 const Real m_Re, const Real m_Ma_s,
+                 const int m_num_dir,
+                 const int m_coarse_graining_radius,
                  const int device);
 
 	virtual ~CUDA_Lattice();
@@ -127,4 +129,6 @@ public:
     void post_process();
 };
 
-#endif /* CU_LATTICE_H_ */
+} // namespace lgca
+
+#endif /* LGCA_CU_LATTICE_H_ */

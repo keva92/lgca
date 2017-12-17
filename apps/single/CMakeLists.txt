@@ -1,12 +1,12 @@
 # Add application source files
-file(GLOB LGCA_SINGLE_SOURCES *.cpp *.cu)
-file(GLOB LGCA_SINGLE_HEADERS  *.h *.cuh)
+file(GLOB LGCA_SINGLE_SOURCES *.cpp)
+file(GLOB LGCA_SINGLE_HEADERS  *.h)
 
 # Specify target and source files to compile from
 add_executable(
   ${PROJECT_NAME}-single
   ${LGCA_SINGLE_SOURCES} ${LGCA_SINGLE_HEADERS}
-  ${LIB_LGCA_SOURCES} ${LIB_LGCA_HEADERS}
+  ${LIB_LGCA_SOURCES} ${LIB_LGCA_HEADERS} ${LIB_LGCA_UIS}
   ${PNGWRITER_SOURCES} ${PNGWRITER_HEADERS}
   ${TCLAP_HEADERS}
 )
@@ -20,5 +20,5 @@ target_link_libraries(
   ${PNG_LIBRARIES}
   ${FREETYPE_LIBRARIES}
   ${VTK_LIBRARIES}
-#  Qt5::Widgets
+  Qt5::Widgets
 )

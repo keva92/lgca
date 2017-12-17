@@ -17,17 +17,19 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef OMP_LATTICE_H_
-#define OMP_LATTICE_H_
+#ifndef LGCA_OMP_LATTICE_H_
+#define LGCA_OMP_LATTICE_H_
 
 #include "lattice.h"
+
+namespace lgca {
 
 class OMP_Lattice: public Lattice {
 
 private:
 
     // Auxiliary array on the CPU.
-    char* node_state_tmp_cpu;
+    Bitset node_state_tmp_cpu;
 
 	// Memory offset to neighbor cells in the different directions for the
 	// propagation step.
@@ -75,10 +77,10 @@ public:
 
 	// Creates an openMP parallelized lattice gas cellular automaton object
 	// of the specified properties.
-	OMP_Lattice(const string test_case,
-                const Real Re, const Real Ma_s,
-                const int n_dir,
-                const int coarse_graining_radius);
+    OMP_Lattice(const string m_test_case,
+                const Real m_Re, const Real m_Ma_s,
+                const int m_num_dir,
+                const int m_coarse_graining_radius);
 
 	virtual ~OMP_Lattice();
 
@@ -100,4 +102,6 @@ public:
     void post_process();
 };
 
-#endif /* OMP_LATTICE_H_ */
+} // namespace lgca
+
+#endif /* LGCA_OMP_LATTICE_H_ */

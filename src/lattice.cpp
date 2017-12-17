@@ -21,6 +21,10 @@
 
 #include <omp.h>
 
+#include <cstring> // std::memcpy
+
+namespace lgca {
+
 // Creates a lattice gas cellular automaton object of the specified properties.
 Lattice::Lattice(const string test_case,
                  const Real Re, const Real Ma_s,
@@ -32,62 +36,62 @@ Lattice::Lattice(const string test_case,
 	//					  Karman vortex street,
 	//                    single collision,
     //                    diffusion).
-    this->test_case = test_case;
+    this->m_test_case = test_case;
 
     // Set the number of lattice directions defining the model under usage.
     assert((n_dir == 4) || (n_dir == 6));
-    this->n_dir = n_dir;
+    this->m_num_dir = n_dir;
 
     // Set the Reynolds number.
     assert(Re > 1.0e-06);
-    this->Re = Re;
+    this->m_Re = Re;
 
     // Set the Mach number.
     assert(Ma_s > 1.0e-06);
-    this->Ma_s = Ma_s;
+    this->m_Ma_s = Ma_s;
 
     // Calculate the dimensions of the lattice from the specified Reynolds number.
     //
     // Define the mean occupation number.
-    d = rho / this->n_dir;
+    m_d = m_rho / this->m_num_dir;
 
     // Compute the scaled viscosity.
-    nu = 1.0 / 12.0 * 1.0 / (d * pow((1.0 - d), 3.0)) - 1.0 / 8.0;
+    m_nu = 1.0 / 12.0 * 1.0 / (m_d * pow((1.0 - m_d), 3.0)) - 1.0 / 8.0;
 
     // Compute the Galilean breaking factor.
-    g = dim / (dim + 2.0) * (1.0 - 2.0 * d) / (1.0 - d);
+    m_g = m_spatial_dim / (m_spatial_dim + 2.0) * (1.0 - 2.0 * m_d) / (1.0 - m_d);
 
     // Compute the viscosity.
-    nu_s = nu / g;
+    m_nu_s = m_nu / m_g;
 
     // Get the scaled sound speed.
-    c_s = c / sqrt(dim);
+    m_c_s = m_c / sqrt(m_spatial_dim);
 
     // Get the velocity.
-    u = this->Ma_s * c_s;
+    m_u = this->m_Ma_s * m_c_s;
 
     // Get the number of cells in y direction;
     if (test_case == "pipe") {
 
         // Get the number of cells in y direction in case of a pipe flow.
-        n_y = (int)((Re * nu_s) / u + 0.5);
+        m_dim_y = (int)((Re * m_nu_s) / m_u + 0.5);
 
     } else if (test_case == "karman") {
 
         // Get the cylinder diameter in case of a Karman vortex street.
-        Real diameter = (Re * nu_s) / u;
-        n_y = (int)(3.0 * diameter + 0.5);
+        Real diameter = (Re * m_nu_s) / m_u;
+        m_dim_y = (int)(3.0 * diameter + 0.5);
 
     } else if (test_case == "collision") {
 
-        // Set the number of cells in y direction to 5.
-        n_y = 7;
+        // Set the number of cells in y direction to 8.
+        m_dim_y = 8;
 
     } else if (test_case == "diffusion" ||
     		   test_case == "periodic"  ||
                test_case == "box") {
 
-    	n_y = (int)Re;
+        m_dim_y = (int)Re;
 
     } else {
 
@@ -96,20 +100,20 @@ Lattice::Lattice(const string test_case,
     }
 
     // Correct the number of cells in y direction for use with the FHP mode.
-    if (n_y % 2 != 0) n_y++;
+    if (m_dim_y % 2 != 0) m_dim_y++;
 
     // Define the number of cells in x direction.
     if (test_case == "pipe"      ||
         test_case == "karman"    ||
         test_case == "collision") {
 
-    	n_x = 2 * n_y;
+        m_dim_x = 2 * m_dim_y;
 
     } else if (test_case == "box"       ||
     	       test_case == "diffusion" ||
     	       test_case == "periodic") {
 
-    	n_x = n_y;
+        m_dim_x = m_dim_y;
 
 	} else {
 
@@ -118,41 +122,41 @@ Lattice::Lattice(const string test_case,
 	}
 
     // Correct the number of cells in x direction for use with collision debug test case.
-    if (n_x % 2 != 0) n_x++;
-    if (test_case == "collision") n_x++;
+    if (m_dim_x % 2 != 0) m_dim_x++;
+    if (test_case == "collision") m_dim_x++;
 
     // Set the body force direction according to the test case.
     if (test_case == "pipe"   ||
         test_case == "karman") {
 
-    	bf_dir = 'x';
+        m_bf_dir = 'x';
 
     } else {
 
-        bf_dir = 0;
+        m_bf_dir = 0;
     }
 
     // Set the number of cells in x direction.
-    assert(n_x > 0);
-    this->n_x = n_x;
+    assert(m_dim_x > 0);
+    this->m_dim_x = m_dim_x;
 
     // Set the number of cells in y direction.
-    assert(n_y > 0);
-    if(n_dir == 6) assert(n_y % 2 == 0);
-    this->n_y = n_y;
+    assert(m_dim_y > 0);
+    if(n_dir == 6) assert(m_dim_y % 2 == 0);
+    this->m_dim_y = m_dim_y;
 
     // Set the total number of cells.
-    n_cells = n_x * n_y;
+    m_num_cells = m_dim_x * m_dim_y;
 
     // Set the total number of nodes in the lattice.
-    n_nodes = n_cells * n_dir;
+    m_num_nodes = m_num_cells * n_dir;
 
     // Set the initial number of particles in the lattice.
-    n_particles = 0;
+    m_num_particles = 0;
 
     // Set the coarse graining radius.
     assert(coarse_graining_radius > 0);
-    this->coarse_graining_radius = coarse_graining_radius;
+    this->m_coarse_graining_radius = coarse_graining_radius;
 
     print_info();
 }
@@ -165,54 +169,58 @@ Lattice::~Lattice() {
 // Initializes the lattice gas automaton with zero states.
 void Lattice::init_zero() {
 
+    // Bitset is initialized with zeros anyway
+
     // Loop over all the nodes.
 #pragma omp parallel for
-    for (int n = 0; n < n_nodes; ++n) {
+    for (int n = 0; n < m_num_nodes; ++n) {
 
         // Initialize the lattice with zeros.
-        node_state_cpu[n] = 0;
+        m_node_state_cpu[n] = bool(0);
     }
 }
 
 // Prints the lattice to the screen.
 void Lattice::print() {
 
-    printf("lattice = [\n");
+    m_node_state_cpu.print();
 
-    // Loop over all the nodes.
-    for (int n = 0; n < n_nodes; ++n) {
+//    printf("lattice = [\n");
 
-        printf("%d ", node_state_cpu[n]);
+//    // Loop over all the nodes.
+//    for (int n = 0; n < n_nodes; ++n) {
 
-        if (((n + 1) % n_x == 0) && (n != 0)) {
+//        printf("%d ", bool(node_state_cpu[n]));
 
-            printf("\n");
-        }
+//        if (((n + 1) % n_x == 0) && (n != 0)) {
 
-        if (((n + 1) % n_cells == 0) && (n != 0)) {
+//            printf("\n");
+//        }
 
-            printf("\n");
-        }
-    }
+//        if (((n + 1) % n_cells == 0) && (n != 0)) {
 
-    printf("]\n");
+//            printf("\n");
+//        }
+//    }
 
-    printf("\n");
+//    printf("]\n");
 
-    printf("cell_type = [\n");
+//    printf("\n");
 
-    // Loop over all the cells.
-    for (int n = 0; n < n_cells; ++n) {
+//    printf("cell_type = [\n");
 
-        printf("%d ", cell_type_cpu[n]);
+//    // Loop over all the cells.
+//    for (int n = 0; n < n_cells; ++n) {
 
-        if (((n + 1) % n_x == 0) && (n != 0)) {
+//        printf("%d ", cell_type_cpu[n]);
 
-            printf("\n");
-        }
-    }
+//        if (((n + 1) % n_x == 0) && (n != 0)) {
 
-    printf("]\n");
+//            printf("\n");
+//        }
+//    }
+
+//    printf("]\n");
 }
 
 // Returns the number of particles in the lattice.
@@ -222,12 +230,12 @@ unsigned int Lattice::get_n_particles() {
 
     // Loop over all the nodes.
 #pragma omp parallel for reduction(+:n_particles)
-    for (unsigned int n = 0; n < n_nodes; ++n) {
+    for (unsigned int n = 0; n < m_num_nodes; ++n) {
 
-        n_particles += node_state_cpu[n];
+        n_particles += bool(m_node_state_cpu[n]);
     }
 
-    this->n_particles = n_particles;
+    this->m_num_particles = n_particles;
 
     return n_particles;
 }
@@ -237,17 +245,17 @@ void Lattice::init_random() {
 
 	// Loop over all cells.
 #pragma omp parallel for
-	for (int cell = 0; cell < n_cells; ++cell) {
+    for (int cell = 0; cell < m_num_cells; ++cell) {
 
 	    // Check weather the cell is a fluid cell.
-	    if (cell_type_cpu[cell] == 0) {
+        if (m_cell_type_cpu[cell] == 0) {
 
             // Loop over all nodes in the fluid cell.
-            for (int dir = 0; dir < n_dir; ++dir) {
+            for (int dir = 0; dir < m_num_dir; ++dir) {
 
                 // Set random states for the nodes in the fluid cell.
-            	node_state_cpu[cell + dir * n_cells] =
-            	        (random_uniform() > (1.0 - (1.0 / n_dir)));
+                m_node_state_cpu[cell + dir * m_num_cells] =
+                        bool(random_uniform() > (1.0 - (1.0 / m_num_dir)));
             }
 	    }
 	}
@@ -292,24 +300,24 @@ void Lattice::apply_bc_karman_vortex_street() {
     apply_bc_pipe();
 
     // Define the position and size of the barrier.
-    int  center_x = n_x / 6;
-    int  center_y = n_y / 2 + 1 / 10 * n_y;
-    Real diameter = n_y / 3;
+    int  center_x = m_dim_x / 6;
+    int  center_y = m_dim_y / 2 + 1 / 10 * m_dim_y;
+    Real diameter = m_dim_y / 3;
 
     // Loop over all cells.
 #pragma omp parallel for
-    for (int cell = 0; cell < n_cells; ++cell) {
+    for (int cell = 0; cell < m_num_cells; ++cell) {
 
         // Get the position of the current cell.
-        int pos_x = cell % n_x;
-        int pos_y = cell / n_x;
+        int pos_x = cell % m_dim_x;
+        int pos_y = cell / m_dim_x;
 
         Real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
 
         if (dist < (diameter / 2.0)) {
 
             // Set the cell type to solid cells of bounce back type.
-            cell_type_cpu[cell] = 1;
+            m_cell_type_cpu[cell] = 1;
         }
     }
 }
@@ -321,25 +329,25 @@ void Lattice::init_single_collision() {
 	int inverse_dir;
 
 	// HPP model.
-	if (n_dir == 4) {
+    if (m_num_dir == 4) {
 
 		inverse_dir = 2;
 
 	// FHP model.
-	} else if (n_dir == 6) {
+    } else if (m_num_dir == 6) {
 
 		inverse_dir = 3;
 
 	// Invalid number of directions.
 	} else {
 
-        printf("ERROR in init_single_collision(): Invalid number of directions %d!\n", n_dir);
+        printf("ERROR in init_single_collision(): Invalid number of directions %d!\n", m_num_dir);
         abort();
 	}
 
     std::vector<int> occupied_nodes;
-    occupied_nodes.push_back(n_x * n_y / 4 + 1);
-    occupied_nodes.push_back(occupied_nodes[0] + (n_x - 9) + inverse_dir * n_cells);
+    occupied_nodes.push_back(m_dim_x * m_dim_y / 4 + 1);
+    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) + inverse_dir * m_num_cells);
 
     init_single(occupied_nodes);
 }
@@ -353,7 +361,7 @@ void Lattice::init_single(const std::vector<int> occupied_nodes) {
     // Loop over the nodes to place a particle at.
     for (int n = 0; n < occupied_nodes.size(); ++n) {
 
-        node_state_cpu[occupied_nodes[n]] = 1;
+        m_node_state_cpu[occupied_nodes[n]] = bool(1);
     }
 }
 
@@ -395,10 +403,10 @@ void Lattice::apply_cell_type_all(const int cell_type) {
 
     // Loop over all cells.
 #pragma omp parallel for
-    for (unsigned int cell = 0; cell < n_cells; ++cell) {
+    for (unsigned int cell = 0; cell < m_num_cells; ++cell) {
 
         // Set the cell type to the specified type.
-        cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = cell_type;
     }
 }
 
@@ -408,10 +416,10 @@ void Lattice::apply_boundary_cell_type_east(const int cell_type) {
 
     // Loop over the cells located at the eastern boundary of
     // the rectangular domain.
-    for (int cell = n_x - 1; cell < n_cells; cell += n_x) {
+    for (int cell = m_dim_x - 1; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type.
-        cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = cell_type;
     }
 }
 
@@ -421,10 +429,10 @@ void Lattice::apply_boundary_cell_type_north(const int cell_type) {
 
     // Loop over the cells located at the northern boundary of
     // the rectangular domain.
-    for (int cell = n_cells - n_x; cell < n_cells; ++cell) {
+    for (int cell = m_num_cells - m_dim_x; cell < m_num_cells; ++cell) {
 
         // Set the cell type to the specified type.
-        cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = cell_type;
     }
 }
 
@@ -434,10 +442,10 @@ void Lattice::apply_boundary_cell_type_west(const int cell_type) {
 
     // Loop over the cells located at the western boundary of
     // the rectangular domain.
-    for (int cell = 0; cell < n_cells; cell += n_x) {
+    for (int cell = 0; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type.
-        cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = cell_type;
     }
 }
 
@@ -447,30 +455,30 @@ void Lattice::apply_boundary_cell_type_south(const int cell_type) {
 
     // Loop over the cells located at the southern boundary of
     // the rectangular domain.
-    for (int cell = 0; cell < n_x; ++cell) {
+    for (int cell = 0; cell < m_dim_x; ++cell) {
 
         // Set the cell type to the specified type.
-        cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = cell_type;
     }
 }
 
 // Prints information about the lattice object to screen.
 void Lattice::print_info() {
 
-    printf("Parameter for test case \"%s\":\n", test_case.c_str());
+    printf("Parameter for test case \"%s\":\n", m_test_case.c_str());
     printf("\n");
-    printf("Reynolds number             Re   = %10.2f\n", Re);
-    printf("Mach number                 Ma   = %10.2f\n", Ma_s);
-    printf("Density                     rho  = %10.2f\n", rho);
-    printf("Velocity                    u    = %10.2f\n", u);
-    printf("Sound speed                 c    = %10.2f\n", c);
-    printf("Scaled sound speed          c_s  = %10.2f\n", c_s);
-    printf("Viscosity                   nu   = %10.2f\n", nu);
-    printf("Scaled viscosity            nu_s = %10.2f\n", nu_s);
-    printf("Galilean breaking factor    g    = %10.2f\n", g);
+    printf("Reynolds number             Re   = %10.2f\n", m_Re);
+    printf("Mach number                 Ma   = %10.2f\n", m_Ma_s);
+    printf("Density                     rho  = %10.2f\n", m_rho);
+    printf("Velocity                    u    = %10.2f\n", m_u);
+    printf("Sound speed                 c    = %10.2f\n", m_c);
+    printf("Scaled sound speed          c_s  = %10.2f\n", m_c_s);
+    printf("Viscosity                   nu   = %10.2f\n", m_nu);
+    printf("Scaled viscosity            nu_s = %10.2f\n", m_nu_s);
+    printf("Galilean breaking factor    g    = %10.2f\n", m_g);
     printf("\n");
-    printf("Number of cells in x direction: %d\n", n_x);
-    printf("Number of cells in y direction: %d\n", n_y);
+    printf("Number of cells in x direction: %d\n", m_dim_x);
+    printf("Number of cells in y direction: %d\n", m_dim_y);
     printf("\n");
 }
 
@@ -490,9 +498,11 @@ void Lattice::copy_data_from_device()
 
 void Lattice::copy_data_to_output_buffer()
 {
-    std::memcpy(/*dest=*/(void*)node_state_out_cpu,
-                /*src=*/(const void*)node_state_cpu,
-                /*bytes=*/n_nodes * sizeof(char));
+    m_node_state_out_cpu.copy(m_node_state_cpu);
+
+//    std::memcpy(/*dest=*/(void*)node_state_out_cpu,
+//                /*src=*/(const void*)node_state_cpu,
+//                /*bytes=*/n_nodes * sizeof(char));
 }
 
 // Computes the number of particles to revert in the context of body force
@@ -501,16 +511,16 @@ int Lattice::get_initial_forcing()
 {
 	// int equilibrium_forcing = get_equilibrium_forcing();
 
-	return (int)(0.01 * n_cells);
+    return (int)(0.01 * m_num_cells);
 }
 
 // Computes the number of particles to revert in the context of body force.
 // in order to compensate boundary layer shear force.
 int Lattice::get_equilibrium_forcing()
 {
-    Real forcing = (8.0 * nu_s * Ma_s * c_s) / pow((Real)n_y, 2.0);
+    Real forcing = (8.0 * m_nu_s * m_Ma_s * m_c_s) / pow((Real)m_dim_y, 2.0);
 
-	return ceil(0.5 * n_cells * forcing);
+    return ceil(0.5 * m_num_cells * forcing);
 }
 
 // Initializes the lattice gas automaton with some random distributed particles
@@ -518,31 +528,33 @@ int Lattice::get_equilibrium_forcing()
 void Lattice::init_diffusion()
 {
     // Define the position and size of the center area.
-    int  center_x = n_x / 2;
-    int  center_y = n_y / 2;
-    Real diameter = n_y / 4;
+    int  center_x = m_dim_x / 2;
+    int  center_y = m_dim_y / 2;
+    Real diameter = m_dim_y / 4;
 
 	// Loop over all cells.
 #pragma omp parallel for
-	for (int cell = 0; cell < n_cells; ++cell) {
+    for (int cell = 0; cell < m_num_cells; ++cell) {
 
 		// Get the x and y position of the current cell.
-		int pos_x = cell % n_x;
-		int pos_y = cell / n_x;
+        int pos_x = cell % m_dim_x;
+        int pos_y = cell / m_dim_x;
 
         Real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
 
 	    // Check weather the cell is a fluid cell in the center area of the domain.
-	    if (cell_type_cpu[cell] == 0 &&
+        if (m_cell_type_cpu[cell] == 0 &&
 	    	dist                < (diameter / 2.0))
 	    {
             // Loop over all nodes in the fluid cell.
-            for (int dir = 0; dir < n_dir; ++dir) {
+            for (int dir = 0; dir < m_num_dir; ++dir) {
 
                 // Set random states for the nodes in the fluid cell.
-            	node_state_cpu[cell + dir * n_cells] =
-            	        (random_uniform() > (1.0 - (1.0 / n_dir)));
+                m_node_state_cpu[cell + dir * m_num_cells] =
+                        bool(random_uniform() > (1.0 - (1.0 / m_num_dir)));
             }
 	    }
 	}
 }
+
+} // namespace lgca

@@ -30,6 +30,8 @@
 #include <cassert>
 #include <chrono>
 
+namespace lgca {
+
 using std::cout;
 using std::endl;
 using std::flush;
@@ -40,5 +42,7 @@ using std::chrono::duration;
 
 // Define floating-point precision.
 typedef float Real;
+
+} // namespace lgca
 
 #endif /* LGCA_COMMON_H_ */

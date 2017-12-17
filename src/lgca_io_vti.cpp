@@ -40,13 +40,13 @@ IoVti::IoVti(Lattice* lattice, const std::string scalars) : mLattice(lattice)
     assert(mImageData);
 
     mImageData->Initialize();
-    mImageData->SetDimensions(mLattice->get_n_x() + 1, mLattice->get_n_y() + 1, 1); // Number of points in each direction
+    mImageData->SetDimensions(mLattice->dim_x() + 1, mLattice->dim_y() + 1, 1); // Number of points in each direction
 
     // Pass pointer to cell density array of the lattice to the image data object
     vtkFloatArray* cell_density = vtkFloatArray::New();
     cell_density->SetName("Cell density");
     cell_density->SetNumberOfComponents(1);
-    cell_density->SetArray((float*)(mLattice->cell_density()), mLattice->get_n_x()*mLattice->get_n_y(), /*save=*/1);
+    cell_density->SetArray((float*)(mLattice->cell_density()), mLattice->num_cells(), /*save=*/1);
     mImageData->GetCellData()->AddArray(cell_density);
     cell_density->Delete();
 
@@ -54,7 +54,7 @@ IoVti::IoVti(Lattice* lattice, const std::string scalars) : mLattice(lattice)
     vtkFloatArray* mean_density = vtkFloatArray::New();
     mean_density->SetName("Mean density");
     mean_density->SetNumberOfComponents(1);
-    mean_density->SetArray((float*)(mLattice->mean_density()), mLattice->get_n_x()*mLattice->get_n_y(), /*save=*/1);
+    mean_density->SetArray((float*)(mLattice->mean_density()), mLattice->num_cells(), /*save=*/1);
     mImageData->GetCellData()->AddArray(mean_density);
     mean_density->Delete();
 
@@ -62,8 +62,8 @@ IoVti::IoVti(Lattice* lattice, const std::string scalars) : mLattice(lattice)
     vtkSOADataArrayTemplate<float>* cell_momentum = vtkSOADataArrayTemplate<float>::New();
     cell_momentum->SetName("Cell momentum");
     cell_momentum->SetNumberOfComponents(2);
-    cell_momentum->SetArray(/*comp=*/0, (float*)(mLattice->cell_momentum()), mLattice->get_n_x()*mLattice->get_n_y(), /*updateMaxId=*/0, /*save=*/1);
-    cell_momentum->SetArray(/*comp=*/1, (float*)(mLattice->cell_momentum()) + mLattice->get_n_x()*mLattice->get_n_y(), mLattice->get_n_x()*mLattice->get_n_y(), /*updateMaxId=*/0, /*save=*/1);
+    cell_momentum->SetArray(/*comp=*/0, (float*)(mLattice->cell_momentum()), mLattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
+    cell_momentum->SetArray(/*comp=*/1, (float*)(mLattice->cell_momentum()) + mLattice->num_cells(), mLattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
     mImageData->GetCellData()->AddArray(cell_momentum);
     cell_momentum->Delete();
 

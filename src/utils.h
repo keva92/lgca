@@ -17,12 +17,14 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef LGCA_UTILS_H_
+#define LGCA_UTILS_H_
 
 #include "lgca_common.h"
 
 #include "tclap/CmdLine.h"
+
+namespace lgca {
 
 // Gets values from the command line.
 static inline void
@@ -125,65 +127,6 @@ inline bool random_bool() {
 	return (random() > 0.5);
 }
 
-inline Real interpolate(Real val, Real y0, Real x0, Real y1, Real x1) {
-
-    return ((val - x0) * (y1 - y0) / (x1 - x0) + y0);
 }
 
-inline std::vector<Real> rgb(Real min, Real max, Real val) {
-
-    Real range = max - min;
-
-    assert(range > 1.0e-06);
-
-    std::vector<Real> rgb_code(3, 0.0);
-
-    Real red   = 0.0;
-    Real green = 0.0;
-    Real blue  = 0.0;
-
-    if (val <= min) {
-
-        red   = 0.0;
-        green = 0.0;
-        blue  = 1.0;
-
-    } else if (val < min + 0.25 * range) {
-
-        red   = 0.0;
-        green = interpolate(val, 0.0, min, 1.0, min + 0.25 * range);
-        blue  = 1.0;
-
-    } else if (val < min + 0.5 * range) {
-
-        red   = 0.0;
-        green = 1.0;
-        blue  = interpolate(val, 1.0, min + 0.25 * range, 0.0, min + 0.5 * range);
-
-    } else if (val < min + 0.75 * range) {
-
-        red   = interpolate(val, 0.0, min + 0.5 * range, 1.0, min + 0.75 * range);
-        green = 1.0;
-        blue  = 0.0;
-
-    } else if (val < max) {
-
-        red   = 1.0;
-        green = interpolate(val, 1.0, min + 0.75 * range, 0.0, max);
-        blue  = 0.0;
-
-    } else if (val >= max ) {
-
-        red   = 1.0;
-        green = 0.0;
-        blue  = 0.0;
-    }
-
-    rgb_code[0] = red;
-    rgb_code[1] = green;
-    rgb_code[2] = blue;
-
-    return rgb_code;
-}
-
-#endif /* UTILS_H_ */
+#endif /* LGCA_UTILS_H_ */

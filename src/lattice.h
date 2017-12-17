@@ -17,14 +17,16 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LATTICE_H_
-#define LATTICE_H_
+#ifndef LGCA_LATTICE_H_
+#define LGCA_LATTICE_H_
 
 #include "lgca_common.h"
 
 #include "utils.h"
 
-#include "pngwriter/pngwriter.h"
+#include "lgca_bitset.h"
+
+namespace lgca {
 
 class Lattice {
 
@@ -32,79 +34,45 @@ private:
 
 protected:
 
-    // Dimension of the problem.
-    const int dim = 2;
+    const int m_spatial_dim = 2;    // Dimension of the problem
 
-    // Number of cells in x direction.
-    unsigned int n_x;
+    unsigned int m_dim_x;           // Number of cells in x direction
+    unsigned int m_dim_y;           // Number of cells in y direction
+    unsigned int m_num_cells;       // Total number of cells
+    unsigned int m_num_dir;         // Number of lattice directions defining the model under usage
+    unsigned int m_num_nodes;       // Total number of nodes in the lattice
+    unsigned int m_num_particles;   // Number of particles in the lattice
 
-    // Number of cells in y direction.
-    unsigned int n_y;
+    // Coarse graining radius, i.e. the number of neighbor cells in one direction taken into account
+    // for averaging purposes.
+    int m_coarse_graining_radius;
 
-    // Total number of cells.
-    unsigned int n_cells;
+    // Test case (pipe flow, box, Karman vortex street, single collision)
+    string m_test_case;
 
-    // Number of lattice directions defining the model under usage.
-    int n_dir;
+    const Real m_rho  = 1.0;  // Density (is set to 1.0)
+    const Real m_c    = 1.0;  // Speed of sound (is set to 1.0)
 
-    // Total number of nodes in the lattice.
-    unsigned int n_nodes;
+    Real m_Re;        // Reynolds number
+    Real m_Ma_s;      // Scaled Mach number
+    Real m_d;         // Mean occupation number
+    Real m_nu;        // Viscosity
+    Real m_g;         // Galilean breaking factor
+    Real m_nu_s;      // Scaled viscosity
+    Real m_c_s;       // Scaled sound speed
+    Real m_u;         // Velocity
+    char m_bf_dir;    // Direction of the body force
 
-    // Number of particles in the lattice.
-    unsigned int n_particles;
+    // Number of particles to revert in the context of body force in order to compensate boundary
+    // layer shear force.
+    int m_equilibrium_forcing;
 
-    // Coarse graining radius, i.e. the number of neighbor cells
-    // in one direction taken into account for averaging purposes.
-    int coarse_graining_radius;
-
-    // Test case (pipe flow, box, Karman vortex street, single collision).
-    string test_case;
-
-    // Reynolds number.
-    Real Re;
-
-    // Scaled Mach number.
-    Real Ma_s;
-
-    // Calculate the dimensions of the lattice from the specified Reynolds number.
-    //
-    // Density (is set to 1.0).
-    const Real rho = 1.0;
-
-    // Speed of sound (is set to 1.0);
-    const Real c = 1.0;
-
-    // Mean occupation number.
-    Real d;
-
-    // Viscosity.
-    Real nu = 1.0 / 12.0 * 1.0 / (d * pow((1.0 - d), 3.0)) - 1.0 / 8.0;
-
-    // Galilean breaking factor.
-    Real g;
-
-    // Scaled viscosity.
-    Real nu_s;
-
-    // Scaled sound speed.
-    Real c_s;
-
-    // Velocity.
-    Real u;
-
-    // Direction of the body force.
-    char bf_dir;
-
-    // Number of particles to revert in the context of body force
-    // in order to compensate boundary layer shear force.
-    int equilibrium_forcing;
-
-    // Map which defines the type of the cells.
+    // Map which defines the type of the cells
     //
     // 0 - fluid cell
     // 1 - solid cell, reflecting, bounce back
     // 2 - solid cell, reflecting, bounce forward
-    char* cell_type_cpu;
+    char* m_cell_type_cpu;
 
     // One-dimensional arrays of integers which contains the states of the nodes, i.e. the
     // occupation numbers of the cellular automaton in the following sense:
@@ -112,16 +80,16 @@ protected:
     // [DIR_1_CELL_1|DIR_1_CELL_2|DIR_1_CELL_3|...|DIR_2_CELL_1|DIR_2_CELL_2|...]
     //
     // Array on the CPU
-    char* node_state_cpu;
+    Bitset m_node_state_cpu;
 
     // Temporary buffer for post-processing and visualization
-    char* node_state_out_cpu;
+    Bitset m_node_state_out_cpu;
 
     // Density values (0th momentum) related to the single cells (non-averaged).
-    Real* cell_density_cpu;
+    Real* m_cell_density_cpu;
 
     // Coarse grained density values (averaged over neighbor cells).
-    Real* mean_density_cpu;
+    Real* m_mean_density_cpu;
 
     // Vector valued quantities are stored in one-dimensional arrays in the
     // following sense:
@@ -129,18 +97,18 @@ protected:
     // [X_COMP_CELL_1|X_COMP_CELL_2|X_COMP_CELL_3|...|Y_COMP_CELL_1|Y_COMP_CELL_2|...]
 
     // Momentum vectors (1st momentum) related to the single cells (non-averaged).
-    Real* cell_momentum_cpu;
+    Real* m_cell_momentum_cpu;
 
     // Coarse grained momentum vectors (averaged over neighbor cells).
-    Real* mean_momentum_cpu;
+    Real* m_mean_momentum_cpu;
 
 public:
 
     // Creates a lattice gas cellular automaton object of the specified properties.
-    Lattice(const string test_case,
-            const Real Re, const Real Ma_s,
-            const int n_dir,
-            const int coarse_graining_radius);
+    Lattice(const string m_test_case,
+            const Real m_Re, const Real m_Ma_s,
+            const int m_num_dir,
+            const int m_coarse_graining_radius);
 
     // Deletes the lattice gas cellular automaton object.
     virtual ~Lattice();
@@ -242,25 +210,28 @@ public:
 
     virtual void copy_data_to_output_buffer();
 
-    // Get functions.
-    Real get_u()   { return u; }
-    int  get_n_x() { return n_x; }
-    int  get_n_y() { return n_y; }
+    // Get functions
+    Real         u() const { return         m_u; }
+    int      dim_x() const { return     m_dim_x; }
+    int      dim_y() const { return     m_dim_y; }
+    int  num_cells() const { return m_num_cells; }
 
-          Real* cell_density()       { assert(cell_density_cpu); return cell_density_cpu; }
-    const Real* cell_density() const { assert(cell_density_cpu); return cell_density_cpu; }
+          Real*  cell_density()       { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }
+    const Real*  cell_density() const { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }
 
-          Real* mean_density()       { assert(mean_density_cpu); return mean_density_cpu; }
-    const Real* mean_density() const { assert(mean_density_cpu); return mean_density_cpu; }
+          Real*  mean_density()       { assert(m_mean_density_cpu);  return  m_mean_density_cpu; }
+    const Real*  mean_density() const { assert(m_mean_density_cpu);  return  m_mean_density_cpu; }
 
-          Real* cell_momentum()       { assert(cell_momentum_cpu); return cell_momentum_cpu; }
-    const Real* cell_momentum() const { assert(cell_momentum_cpu); return cell_momentum_cpu; }
+          Real* cell_momentum()       { assert(m_cell_momentum_cpu); return m_cell_momentum_cpu; }
+    const Real* cell_momentum() const { assert(m_cell_momentum_cpu); return m_cell_momentum_cpu; }
 
-          Real* mean_momentum()       { assert(mean_momentum_cpu); return mean_momentum_cpu; }
-    const Real* mean_momentum() const { assert(mean_momentum_cpu); return mean_momentum_cpu; }
+          Real* mean_momentum()       { assert(m_mean_momentum_cpu); return m_mean_momentum_cpu; }
+    const Real* mean_momentum() const { assert(m_mean_momentum_cpu); return m_mean_momentum_cpu; }
 
-    Real cell_density(const int x, const int y) { assert(cell_density_cpu); return cell_density_cpu[y * n_x + x]; }
-    Real mean_density(const int x, const int y) { assert(mean_density_cpu); return mean_density_cpu[y * n_x + x]; }
+    Real cell_density(const int x, const int y) { assert(m_cell_density_cpu); return m_cell_density_cpu[y * m_dim_x + x]; }
+    Real mean_density(const int x, const int y) { assert(m_mean_density_cpu); return m_mean_density_cpu[y * m_dim_x + x]; }
 };
 
-#endif /* LATTICE_H_ */
+} // namespace lgca
+
+#endif /* LGCA_LATTICE_H_ */
