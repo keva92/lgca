@@ -30,7 +30,8 @@
 
 namespace lgca {
 
-class CUDA_Lattice: public Lattice {
+template<int num_dir_>
+class CUDA_Lattice: public Lattice<num_dir_> {
 
 private:
 

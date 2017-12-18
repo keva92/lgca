@@ -57,7 +57,6 @@ PipeView::PipeView(QWidget *parent) :
     // Define some variables
     Real   Re                     = 80.0;     // Reynolds number
     Real   Ma                     = 0.2;      // Mach number
-    int    n_dir                  = 6;        // Number of lattice directions
     int    coarse_graining_radius = 15;       // Coarse graining radius
 
     srand48(time(NULL));
@@ -66,7 +65,7 @@ PipeView::PipeView(QWidget *parent) :
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice(/*case=*/"pipe", Re, Ma, n_dir, coarse_graining_radius);
+    m_lattice = new OMP_Lattice<NUM_DIR>(/*case=*/"pipe", Re, Ma, coarse_graining_radius);
 
     // Apply boundary conditions
     m_lattice->apply_bc_pipe();
@@ -86,7 +85,7 @@ PipeView::PipeView(QWidget *parent) :
     // Set (proper) parallelization parameters
     m_lattice->setup_parallel();
 
-    m_vti_io_handler = new IoVti(m_lattice, "Mean density");
+    m_vti_io_handler = new IoVti<NUM_DIR>(m_lattice, "Mean density");
 
     vtkNew<vtkImageDataGeometryFilter> geomFilter;
     geomFilter->SetInputData(m_vti_io_handler->image());
@@ -174,6 +173,7 @@ void PipeView::run()
         // Print current simulation performance
         auto sim_end = steady_clock::now();
         auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
+        fprintf(stderr, "Simulation took %f s.\n", sim_time);
         m_mnups = (int)((m_lattice->num_cells() * m_write_steps) / (sim_time * 1.0e06));
         fprintf(stderr, "Current MNUPS: %d\n", m_mnups);
 
@@ -187,14 +187,23 @@ void PipeView::run()
     // Visualization
     task_group.run_and_wait([&]{
 
+
         // Compute quantities of interest as a post-processing procedure
+        auto pp_start = steady_clock::now();
         m_lattice->post_process();
+        auto pp_end = steady_clock::now();
+        auto pp_time = std::chrono::duration_cast<duration<double>>(pp_end - pp_start).count();
+        fprintf(stderr, "Postprocessing took %f s.\n", pp_time);
 
         // Update image data object
         m_vti_io_handler->update();
 
         // Update render window
+        auto ren_start = steady_clock::now();
         m_ui->qvtkWidget->GetRenderWindow()->Render();
+        auto ren_end = steady_clock::now();
+        auto ren_time = std::chrono::duration_cast<duration<double>>(ren_end - ren_start).count();
+        fprintf(stderr, "Rendering took %f s.\n", ren_time);
     });
 
     QTimer::singleShot(0, this, SLOT(run()));

@@ -30,257 +30,31 @@ namespace lgca {
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.
-OMP_Lattice::OMP_Lattice(const string test_case,
-                         const Real Re, const Real Ma_s,
-                         const int n_dir,
-                         const int coarse_graining_radius)
+template<int num_dir_>
+OMP_Lattice<num_dir_>::OMP_Lattice(const string test_case,
+                                   const Real Re, const Real Ma_s,
+                                   const int coarse_graining_radius)
+               : Lattice<num_dir_>(test_case, Re, Ma_s, coarse_graining_radius) {
 
-			             : Lattice(test_case, Re, Ma_s, n_dir, coarse_graining_radius) {
-
-    // Allocate the memory for the arrays on the host (CPU).
+    // Allocate the memory for the arrays on the host (CPU)
     allocate_memory();
 
-	// Memory offset to neighbor cells in the different directions for the
-	// propagation step.
-	offset_to_neighbor_even = new int[n_dir];
-	offset_to_neighbor_odd =  new int[n_dir];
-
-	// Memory offset to related cells of the opposite boundary in the different
-	// directions in case of periodic boundaries.
-	offset_to_eastern_boundary_even  = new int[n_dir];
-	offset_to_eastern_boundary_odd   = new int[n_dir];
-	offset_to_northern_boundary_even = new int[n_dir];
-	offset_to_northern_boundary_odd  = new int[n_dir];
-	offset_to_western_boundary_even  = new int[n_dir];
-	offset_to_western_boundary_odd   = new int[n_dir];
-	offset_to_southern_boundary_even = new int[n_dir];
-	offset_to_southern_boundary_odd  = new int[n_dir];
-
-	// Inverse direction indices for each lattice direction.
-	inverse_dir = new char[n_dir];
-
-	// Mirrored direction indices for each lattice direction with respect
-	// to the x and y axis.
-	mirrored_dir_x = new char[n_dir];
-	mirrored_dir_y = new char[n_dir];
-
-	// Set the components of the lattice vectors for the different directions.
-	//
-	// Set the model based values according to the number of lattice directions.
-	switch (n_dir) {
-
-		// HPP model.
-		case 4:
-		{
-			// Define the memory offsets in the different directions for
-			// cells in rows with even and odd indices (which are the same
-			// in case of HPP).
-			//
-			// The cell is located in a row with even index value.
-			offset_to_neighbor_even[0] = 1;
-            offset_to_neighbor_even[1] = m_dim_x;
-			offset_to_neighbor_even[2] = -1;
-            offset_to_neighbor_even[3] = -m_dim_x;
-
-			offset_to_eastern_boundary_even[0] = 0;
-			offset_to_eastern_boundary_even[1] = 0;
-            offset_to_eastern_boundary_even[2] = m_dim_x;
-			offset_to_eastern_boundary_even[3] = 0;
-
-			offset_to_northern_boundary_even[0] = 0;
-			offset_to_northern_boundary_even[1] = 0;
-			offset_to_northern_boundary_even[2] = 0;
-            offset_to_northern_boundary_even[3] = m_dim_x * m_dim_y;
-
-            offset_to_western_boundary_even[0] = -m_dim_x;
-			offset_to_western_boundary_even[1] = 0;
-			offset_to_western_boundary_even[2] = 0;
-			offset_to_western_boundary_even[3] = 0;
-
-			offset_to_southern_boundary_even[0] = 0;
-            offset_to_southern_boundary_even[1] = -m_dim_x * m_dim_y;
-			offset_to_southern_boundary_even[2] = 0;
-			offset_to_southern_boundary_even[3] = 0;
-
-			// The cell is located in a row with odd index value.
-			offset_to_neighbor_odd[0] = offset_to_neighbor_even[0];
-			offset_to_neighbor_odd[1] = offset_to_neighbor_even[1];
-			offset_to_neighbor_odd[2] = offset_to_neighbor_even[2];
-			offset_to_neighbor_odd[3] = offset_to_neighbor_even[3];
-
-			offset_to_eastern_boundary_odd[0] = offset_to_eastern_boundary_even[0];
-			offset_to_eastern_boundary_odd[1] = offset_to_eastern_boundary_even[1];
-			offset_to_eastern_boundary_odd[2] = offset_to_eastern_boundary_even[2];
-			offset_to_eastern_boundary_odd[3] = offset_to_eastern_boundary_even[3];
-
-			offset_to_northern_boundary_odd[0] = offset_to_northern_boundary_even[0];
-			offset_to_northern_boundary_odd[1] = offset_to_northern_boundary_even[1];
-			offset_to_northern_boundary_odd[2] = offset_to_northern_boundary_even[2];
-			offset_to_northern_boundary_odd[3] = offset_to_northern_boundary_even[3];
-
-			offset_to_western_boundary_odd[0] = offset_to_western_boundary_even[0];
-			offset_to_western_boundary_odd[1] = offset_to_western_boundary_even[1];
-			offset_to_western_boundary_odd[2] = offset_to_western_boundary_even[2];
-			offset_to_western_boundary_odd[3] = offset_to_western_boundary_even[3];
-
-			offset_to_southern_boundary_odd[0] = offset_to_southern_boundary_even[0];
-			offset_to_southern_boundary_odd[1] = offset_to_southern_boundary_even[1];
-			offset_to_southern_boundary_odd[2] = offset_to_southern_boundary_even[2];
-			offset_to_southern_boundary_odd[3] = offset_to_southern_boundary_even[3];
-
-			inverse_dir[0] = 2;
-			inverse_dir[1] = 3;
-			inverse_dir[2] = 0;
-			inverse_dir[3] = 1;
-
-			mirrored_dir_x[0] = 0;
-			mirrored_dir_x[1] = 3;
-			mirrored_dir_x[2] = 2;
-			mirrored_dir_x[3] = 1;
-
-			mirrored_dir_y[0] = 2;
-			mirrored_dir_y[1] = 1;
-			mirrored_dir_y[2] = 0;
-			mirrored_dir_y[3] = 3;
-
-			break;
-		}
-
-		// FHP model.
-		case 6:
-		{
-			// Define the memory offsets in the different directions for
-			// cells in rows with even and odd indices.
-			//
-			// The cell is located in a row with even index value.
-			offset_to_neighbor_even[0] = 1;
-            offset_to_neighbor_even[1] = m_dim_x;
-            offset_to_neighbor_even[2] = m_dim_x - 1;
-			offset_to_neighbor_even[3] = -1;
-            offset_to_neighbor_even[4] = -m_dim_x - 1;
-            offset_to_neighbor_even[5] = -m_dim_x;
-
-			offset_to_eastern_boundary_even[0] = 0;
-			offset_to_eastern_boundary_even[1] = 0;
-            offset_to_eastern_boundary_even[2] = m_dim_x;
-            offset_to_eastern_boundary_even[3] = m_dim_x;
-            offset_to_eastern_boundary_even[4] = m_dim_x;
-			offset_to_eastern_boundary_even[5] = 0;
-
-			offset_to_northern_boundary_even[0] = 0;
-			offset_to_northern_boundary_even[1] = 0;
-			offset_to_northern_boundary_even[2] = 0;
-			offset_to_northern_boundary_even[3] = 0;
-            offset_to_northern_boundary_even[4] = m_dim_x * m_dim_y;
-            offset_to_northern_boundary_even[5] = m_dim_x * m_dim_y;
-
-            offset_to_western_boundary_even[0] = -m_dim_x;
-			offset_to_western_boundary_even[1] = 0;
-			offset_to_western_boundary_even[2] = 0;
-			offset_to_western_boundary_even[3] = 0;
-			offset_to_western_boundary_even[4] = 0;
-			offset_to_western_boundary_even[5] = 0;
-
-			offset_to_southern_boundary_even[0] = 0;
-            offset_to_southern_boundary_even[1] = -m_dim_x * m_dim_y;
-            offset_to_southern_boundary_even[2] = -m_dim_x * m_dim_y + 1;
-			offset_to_southern_boundary_even[3] = 0;
-			offset_to_southern_boundary_even[4] = 0;
-			offset_to_southern_boundary_even[5] = 0;
-
-			// The cell is located in a row with odd index value.
-			offset_to_neighbor_odd[0] = 1;
-            offset_to_neighbor_odd[1] = m_dim_x + 1;
-            offset_to_neighbor_odd[2] = m_dim_x;
-			offset_to_neighbor_odd[3] = -1;
-            offset_to_neighbor_odd[4] = -m_dim_x;
-            offset_to_neighbor_odd[5] = -m_dim_x + 1;
-
-			offset_to_eastern_boundary_odd[0] = 0;
-			offset_to_eastern_boundary_odd[1] = 0;
-			offset_to_eastern_boundary_odd[2] = 0;
-            offset_to_eastern_boundary_odd[3] = m_dim_x;
-			offset_to_eastern_boundary_odd[4] = 0;
-			offset_to_eastern_boundary_odd[5] = 0;
-
-			offset_to_northern_boundary_odd[0] = 0;
-			offset_to_northern_boundary_odd[1] = 0;
-			offset_to_northern_boundary_odd[2] = 0;
-			offset_to_northern_boundary_odd[3] = 0;
-            offset_to_northern_boundary_odd[4] = m_dim_x * m_dim_y;
-            offset_to_northern_boundary_odd[5] = m_dim_x * m_dim_y;
-
-            offset_to_western_boundary_odd[0] = -m_dim_x;
-            offset_to_western_boundary_odd[1] = -m_dim_x;
-			offset_to_western_boundary_odd[2] = 0;
-			offset_to_western_boundary_odd[3] = 0;
-			offset_to_western_boundary_odd[4] = 0;
-            offset_to_western_boundary_odd[5] = -m_dim_x;
-
-			offset_to_southern_boundary_odd[0] = 0;
-            offset_to_southern_boundary_odd[1] = -m_dim_x * m_dim_y;
-            offset_to_southern_boundary_odd[2] = -m_dim_x * m_dim_y;
-			offset_to_southern_boundary_odd[3] = 0;
-			offset_to_southern_boundary_odd[4] = 0;
-			offset_to_southern_boundary_odd[5] = 0;
-
-			inverse_dir[0] = 3;
-			inverse_dir[1] = 4;
-			inverse_dir[2] = 5;
-			inverse_dir[3] = 0;
-			inverse_dir[4] = 1;
-			inverse_dir[5] = 2;
-
-			mirrored_dir_x[0] = 0;
-			mirrored_dir_x[1] = 5;
-			mirrored_dir_x[2] = 4;
-			mirrored_dir_x[3] = 3;
-			mirrored_dir_x[4] = 2;
-			mirrored_dir_x[5] = 1;
-
-			mirrored_dir_y[0] = 3;
-			mirrored_dir_y[1] = 2;
-			mirrored_dir_y[2] = 1;
-			mirrored_dir_y[3] = 0;
-			mirrored_dir_y[4] = 5;
-			mirrored_dir_y[5] = 4;
-
-			break;
-		}
-
-#ifdef DEBUG
-		default:
-		{
-			printf("ERROR in OMP_Lattice::OMP_Lattice: Invalid number of directions %d!\n", n_dir);
-			abort();
-			break;
-		}
-#endif
-
-	}
-
-	// Lattice vector components in the different directions.
-    lattice_vec_x = new Real[n_dir];
-    lattice_vec_y = new Real[n_dir];
-
-    // Set the components of the lattice vectors for the different directions.
-    //
-    // Loop over all directions.
-    for (int dir = 0; dir < n_dir; ++dir) {
-
-        lattice_vec_x[dir] = cos(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
-        lattice_vec_y[dir] = sin(2.0 * M_PI / ((Real) n_dir) * ((Real) dir));
-    }
+    // Set the model-based values according to the number of lattice directions
+    m_model = new ModelDescriptor<num_dir_>(this->m_dim_x, this->m_dim_y);
 }
 
 // Deletes the openMP parallelized lattice gas cellular automaton object.
-OMP_Lattice::~OMP_Lattice() {
+template<int num_dir_>
+OMP_Lattice<num_dir_>::~OMP_Lattice() {
+
+    delete m_model;
 
     this->free_memory();
 }
 
 // Performs the collision and propagation step on the lattice gas automaton.
-void OMP_Lattice::collide_and_propagate(unsigned int step) {
+template<int num_dir_>
+void OMP_Lattice<num_dir_>::collide_and_propagate(unsigned int step) {
 
     // TODO: Set the seed for the random number generation.
     int seed = time(NULL);
@@ -297,42 +71,42 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 
     // Loop over all cells.
 //    const int n_blocks = ((n_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
-    tbb::parallel_for(tbb::blocked_range<int>(0, m_num_cells), [&](const tbb::blocked_range<int>& r) {
+    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_cells), [&](const tbb::blocked_range<int>& r) {
     for (int cell = r.begin(); cell != r.end(); ++cell)
     {        
 		// Calculate the position of the cell in x direction (column index).
-        int pos_x = cell % m_dim_x;
+        int pos_x = cell % this->m_dim_x;
 
 		// Calculate the position of the cell in y direction (row index).
-        int pos_y = cell / m_dim_x;
+        int pos_y = cell / this->m_dim_x;
 
 		// Get the type of the cell, i.e. fluid or solid.
 		// This has to be taken into account during the collision step, where
 		// cells behave different according to their type.
-        char cell_type = m_cell_type_cpu[cell];
+        char cell_type = this->m_cell_type_cpu[cell];
 
 		// Check weather the cell is located on boundaries.
-        bool on_eastern_boundary  = (cell + 1) % m_dim_x == 0;
-        bool on_northern_boundary = cell >= (m_num_cells - m_dim_x);
-        bool on_western_boundary  = cell % m_dim_x == 0;
-        bool on_southern_boundary = cell < m_dim_x;
+        bool on_eastern_boundary  = (cell + 1) % this->m_dim_x == 0;
+        bool on_northern_boundary = cell >= (this->m_num_cells - this->m_dim_x);
+        bool on_western_boundary  = cell % this->m_dim_x == 0;
+        bool on_southern_boundary = cell < this->m_dim_x;
 
 		// Define an array for the global indices of the nodes in the cell.
-        int node_idx[m_num_dir];
+        int node_idx[num_dir_];
 
 		// Define an array for the states of the nodes in the cell.
-        char node_state[m_num_dir];
+        char node_state[num_dir_];
 
 		// Execute collision step.
 		//
 		// The thread working on the cell has to know about the states of the
 		// nodes within the cell, therefore looping over all directions and
-		// look it up.
-	#pragma unroll
-        for (int dir = 0; dir < m_num_dir; ++dir) {
+        // look it up.
+#pragma unroll
+        for (int dir = 0; dir < num_dir_; ++dir) {
 
-            node_idx[dir] = cell + dir * m_num_cells;
-            node_state[dir] = bool(m_node_state_cpu[node_idx[dir]]);
+            node_idx[dir] = cell + dir * this->m_num_cells;
+            node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
 		}
 
 		// TODO: Create a random boolean value for the collision step.
@@ -342,11 +116,11 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 						 + 1 * ((pos_x % 2) != (pos_y % 2)) * (step % 2);
 
 		// Create a temporary array to copy the node states into.
-        char node_state_tmp[m_num_dir];
+        char node_state_tmp[num_dir_];
 
 		// Copy the actual states of the nodes to the temporary array.
-	#pragma unroll
-        for (int dir = 0; dir < m_num_dir; ++dir) {
+#pragma unroll
+        for (int dir = 0; dir < num_dir_; ++dir) {
 
 			node_state_tmp[dir] = node_state[dir];
 		}
@@ -357,7 +131,7 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 			case 0:
 			{
 				// Using the the HPP model.
-                if (m_num_dir == 4) {
+                if (num_dir_ == 4) {
 
 	//                    // Collision case 1.
 	//                    if ((node_state[0] == 0) &&
@@ -404,7 +178,7 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 							+ (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]));
 
 				// Collision cases of the FHP model.
-                } else if (m_num_dir == 6) {
+                } else if (num_dir_ == 6) {
 
 					// Collision case a1.
 					if ((node_state[0] == 1) &&
@@ -554,12 +328,12 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 			case 1:
 			{
 				// Loop over all directions.
-				// #pragma unroll
-                for (int dir = 0; dir < m_num_dir; ++dir) {
+#pragma unroll
+                for (int dir = 0; dir < num_dir_; ++dir) {
 
 					// Exchange the states of the nodes with the the states of
 					// the inverse directions.
-					node_state_tmp[dir] = node_state[inverse_dir[dir]];
+                    node_state_tmp[dir] = node_state[Model::INV_DIR[dir]];
 				}
 
 				break;
@@ -569,21 +343,21 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 			case 2:
 			{
 				// Loop over all directions.
-	#pragma unroll
-                for (int dir = 0; dir < m_num_dir; ++dir) {
+#pragma unroll
+                for (int dir = 0; dir < num_dir_; ++dir) {
 
 					if (on_northern_boundary || on_southern_boundary) {
 
 						// Exchange the states of the nodes with the the states of
 						// the mirrored directions along the x axis.
-						node_state_tmp[dir] = node_state[mirrored_dir_x[dir]];
+                        node_state_tmp[dir] = node_state[Model::MIR_DIR_X[dir]];
 					}
 
 					if (on_eastern_boundary || on_western_boundary) {
 
 						// Exchange the states of the nodes with the the states of
 						// the mirrored directions along the y axis.
-						node_state_tmp[dir] = node_state[mirrored_dir_y[dir]];
+                        node_state_tmp[dir] = node_state[Model::MIR_DIR_Y[dir]];
 					}
 				}
 
@@ -606,7 +380,7 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 		//
 		// Loop over all directions.
 #pragma unroll
-        for (int dir = 0; dir < m_num_dir; dir++)
+        for (int dir = 0; dir < num_dir_; dir++)
 		{
 			// Reset the memory offset.
 			int offset = 0;
@@ -617,28 +391,28 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 				// Construct the correct memory offset.
 				//
 				// Apply a default offset value.
-				offset += offset_to_neighbor_even[dir];
+                offset += m_model->offset_to_neighbor_even[dir];
 
 				// Correct the offset in the current direction if the cell is
 				// located on boundaries.
 				if (on_eastern_boundary) {
 
-					offset += offset_to_western_boundary_even[dir];
+                    offset += m_model->offset_to_western_boundary_even[dir];
 				}
 
 				if (on_northern_boundary) {
 
-					offset += offset_to_southern_boundary_even[dir];
+                    offset += m_model->offset_to_southern_boundary_even[dir];
 				}
 
 				if (on_western_boundary) {
 
-					offset += offset_to_eastern_boundary_even[dir];
+                    offset += m_model->offset_to_eastern_boundary_even[dir];
 				}
 
 				if (on_southern_boundary) {
 
-					offset += offset_to_northern_boundary_even[dir];
+                    offset += m_model->offset_to_northern_boundary_even[dir];
 				}
 
             // The cell is located in a row with odd index value.
@@ -647,28 +421,28 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
 				// Construct the correct memory offset.
 				//
 				// Apply a default offset value.
-				offset += offset_to_neighbor_odd[dir];
+                offset += m_model->offset_to_neighbor_odd[dir];
 
 				// Correct the offset in the current direction if the cell is
 				// located on boundaries.
 				if (on_eastern_boundary) {
 
-					offset += offset_to_western_boundary_odd[dir];
+                    offset += m_model->offset_to_western_boundary_odd[dir];
 				}
 
 				if (on_northern_boundary) {
 
-					offset += offset_to_southern_boundary_odd[dir];
+                    offset += m_model->offset_to_southern_boundary_odd[dir];
 				}
 
 				if (on_western_boundary) {
 
-					offset += offset_to_eastern_boundary_odd[dir];
+                    offset += m_model->offset_to_eastern_boundary_odd[dir];
 				}
 
 				if (on_southern_boundary) {
 
-					offset += offset_to_northern_boundary_odd[dir];
+                    offset += m_model->offset_to_northern_boundary_odd[dir];
 				}
             }
 
@@ -681,21 +455,22 @@ void OMP_Lattice::collide_and_propagate(unsigned int step) {
     });
 
     // Update the node states.
-    auto node_state_cpu_tmp = m_node_state_cpu.ptr();
-    m_node_state_cpu = node_state_tmp_cpu.ptr();
+    auto node_state_cpu_tmp = this->m_node_state_cpu.ptr();
+    this->m_node_state_cpu = node_state_tmp_cpu.ptr();
     node_state_tmp_cpu = node_state_cpu_tmp;
 }
 
 // Applies a body force in the specified direction (x or y) and with the
 // specified intensity to the particles. E.g., if the intensity is equal 100,
 // every 100th particle changes it's direction, if feasible.
-void OMP_Lattice::apply_body_force(const int forcing) {
+template<int num_dir_>
+void OMP_Lattice<num_dir_>:: OMP_Lattice::apply_body_force(const int forcing) {
 
     // TODO: Set the seed for the random number generation on the device.
     int seed = time(NULL);
 
     // Set a maximum number of iterations to find particles which can be reverted.
-    const int it_max = 2 * m_num_cells;
+    const int it_max = 2 * this->m_num_cells;
 
     // Set the number of iterations to zero.
     int it = 0;
@@ -706,53 +481,53 @@ void OMP_Lattice::apply_body_force(const int forcing) {
     // Loop over all cells.
     do
     {
-        int cell = rand() % m_num_cells;
+        int cell = rand() % this->m_num_cells;
 
     	it++;
 
         // Get the type of the cell, i.e. fluid or solid.
         // Note that body forces are applied to fluid cells only.
-        char cell_type = m_cell_type_cpu[cell];
+        char cell_type = this->m_cell_type_cpu[cell];
 
         // Check weather the cell working on is a fluid cell.
         if (cell_type == 0) {
 
             // Define an array for the global indices of the nodes in the cell.
-            int node_idx[m_num_dir];
+            int node_idx[num_dir_];
 
             // Define an array for the states of the nodes in the cell.
-            char node_state[m_num_dir];
+            char node_state[num_dir_];
 
             // The thread working on the cell has to know about the states of the
             // nodes within the cell, therefore looping over all directions and
             // look it up.
-    #pragma unroll
-            for (int dir = 0; dir < m_num_dir; ++dir) {
+#pragma unroll
+            for (int dir = 0; dir < num_dir_; ++dir) {
 
-                node_idx[dir] = cell + dir * m_num_cells;
-                node_state[dir] = bool(m_node_state_cpu[node_idx[dir]]);
+                node_idx[dir] = cell + dir * this->m_num_cells;
+                node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
             }
 
             // Create a temporary array to copy the node states into.
-            char node_state_tmp[m_num_dir];
+            char node_state_tmp[num_dir_];
 
             // Copy the current states of the nodes to the temporary array.
-    #pragma unroll
-            for (int dir = 0; dir < m_num_dir; ++dir) {
+#pragma unroll
+            for (int dir = 0; dir < num_dir_; ++dir) {
 
                 node_state_tmp[dir] = node_state[dir];
             }
 
-            if (m_num_dir == 4) {
+            if (num_dir_ == 4) {
 
-                if (m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[2] == 1)) {
+                if (this->m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[2] == 1)) {
 
 					node_state_tmp[0] = 1;
 					node_state_tmp[2] = 0;
 
 					reverted_particles++;
 
-                } else if (m_bf_dir == 'y' && (node_state[1] == 1) && (node_state[3] == 0)) {
+                } else if (this->m_bf_dir == 'y' && (node_state[1] == 1) && (node_state[3] == 0)) {
 
 					node_state_tmp[1] = 0;
 					node_state_tmp[3] = 1;
@@ -761,16 +536,16 @@ void OMP_Lattice::apply_body_force(const int forcing) {
 				}
         	}
 
-            else if (m_num_dir == 6) {
+            else if (num_dir_ == 6) {
 
-                if (m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[3] == 1)) {
+                if (this->m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[3] == 1)) {
 
 					node_state_tmp[0] = 1;
 					node_state_tmp[3] = 0;
 
 					reverted_particles++;
 
-                } else if (m_bf_dir == 'y') {
+                } else if (this->m_bf_dir == 'y') {
 
 					if ((node_state[1] == 1) && (node_state[5] == 0)) {
 
@@ -833,10 +608,10 @@ void OMP_Lattice::apply_body_force(const int forcing) {
             // Write the new node states back to the data array.
             //
             // Loop over all directions.
-    #pragma unroll
-            for(int dir = 0; dir < m_num_dir; dir++)
+#pragma unroll
+            for (int dir = 0; dir < num_dir_; dir++)
             {
-                m_node_state_cpu[node_idx[dir]] = bool(node_state_tmp[dir]);
+                this->m_node_state_cpu[node_idx[dir]] = bool(node_state_tmp[dir]);
             }
 
         } /* IF cell_type */
@@ -845,7 +620,8 @@ void OMP_Lattice::apply_body_force(const int forcing) {
 }
 
 // Computes quantities of interest as a post-processing procedure.
-void OMP_Lattice::post_process() {
+template<int num_dir_>
+void OMP_Lattice<num_dir_>::post_process() {
 
 	// Computes cell quantities of interest as a post-processing procedure.
 	cell_post_process();
@@ -855,13 +631,11 @@ void OMP_Lattice::post_process() {
 }
 
 // Computes cell quantities of interest as a post-processing procedure.
-void OMP_Lattice::cell_post_process()
+template<int num_dir_>
+void OMP_Lattice<num_dir_>::cell_post_process()
 {
     // Loop over lattice cells
-//#pragma omp parallel for
-//    for (int cell = 0; cell < n_cells; ++cell)
-//    {
-    tbb::parallel_for(tbb::blocked_range<int>(0, m_num_cells), [&](const tbb::blocked_range<int>& r) {
+    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_cells), [&](const tbb::blocked_range<int>& r) {
     for (int cell = r.begin(); cell != r.end(); ++cell)
     {
         // Initialize the cell quantities to be computed
@@ -871,41 +645,39 @@ void OMP_Lattice::cell_post_process()
 
         // Loop over nodes within the current cell
 #pragma unroll
-        for (int dir = 0; dir < m_num_dir; ++dir) {
+        for (int dir = 0; dir < num_dir_; ++dir) {
 
-            int node_idx = cell + dir * m_num_cells;
-            char node_state = bool(m_node_state_out_cpu[node_idx]);
+            int node_idx = cell + dir * this->m_num_cells;
+            char node_state = bool(this->m_node_state_out_cpu[node_idx]);
 
             // Sum up the node states
             cell_density += node_state;
 
             // Sum up the node states multiplied by the lattice vector component for the current
             // direction
-            cell_momentum_x += node_state * lattice_vec_x[dir];
-            cell_momentum_y += node_state * lattice_vec_y[dir];
+            cell_momentum_x += node_state * Model::LATTICE_VEC_X[dir];
+            cell_momentum_y += node_state * Model::LATTICE_VEC_Y[dir];
         }
 
         // Write the computed cell quantities to the related data arrays
-        m_cell_density_cpu [cell          ] = (Real) cell_density;
-        m_cell_momentum_cpu[cell          ] =        cell_momentum_x;
-        m_cell_momentum_cpu[cell + m_num_cells] =        cell_momentum_y;
+        this->m_cell_density_cpu [cell                    ] = (Real) cell_density;
+        this->m_cell_momentum_cpu[cell                    ] =        cell_momentum_x;
+        this->m_cell_momentum_cpu[cell + this->m_num_cells] =        cell_momentum_y;
 
     } // for cell
     });
 }
 
 // Computes coarse grained quantities of interest as a post-processing procedure
-void OMP_Lattice::mean_post_process()
+template<int num_dir_>
+void OMP_Lattice<num_dir_>::mean_post_process()
 {
     // Loop over all cells
-//#pragma omp parallel for
-//    for (unsigned int cell = 0; cell < n_cells; ++cell)
-//    {
-    tbb::parallel_for(tbb::blocked_range<int>(0, m_num_cells), [&](const tbb::blocked_range<int>& r) {
+    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_cells), [&](const tbb::blocked_range<int>& r) {
     for (int cell = r.begin(); cell != r.end(); ++cell)
     {
         // Calculate the position of the cell in x direction
-        int pos_x = cell % m_dim_x;
+        int pos_x = cell % this->m_dim_x;
 
         // Initialize the coarse grained quantities to be computed
         Real mean_density    = 0.0;
@@ -918,114 +690,77 @@ void OMP_Lattice::mean_post_process()
         // The thread working on the cell has to know the cell quantities of the coarse graining
         // neighbor cells, therefore looping over all neighbor cells and look it up
 #pragma unroll
-        for (int y = -m_coarse_graining_radius; y <= m_coarse_graining_radius; ++y) {
+        for (int y = -this->m_coarse_graining_radius; y <= this->m_coarse_graining_radius; ++y) {
 
-            for (int x = -m_coarse_graining_radius; x <= m_coarse_graining_radius; ++x) {
+            for (int x = -this->m_coarse_graining_radius; x <= this->m_coarse_graining_radius; ++x) {
 
                 // Get the index of the coarse graining neighbor cell
-                int neighbor_idx = cell + y * m_dim_x + x;
+                int neighbor_idx = cell + y * this->m_dim_x + x;
 
                 // Get the position of the coarse graining neighbor cell in x direction
-                int pos_x_neighbor = neighbor_idx % m_dim_x;
+                int pos_x_neighbor = neighbor_idx % this->m_dim_x;
 
                 // Check weather the coarse graining neighbor cell is valid
-                if ((neighbor_idx >= 0) &
-                    (neighbor_idx < m_num_cells) &&
-                    (abs(pos_x_neighbor - pos_x) <= m_coarse_graining_radius)) {
+                if ((neighbor_idx >= 0) &&
+                    (neighbor_idx < this->m_num_cells) &&
+                    (abs(pos_x_neighbor - pos_x) <= this->m_coarse_graining_radius)) {
 
                     // Increase the number of existing coarse graining neighbor cells
                     n_exist_neighbors++;
 
-                    mean_density    += m_cell_density_cpu [neighbor_idx          ];
-                    mean_momentum_x += m_cell_momentum_cpu[neighbor_idx          ];
-                    mean_momentum_y += m_cell_momentum_cpu[neighbor_idx + m_num_cells];
+                    mean_density    += this->m_cell_density_cpu [neighbor_idx                    ];
+                    mean_momentum_x += this->m_cell_momentum_cpu[neighbor_idx                    ];
+                    mean_momentum_y += this->m_cell_momentum_cpu[neighbor_idx + this->m_num_cells];
                 }
             }
         }
 
         // Write the computed coarse grained quantities to the related data arrays
-        m_mean_density_cpu [cell          ] = mean_density    / ((Real) n_exist_neighbors);
-        m_mean_momentum_cpu[cell          ] = mean_momentum_x / ((Real) n_exist_neighbors);
-        m_mean_momentum_cpu[cell + m_num_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
+        this->m_mean_density_cpu [cell                    ] = mean_density    / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[cell                    ] = mean_momentum_x / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[cell + this->m_num_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
 
     } // for cell
     });
 }
 
 // Allocates the memory for the arrays on the host (CPU).
-void OMP_Lattice::allocate_memory()
+template<int num_dir_>
+void OMP_Lattice<num_dir_>::allocate_memory()
 {
     // Allocate host memory.
-//    cu_verify(cudaMallocHost((void **) &node_state_cpu,          n_nodes * sizeof(char)));
-//    cu_verify(cudaMallocHost((void **) &node_state_tmp_cpu,      n_nodes * sizeof(char)));
-//    cu_verify(cudaMallocHost((void **) &node_state_out_cpu,      n_nodes * sizeof(char)));
-    cu_verify(cudaMallocHost((void **) &m_cell_type_cpu,           m_num_cells * sizeof(char)));
-    cu_verify(cudaMallocHost((void **) &m_cell_density_cpu,        m_num_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &m_mean_density_cpu,        m_num_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &m_cell_momentum_cpu, m_spatial_dim * m_num_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &m_mean_momentum_cpu, m_spatial_dim * m_num_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_cell_type_cpu,                           this->m_num_cells * sizeof(char)));
+    cu_verify(cudaMallocHost((void **) &this->m_cell_density_cpu,                        this->m_num_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_mean_density_cpu,                        this->m_num_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_cell_momentum_cpu, this->m_spatial_dim * this->m_num_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_mean_momentum_cpu, this->m_spatial_dim * this->m_num_cells * sizeof(Real)));
 
-    m_node_state_cpu.resize(m_num_nodes);
-    node_state_tmp_cpu.resize(m_num_nodes);
-    m_node_state_out_cpu.resize(m_num_nodes);
+    this->m_node_state_cpu.resize    (this->m_num_nodes);
+            node_state_tmp_cpu.resize(this->m_num_nodes);
+    this->m_node_state_out_cpu.resize(this->m_num_nodes);
 }
 
 // Frees the memory for the arrays on the host (CPU).
-void OMP_Lattice::free_memory()
+template<int num_dir_>
+void OMP_Lattice<num_dir_>::free_memory()
 {
     // Free CPU memory.
-//    cu_verify(cudaFreeHost(node_state_cpu));
-//    cu_verify(cudaFreeHost(node_state_tmp_cpu));
-//    cu_verify(cudaFreeHost(node_state_out_cpu));
-    cu_verify(cudaFreeHost(m_cell_type_cpu));
-    cu_verify(cudaFreeHost(m_cell_density_cpu));
-    cu_verify(cudaFreeHost(m_mean_density_cpu));
-    cu_verify(cudaFreeHost(m_cell_momentum_cpu));
-    cu_verify(cudaFreeHost(m_mean_momentum_cpu));
+    cu_verify(cudaFreeHost(this->m_cell_type_cpu));
+    cu_verify(cudaFreeHost(this->m_cell_density_cpu));
+    cu_verify(cudaFreeHost(this->m_mean_density_cpu));
+    cu_verify(cudaFreeHost(this->m_cell_momentum_cpu));
+    cu_verify(cudaFreeHost(this->m_mean_momentum_cpu));
 
-	delete[] offset_to_neighbor_even;
-	delete[] offset_to_neighbor_odd;
-	delete[] offset_to_eastern_boundary_even;
-	delete[] offset_to_eastern_boundary_odd;
-	delete[] offset_to_northern_boundary_even;
-	delete[] offset_to_northern_boundary_odd;
-	delete[] offset_to_western_boundary_even;
-	delete[] offset_to_western_boundary_odd;
-	delete[] offset_to_southern_boundary_even;
-	delete[] offset_to_southern_boundary_odd;
-	delete[] inverse_dir;
-	delete[] mirrored_dir_x;
-	delete[] mirrored_dir_y;
-	delete[] lattice_vec_x;
-	delete[] lattice_vec_y;
-
-//    node_state_cpu                   = NULL;
-//    node_state_tmp_cpu               = NULL;
-//    node_state_out_cpu               = NULL;
-    m_cell_type_cpu                    = NULL;
-    m_cell_density_cpu                 = NULL;
-    m_mean_density_cpu                 = NULL;
-    m_cell_momentum_cpu                = NULL;
-    m_mean_momentum_cpu                = NULL;
-	offset_to_neighbor_even          = NULL;
-	offset_to_neighbor_odd           = NULL;
-	offset_to_eastern_boundary_even  = NULL;
-	offset_to_eastern_boundary_odd   = NULL;
-	offset_to_northern_boundary_even = NULL;
-	offset_to_northern_boundary_odd  = NULL;
-	offset_to_western_boundary_even  = NULL;
-	offset_to_western_boundary_odd   = NULL;
-	offset_to_southern_boundary_even = NULL;
-    offset_to_southern_boundary_odd  = NULL;
-	inverse_dir                      = NULL;
-	mirrored_dir_x                   = NULL;
-	mirrored_dir_y                   = NULL;
-	lattice_vec_x                    = NULL;
-	lattice_vec_y                    = NULL;
+    this->m_cell_type_cpu       = NULL;
+    this->m_cell_density_cpu    = NULL;
+    this->m_mean_density_cpu    = NULL;
+    this->m_cell_momentum_cpu   = NULL;
+    this->m_mean_momentum_cpu   = NULL;
 }
 
 // Sets (proper) parallelization parameters.
-void OMP_Lattice::setup_parallel()
+template<int num_dir_>
+void OMP_Lattice<num_dir_>::setup_parallel()
 {
 
 #pragma omp parallel for
@@ -1040,9 +775,10 @@ void OMP_Lattice::setup_parallel()
 }
 
 // Computes the mean velocity of the lattice.
-std::vector<Real> OMP_Lattice::get_mean_velocity() {
+template<int num_dir_>
+std::vector<Real> OMP_Lattice<num_dir_>::get_mean_velocity() {
 
-    std::vector<Real> mean_velocity(m_spatial_dim, 0.0);
+    std::vector<Real> mean_velocity(this->m_spatial_dim, 0.0);
 
     Real sum_x_vel = 0.0;
     Real sum_y_vel = 0.0;
@@ -1051,18 +787,18 @@ std::vector<Real> OMP_Lattice::get_mean_velocity() {
 
     // Sum up all (fluid) cell x and y velocity components.
 #pragma omp parallel for reduction(+: sum_x_vel, sum_y_vel)
-    for (unsigned int n = 0; n < m_num_cells; ++n) {
+    for (unsigned int n = 0; n < this->m_num_cells; ++n) {
 
-        if (m_cell_type_cpu[n] == 0) {
+        if (this->m_cell_type_cpu[n] == 0) {
 
         	counter++;
 
-            Real cell_density = m_cell_density_cpu[n];
+            Real cell_density = this->m_cell_density_cpu[n];
 
 			if (cell_density > 1.0e-06) {
 
-                sum_x_vel += m_cell_momentum_cpu[n          ] / cell_density;
-                sum_y_vel += m_cell_momentum_cpu[n + m_num_cells] / cell_density;
+                sum_x_vel += this->m_cell_momentum_cpu[n                    ] / cell_density;
+                sum_y_vel += this->m_cell_momentum_cpu[n + this->m_num_cells] / cell_density;
 			}
 
 #ifdef DEBUG
@@ -1089,5 +825,9 @@ std::vector<Real> OMP_Lattice::get_mean_velocity() {
 
     return mean_velocity;
 }
+
+// Explicit instantiations
+template class OMP_Lattice<4>;
+template class OMP_Lattice<6>;
 
 } // namespace lgca

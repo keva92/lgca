@@ -27,13 +27,17 @@
 namespace lgca {
 
 // Forward declarations
+template<int num_dir>
 class Lattice;
 
+template<int num_dir_>
 class IoVti
 {
+    using LatticeType = Lattice<num_dir_>;
+
 public:
 
-    IoVti(Lattice* lattice, const std::string scalars);
+    IoVti(LatticeType* lattice, const std::string scalars);
     virtual ~IoVti() { mImageData->Delete(); }
 
     // Update image data object.
@@ -42,8 +46,8 @@ public:
     // Write current image data to file.
     void write(const unsigned int step);
 
-          Lattice* lattice()       { assert(mLattice); return mLattice; }
-    const Lattice* lattice() const { assert(mLattice); return mLattice; }
+          LatticeType* lattice()       { assert(mLattice); return mLattice; }
+    const LatticeType* lattice() const { assert(mLattice); return mLattice; }
 
           vtkImageData* image()       { assert(mImageData); return mImageData; }
     const vtkImageData* image() const { assert(mImageData); return mImageData; }
@@ -51,7 +55,7 @@ public:
 
 private:
 
-    Lattice*        mLattice;
+    LatticeType*    mLattice;
     vtkImageData*   mImageData;
 
 }; // class IoVti

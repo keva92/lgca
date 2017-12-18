@@ -25,10 +25,14 @@
 #include "utils.h"
 
 #include "lgca_bitset.h"
+#include "lgca_models.h"
 
 namespace lgca {
 
+template<int num_dir_> // Number of lattice directions defining the model under usage
 class Lattice {
+
+    static_assert(num_dir_ == 4 || num_dir_ == 6, "Invalid lattice gas model.");
 
 private:
 
@@ -39,7 +43,6 @@ protected:
     unsigned int m_dim_x;           // Number of cells in x direction
     unsigned int m_dim_y;           // Number of cells in y direction
     unsigned int m_num_cells;       // Total number of cells
-    unsigned int m_num_dir;         // Number of lattice directions defining the model under usage
     unsigned int m_num_nodes;       // Total number of nodes in the lattice
     unsigned int m_num_particles;   // Number of particles in the lattice
 
@@ -107,7 +110,6 @@ public:
     // Creates a lattice gas cellular automaton object of the specified properties.
     Lattice(const string m_test_case,
             const Real m_Re, const Real m_Ma_s,
-            const int m_num_dir,
             const int m_coarse_graining_radius);
 
     // Deletes the lattice gas cellular automaton object.

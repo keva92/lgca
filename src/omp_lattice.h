@@ -24,42 +24,18 @@
 
 namespace lgca {
 
-class OMP_Lattice: public Lattice {
+template<int num_dir_>
+class OMP_Lattice: public Lattice<num_dir_> {
 
 private:
+
+    using Model = ModelDescriptor<num_dir_>;
 
     // Auxiliary array on the CPU.
     Bitset node_state_tmp_cpu;
 
-	// Memory offset to neighbor cells in the different directions for the
-	// propagation step.
-	// Note that for the FHP model there is a difference in the offsets depending
-	// on weather the cell is located in a row with even or odd index.
-	int* offset_to_neighbor_even;
-	int* offset_to_neighbor_odd;
-
-	// Memory offset to related cells of the opposite boundary in the different
-	// directions in case of periodic boundaries.
-	int* offset_to_eastern_boundary_even;
-	int* offset_to_eastern_boundary_odd;
-	int* offset_to_northern_boundary_even;
-	int* offset_to_northern_boundary_odd;
-	int* offset_to_western_boundary_even;
-	int* offset_to_western_boundary_odd;
-	int* offset_to_southern_boundary_even;
-	int* offset_to_southern_boundary_odd;
-
-	// Inverse direction indices for each lattice direction.
-	char* inverse_dir;
-
-	// Mirrored direction indices for each lattice direction with respect
-	// to the x and y axis.
-	char* mirrored_dir_x;
-	char* mirrored_dir_y;
-
-	// Lattice vector components in the different directions.
-    Real* lattice_vec_x;
-    Real* lattice_vec_y;
+    // Model-based values according to the number of lattice directions
+    Model* m_model;
 
 	// Computes cell quantities of interest as a post-processing procedure.
 	void cell_post_process();
@@ -79,7 +55,6 @@ public:
 	// of the specified properties.
     OMP_Lattice(const string m_test_case,
                 const Real m_Re, const Real m_Ma_s,
-                const int m_num_dir,
                 const int m_coarse_graining_radius);
 
 	virtual ~OMP_Lattice();

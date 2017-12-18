@@ -32,14 +32,16 @@ namespace Ui {
 namespace lgca {
 
 // Forward declarations
-class IoVti;
-class Lattice;
+template<int num_dir> class IoVti;
+template<int num_dir> class Lattice;
 
 class PipeView : public QMainWindow
 {
     Q_OBJECT
 
 public:
+
+    static constexpr int NUM_DIR = 6; // TODO Number of lattice directions
 
     explicit PipeView(QWidget *parent = 0);
     ~PipeView();
@@ -53,17 +55,16 @@ public slots:
 
 private:
 
-    Ui::PipeView*   m_ui;
-    Lattice*        m_lattice;
-    IoVti*          m_vti_io_handler;
+    Ui::PipeView*     m_ui;
+    Lattice<NUM_DIR>* m_lattice;
+    IoVti  <NUM_DIR>* m_vti_io_handler;
 
-    int             m_mnups;
-    int             m_num_particles;
+    int               m_mnups;
+    int               m_num_particles;
     std::vector<Real> m_mean_velocity;
-    int             m_forcing;
+    int               m_forcing;
 
-    const int       m_write_steps = 20; // Number of steps after which results are post-processed and visualized or written to file
-
+    const int         m_write_steps = 20; // Number of steps after which results are post-processed and visualized or written to file
 };
 
 } // namespace lgca

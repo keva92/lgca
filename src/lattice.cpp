@@ -26,10 +26,10 @@
 namespace lgca {
 
 // Creates a lattice gas cellular automaton object of the specified properties.
-Lattice::Lattice(const string test_case,
-                 const Real Re, const Real Ma_s,
-                 const int n_dir,
-                 const int coarse_graining_radius) {
+template<int num_dir_>
+Lattice<num_dir_>::Lattice(const string test_case,
+                           const Real Re, const Real Ma_s,
+                           const int coarse_graining_radius) {
 
     // Set the test case (pipe flow,
 	//					  box,
@@ -37,10 +37,6 @@ Lattice::Lattice(const string test_case,
 	//                    single collision,
     //                    diffusion).
     this->m_test_case = test_case;
-
-    // Set the number of lattice directions defining the model under usage.
-    assert((n_dir == 4) || (n_dir == 6));
-    this->m_num_dir = n_dir;
 
     // Set the Reynolds number.
     assert(Re > 1.0e-06);
@@ -53,7 +49,7 @@ Lattice::Lattice(const string test_case,
     // Calculate the dimensions of the lattice from the specified Reynolds number.
     //
     // Define the mean occupation number.
-    m_d = m_rho / this->m_num_dir;
+    m_d = m_rho / num_dir_;
 
     // Compute the scaled viscosity.
     m_nu = 1.0 / 12.0 * 1.0 / (m_d * pow((1.0 - m_d), 3.0)) - 1.0 / 8.0;
@@ -142,14 +138,14 @@ Lattice::Lattice(const string test_case,
 
     // Set the number of cells in y direction.
     assert(m_dim_y > 0);
-    if(n_dir == 6) assert(m_dim_y % 2 == 0);
+    if (num_dir_ == 6) assert(m_dim_y % 2 == 0);
     this->m_dim_y = m_dim_y;
 
     // Set the total number of cells.
     m_num_cells = m_dim_x * m_dim_y;
 
     // Set the total number of nodes in the lattice.
-    m_num_nodes = m_num_cells * n_dir;
+    m_num_nodes = m_num_cells * num_dir_;
 
     // Set the initial number of particles in the lattice.
     m_num_particles = 0;
@@ -162,12 +158,14 @@ Lattice::Lattice(const string test_case,
 }
 
 // Deletes the lattice gas cellular automaton object.
-Lattice::~Lattice() {
+template<int num_dir_>
+Lattice<num_dir_>::~Lattice() {
 
 }
 
 // Initializes the lattice gas automaton with zero states.
-void Lattice::init_zero() {
+template<int num_dir_>
+void Lattice<num_dir_>::init_zero() {
 
     // Bitset is initialized with zeros anyway
 
@@ -181,7 +179,8 @@ void Lattice::init_zero() {
 }
 
 // Prints the lattice to the screen.
-void Lattice::print() {
+template<int num_dir_>
+void Lattice<num_dir_>::print() {
 
     m_node_state_cpu.print();
 
@@ -224,7 +223,8 @@ void Lattice::print() {
 }
 
 // Returns the number of particles in the lattice.
-unsigned int Lattice::get_n_particles() {
+template<int num_dir_>
+unsigned int Lattice<num_dir_>::get_n_particles() {
 
     int n_particles = 0;
 
@@ -241,7 +241,8 @@ unsigned int Lattice::get_n_particles() {
 }
 
 // Initializes the lattice gas automaton with some random distributed particles.
-void Lattice::init_random() {
+template<int num_dir_>
+void Lattice<num_dir_>::init_random() {
 
 	// Loop over all cells.
 #pragma omp parallel for
@@ -251,11 +252,11 @@ void Lattice::init_random() {
         if (m_cell_type_cpu[cell] == 0) {
 
             // Loop over all nodes in the fluid cell.
-            for (int dir = 0; dir < m_num_dir; ++dir) {
+            for (int dir = 0; dir < num_dir_; ++dir) {
 
                 // Set random states for the nodes in the fluid cell.
                 m_node_state_cpu[cell + dir * m_num_cells] =
-                        bool(random_uniform() > (1.0 - (1.0 / m_num_dir)));
+                        bool(random_uniform() > (1.0 - (1.0 / num_dir_)));
             }
 	    }
 	}
@@ -263,7 +264,8 @@ void Lattice::init_random() {
 
 // Applies boundary conditions for a peridoc domain, i.e. no boundaries over
 // the whole rectangular domain.
-void Lattice::apply_bc_periodic() {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_bc_periodic() {
 
     // Set the cell type to fluid cells.
     int cell_type = 0;
@@ -274,7 +276,8 @@ void Lattice::apply_bc_periodic() {
 
 // Applies boundary conditions for a pipe flow, i.e. reflecting boundaries
 // at the upper and the lower edge of the rectangular domain.
-void Lattice::apply_bc_pipe() {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_bc_pipe() {
 
     // Set the cell type to fluid cells.
     int cell_type = 0;
@@ -293,7 +296,8 @@ void Lattice::apply_bc_pipe() {
 
 // Applies boundary conditions for a Karman vortex street, i.e. a pipe flow
 // with a cylinder.
-void Lattice::apply_bc_karman_vortex_street() {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_bc_karman_vortex_street() {
 
     // Apply boundary conditions for a pipe flow, i.e. reflecting boundaries
     // at the upper and the lower edge of the rectangular domain.
@@ -323,25 +327,26 @@ void Lattice::apply_bc_karman_vortex_street() {
 }
 
 // Initializes the lattice gas automaton with two colliding particles.
-void Lattice::init_single_collision() {
+template<int num_dir_>
+void Lattice<num_dir_>::init_single_collision() {
 
 	// Get the inverse direction of the 0-th one.
 	int inverse_dir;
 
 	// HPP model.
-    if (m_num_dir == 4) {
+    if (num_dir_ == 4) {
 
 		inverse_dir = 2;
 
 	// FHP model.
-    } else if (m_num_dir == 6) {
+    } else if (num_dir_ == 6) {
 
 		inverse_dir = 3;
 
 	// Invalid number of directions.
 	} else {
 
-        printf("ERROR in init_single_collision(): Invalid number of directions %d!\n", m_num_dir);
+        printf("ERROR in init_single_collision(): Invalid number of directions %d!\n", num_dir_);
         abort();
 	}
 
@@ -353,7 +358,8 @@ void Lattice::init_single_collision() {
 }
 
 // Initializes the lattice gas automaton with single particles at defined nodes.
-void Lattice::init_single(const std::vector<int> occupied_nodes) {
+template<int num_dir_>
+void Lattice<num_dir_>::init_single(const std::vector<int> occupied_nodes) {
 
     // Initialize the lattice with zeros.
     init_zero();
@@ -367,7 +373,8 @@ void Lattice::init_single(const std::vector<int> occupied_nodes) {
 
 // Applies boundary conditions for reflecting boundaries at all edges
 // of the rectangular domain.
-void Lattice::apply_bc_reflecting(const string bounce_type) {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_bc_reflecting(const string bounce_type) {
 
     // Set the cell type to fluid cells.
     int cell_type = 0;
@@ -399,7 +406,8 @@ void Lattice::apply_bc_reflecting(const string bounce_type) {
 }
 
 // Applies the specified cell type to all cells in the domain.
-void Lattice::apply_cell_type_all(const int cell_type) {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_cell_type_all(const int cell_type) {
 
     // Loop over all cells.
 #pragma omp parallel for
@@ -412,7 +420,8 @@ void Lattice::apply_cell_type_all(const int cell_type) {
 
 // Applies the specified cell type to cells located on the eastern boundary
 // of the rectangular domain.
-void Lattice::apply_boundary_cell_type_east(const int cell_type) {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_boundary_cell_type_east(const int cell_type) {
 
     // Loop over the cells located at the eastern boundary of
     // the rectangular domain.
@@ -425,7 +434,8 @@ void Lattice::apply_boundary_cell_type_east(const int cell_type) {
 
 // Applies the specified cell type to cells located on the northern boundary
 // of the rectangular domain.
-void Lattice::apply_boundary_cell_type_north(const int cell_type) {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_boundary_cell_type_north(const int cell_type) {
 
     // Loop over the cells located at the northern boundary of
     // the rectangular domain.
@@ -438,7 +448,8 @@ void Lattice::apply_boundary_cell_type_north(const int cell_type) {
 
 // Applies the specified cell type to cells located on the western boundary
 // of the rectangular domain.
-void Lattice::apply_boundary_cell_type_west(const int cell_type) {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_boundary_cell_type_west(const int cell_type) {
 
     // Loop over the cells located at the western boundary of
     // the rectangular domain.
@@ -451,7 +462,8 @@ void Lattice::apply_boundary_cell_type_west(const int cell_type) {
 
 // Applies the specified cell type to cells located on the southern boundary
 // of the rectangular domain.
-void Lattice::apply_boundary_cell_type_south(const int cell_type) {
+template<int num_dir_>
+void Lattice<num_dir_>::apply_boundary_cell_type_south(const int cell_type) {
 
     // Loop over the cells located at the southern boundary of
     // the rectangular domain.
@@ -463,7 +475,8 @@ void Lattice::apply_boundary_cell_type_south(const int cell_type) {
 }
 
 // Prints information about the lattice object to screen.
-void Lattice::print_info() {
+template<int num_dir_>
+void Lattice<num_dir_>::print_info() {
 
     printf("Parameter for test case \"%s\":\n", m_test_case.c_str());
     printf("\n");
@@ -483,20 +496,23 @@ void Lattice::print_info() {
 }
 
 // Copies all data arrays from the host (CPU) to the device (GPU).
-void Lattice::copy_data_to_device()
+template<int num_dir_>
+void Lattice<num_dir_>::copy_data_to_device()
 {
 	// Only valid for CUDA parallelized lattice gas automatons.
 	// Implemented in CUDA_Lattice.
 }
 
 // Copies all data arrays from the device (GPU) back to the host (CPU).
-void Lattice::copy_data_from_device()
+template<int num_dir_>
+void Lattice<num_dir_>::copy_data_from_device()
 {
 	// Only valid for CUDA parallelized lattice gas automatons.
 	// Implemented in CUDA_Lattice.
 }
 
-void Lattice::copy_data_to_output_buffer()
+template<int num_dir_>
+void Lattice<num_dir_>::copy_data_to_output_buffer()
 {
     m_node_state_out_cpu.copy(m_node_state_cpu);
 
@@ -507,7 +523,8 @@ void Lattice::copy_data_to_output_buffer()
 
 // Computes the number of particles to revert in the context of body force
 // in order to accelerate the flow.
-int Lattice::get_initial_forcing()
+template<int num_dir_>
+int Lattice<num_dir_>::get_initial_forcing()
 {
 	// int equilibrium_forcing = get_equilibrium_forcing();
 
@@ -516,7 +533,8 @@ int Lattice::get_initial_forcing()
 
 // Computes the number of particles to revert in the context of body force.
 // in order to compensate boundary layer shear force.
-int Lattice::get_equilibrium_forcing()
+template<int num_dir_>
+int Lattice<num_dir_>::get_equilibrium_forcing()
 {
     Real forcing = (8.0 * m_nu_s * m_Ma_s * m_c_s) / pow((Real)m_dim_y, 2.0);
 
@@ -525,7 +543,8 @@ int Lattice::get_equilibrium_forcing()
 
 // Initializes the lattice gas automaton with some random distributed particles
 // in the center area of the domain.
-void Lattice::init_diffusion()
+template<int num_dir_>
+void Lattice<num_dir_>::init_diffusion()
 {
     // Define the position and size of the center area.
     int  center_x = m_dim_x / 2;
@@ -547,14 +566,18 @@ void Lattice::init_diffusion()
 	    	dist                < (diameter / 2.0))
 	    {
             // Loop over all nodes in the fluid cell.
-            for (int dir = 0; dir < m_num_dir; ++dir) {
+            for (int dir = 0; dir < num_dir_; ++dir) {
 
                 // Set random states for the nodes in the fluid cell.
                 m_node_state_cpu[cell + dir * m_num_cells] =
-                        bool(random_uniform() > (1.0 - (1.0 / m_num_dir)));
+                        bool(random_uniform() > (1.0 - (1.0 / num_dir_)));
             }
 	    }
 	}
 }
+
+// Explicit instantiations
+template class Lattice<4>;
+template class Lattice<6>;
 
 } // namespace lgca

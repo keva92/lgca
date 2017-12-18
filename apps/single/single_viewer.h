@@ -32,14 +32,16 @@ namespace Ui {
 namespace lgca {
 
 // Forward declarations
-class IoVti;
-class Lattice;
+template<int num_dir> class IoVti;
+template<int num_dir> class Lattice;
 
 class SingleView : public QMainWindow
 {
     Q_OBJECT
 
 public:
+
+    static constexpr int NUM_DIR = 6; // TODO Number of lattice directions
 
     explicit SingleView(QWidget *parent = 0);
     ~SingleView();
@@ -55,14 +57,14 @@ public slots:
 
 private:
 
-    Ui::SingleView* m_ui;
-    Lattice*        m_lattice;
-    IoVti*          m_vti_io_handler;
+    Ui::SingleView*   m_ui;
+    Lattice<NUM_DIR>* m_lattice;
+    IoVti  <NUM_DIR>* m_vti_io_handler;
 
-    int             m_mnups;
-    int             m_num_particles;
+    int               m_mnups;
+    int               m_num_particles;
 
-    const int       m_write_steps = 1; // Number of steps after which results are post-processed and visualized or written to file
+    const int         m_write_steps = 1; // Number of steps after which results are post-processed and visualized or written to file
 };
 
 } // namespace lgca
