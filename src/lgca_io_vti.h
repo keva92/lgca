@@ -38,7 +38,7 @@ class IoVti
 public:
 
     IoVti(LatticeType* lattice, const std::string scalars);
-    virtual ~IoVti() { mImageData->Delete(); }
+    virtual ~IoVti() { m_cell_image_data->Delete(); m_mean_image_data->Delete(); }
 
     // Update image data object.
     void update();
@@ -46,17 +46,22 @@ public:
     // Write current image data to file.
     void write(const unsigned int step);
 
-          LatticeType* lattice()       { assert(mLattice); return mLattice; }
-    const LatticeType* lattice() const { assert(mLattice); return mLattice; }
+          LatticeType* lattice()       { assert(m_lattice); return m_lattice; }
+    const LatticeType* lattice() const { assert(m_lattice); return m_lattice; }
 
-          vtkImageData* image()       { assert(mImageData); return mImageData; }
-    const vtkImageData* image() const { assert(mImageData); return mImageData; }
+          vtkImageData* cell_image()       { assert(m_cell_image_data); return m_cell_image_data; }
+    const vtkImageData* cell_image() const { assert(m_cell_image_data); return m_cell_image_data; }
+
+          vtkImageData* mean_image()       { assert(m_mean_image_data); return m_mean_image_data; }
+    const vtkImageData* mean_image() const { assert(m_mean_image_data); return m_mean_image_data; }
 
 
 private:
 
-    LatticeType*    mLattice;
-    vtkImageData*   mImageData;
+    LatticeType*    m_lattice;
+
+    vtkImageData*   m_cell_image_data;
+    vtkImageData*   m_mean_image_data;
 
 }; // class IoVti
 

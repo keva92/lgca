@@ -38,7 +38,7 @@ private:
 
 protected:
 
-    const int m_spatial_dim = 2;    // Dimension of the problem
+    static constexpr int m_spatial_dim = 2;    // Dimension of the problem
 
     unsigned int m_dim_x;           // Number of cells in x direction
     unsigned int m_dim_y;           // Number of cells in y direction
@@ -47,8 +47,11 @@ protected:
     unsigned int m_num_particles;   // Number of particles in the lattice
 
     // Coarse graining radius, i.e. the number of neighbor cells in one direction taken into account
-    // for averaging purposes.
-    int m_coarse_graining_radius;
+    // for averaging purposes
+    unsigned int m_coarse_graining_radius; // TODO Make static constexpr
+    unsigned int m_coarse_dim_x;
+    unsigned int m_coarse_dim_y;
+    unsigned int m_num_coarse_cells;
 
     // Test case (pipe flow, box, Karman vortex street, single collision)
     string m_test_case;
@@ -80,7 +83,7 @@ protected:
     // One-dimensional arrays of integers which contains the states of the nodes, i.e. the
     // occupation numbers of the cellular automaton in the following sense:
     //
-    // [DIR_1_CELL_1|DIR_1_CELL_2|DIR_1_CELL_3|...|DIR_2_CELL_1|DIR_2_CELL_2|...]
+    // [DIR_0_CELL_0|DIR_1_CELL_0|DIR_2_CELL_0|...|DIR_0_CELL_1|DIR_1_CELL_1|...]
     //
     // Array on the CPU
     Bitset m_node_state_cpu;
@@ -213,10 +216,13 @@ public:
     virtual void copy_data_to_output_buffer();
 
     // Get functions
-    Real         u() const { return         m_u; }
-    int      dim_x() const { return     m_dim_x; }
-    int      dim_y() const { return     m_dim_y; }
-    int  num_cells() const { return m_num_cells; }
+    Real                        u() const { return m_u; }
+    unsigned int            dim_x() const { return m_dim_x; }
+    unsigned int            dim_y() const { return m_dim_y; }
+    unsigned int        num_cells() const { return m_num_cells; }
+    unsigned int     coarse_dim_x() const { return m_coarse_dim_x; }
+    unsigned int     coarse_dim_y() const { return m_coarse_dim_y; }
+    unsigned int num_coarse_cells() const { return m_num_coarse_cells; }
 
           Real*  cell_density()       { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }
     const Real*  cell_density() const { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }

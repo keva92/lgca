@@ -57,7 +57,7 @@ SingleView::SingleView(QWidget *parent) :
     // Define some variables
     Real   Re                     = 80.0;     // Reynolds number
     Real   Ma                     = 0.2;      // Mach number
-    int    coarse_graining_radius = 15;       // Coarse graining radius
+    int    coarse_graining_radius = 2;       // Coarse graining radius
 
     srand48(time(NULL));
 
@@ -84,7 +84,7 @@ SingleView::SingleView(QWidget *parent) :
     m_vti_io_handler = new IoVti<NUM_DIR>(m_lattice, "Cell density");
 
     vtkNew<vtkImageDataGeometryFilter> geomFilter;
-    geomFilter->SetInputData(m_vti_io_handler->image());
+    geomFilter->SetInputData(m_vti_io_handler->cell_image());
     geomFilter->Update();
     vtkNew<vtkPolyDataMapper> mapper;
     mapper->SetInputConnection(geomFilter->GetOutputPort());

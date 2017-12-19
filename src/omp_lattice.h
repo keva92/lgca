@@ -32,7 +32,7 @@ private:
     using Model = ModelDescriptor<num_dir_>;
 
     // Auxiliary array on the CPU.
-    Bitset node_state_tmp_cpu;
+    Bitset m_node_state_tmp_cpu;
 
     // Model-based values according to the number of lattice directions
     Model* m_model;

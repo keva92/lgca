@@ -56,10 +56,10 @@ OMP_Lattice<num_dir_>::~OMP_Lattice() {
 template<int num_dir_>
 void OMP_Lattice<num_dir_>::collide_and_propagate(unsigned int step) {
 
-    // TODO: Set the seed for the random number generation.
+    // TODO Set the seed for the random number generation.
     int seed = time(NULL);
 
-#ifdef DEBUG
+#ifndef NDEBUG
             // Check weather the domain dimensions are valid for the FHP model.
             if (n_y % 2 != 0 && n_dir == 6) {
 
@@ -69,395 +69,401 @@ void OMP_Lattice<num_dir_>::collide_and_propagate(unsigned int step) {
             }
 #endif
 
-    // Loop over all cells.
-//    const int n_blocks = ((n_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
-    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_cells), [&](const tbb::blocked_range<int>& r) {
-    for (int cell = r.begin(); cell != r.end(); ++cell)
+    // Loop over bunches of cells
+    const int num_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
+    tbb::parallel_for(tbb::blocked_range<int>(0, num_blocks), [&](const tbb::blocked_range<int>& r) {
+    for (int block = r.begin(); block != r.end(); ++block)
     {        
-		// Calculate the position of the cell in x direction (column index).
-        int pos_x = cell % this->m_dim_x;
+        for (int cell = block * Bitset::BITS_PER_BLOCK; cell < (block+1) * Bitset::BITS_PER_BLOCK; ++cell) {
 
-		// Calculate the position of the cell in y direction (row index).
-        int pos_y = cell / this->m_dim_x;
+            if (cell >= this->m_num_cells) break;
 
-		// Get the type of the cell, i.e. fluid or solid.
-		// This has to be taken into account during the collision step, where
-		// cells behave different according to their type.
-        char cell_type = this->m_cell_type_cpu[cell];
+            // Calculate the position of the cell in x direction (column index).
+            int pos_x = cell % this->m_dim_x;
 
-		// Check weather the cell is located on boundaries.
-        bool on_eastern_boundary  = (cell + 1) % this->m_dim_x == 0;
-        bool on_northern_boundary = cell >= (this->m_num_cells - this->m_dim_x);
-        bool on_western_boundary  = cell % this->m_dim_x == 0;
-        bool on_southern_boundary = cell < this->m_dim_x;
+            // Calculate the position of the cell in y direction (row index).
+            int pos_y = cell / this->m_dim_x;
 
-		// Define an array for the global indices of the nodes in the cell.
-        int node_idx[num_dir_];
+            // Get the type of the cell, i.e. fluid or solid.
+            // This has to be taken into account during the collision step, where
+            // cells behave different according to their type.
+            char cell_type = this->m_cell_type_cpu[cell];
 
-		// Define an array for the states of the nodes in the cell.
-        char node_state[num_dir_];
+            // Check weather the cell is located on boundaries.
+            bool on_eastern_boundary  = (cell + 1) % this->m_dim_x == 0;
+            bool on_northern_boundary = cell >= (this->m_num_cells - this->m_dim_x);
+            bool on_western_boundary  = cell % this->m_dim_x == 0;
+            bool on_southern_boundary = cell < this->m_dim_x;
 
-		// Execute collision step.
-		//
-		// The thread working on the cell has to know about the states of the
-		// nodes within the cell, therefore looping over all directions and
-        // look it up.
+            // Define an array for the global indices of the nodes in the cell.
+            int node_idx[num_dir_];
+
+            // Define an array for the states of the nodes in the cell.
+            char node_state[num_dir_];
+
+            // Execute collision step.
+            //
+            // The thread working on the cell has to know about the states of the
+            // nodes within the cell, therefore looping over all directions and
+            // look it up.
 #pragma unroll
-        for (int dir = 0; dir < num_dir_; ++dir) {
+            for (int dir = 0; dir < num_dir_; ++dir) {
 
-            node_idx[dir] = cell + dir * this->m_num_cells;
-            node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
-		}
-
-		// TODO: Create a random boolean value for the collision step.
-		// bool rand_bool = cu_random_bool(seed, cell);
-		bool rand_bool =       ((pos_x % 2) == (pos_y % 2))
-						 - 1 * ((pos_x % 2) == (pos_y % 2)) * (step % 2)
-						 + 1 * ((pos_x % 2) != (pos_y % 2)) * (step % 2);
-
-		// Create a temporary array to copy the node states into.
-        char node_state_tmp[num_dir_];
-
-		// Copy the actual states of the nodes to the temporary array.
-#pragma unroll
-        for (int dir = 0; dir < num_dir_; ++dir) {
-
-			node_state_tmp[dir] = node_state[dir];
-		}
-
-		switch (cell_type) {
-
-			// The cell working on is a fluid cell ("normal" collision).
-			case 0:
-			{
-				// Using the the HPP model.
-                if (num_dir_ == 4) {
-
-	//                    // Collision case 1.
-	//                    if ((node_state[0] == 0) &&
-	//                        (node_state[1] == 1) &&
-	//                        (node_state[2] == 0) &&
-	//                        (node_state[3] == 1)) {
-	//
-	//                        node_state_tmp[0] = 1;
-	//                        node_state_tmp[1] = 0;
-	//                        node_state_tmp[2] = 1;
-	//                        node_state_tmp[3] = 0;
-	//
-	//                        break;
-	//                    }
-	//
-	//                    // Collision case 2.
-	//                    if ((node_state[0] == 1) &&
-	//                        (node_state[1] == 0) &&
-	//                        (node_state[2] == 1) &&
-	//                        (node_state[3] == 0)) {
-	//
-	//                        node_state_tmp[0] = 0;
-	//                        node_state_tmp[1] = 1;
-	//                        node_state_tmp[2] = 0;
-	//                        node_state_tmp[3] = 1;
-	//
-	//                        break;
-	//                    }
-
-					node_state_tmp[0] = node_state[0]
-							- (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]))
-							+ (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]));
-
-					node_state_tmp[1] = node_state[1]
-							- (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]))
-							+ (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]));
-
-					node_state_tmp[2] = node_state[2]
-							- (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]))
-							+ (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]));
-
-					node_state_tmp[3] = node_state[3]
-							- (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]))
-							+ (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]));
-
-				// Collision cases of the FHP model.
-                } else if (num_dir_ == 6) {
-
-					// Collision case a1.
-					if ((node_state[0] == 1) &&
-						(node_state[1] == 0) &&
-						(node_state[2] == 0) &&
-						(node_state[3] == 1) &&
-						(node_state[4] == 0) &&
-						(node_state[5] == 0)) {
-
-						node_state_tmp[0] = 0;
-						node_state_tmp[1] = rand_bool;
-						node_state_tmp[2] = 1 - node_state_tmp[1];
-						node_state_tmp[3] = 0;
-						node_state_tmp[4] = node_state_tmp[1];
-						node_state_tmp[5] = node_state_tmp[2];
-
-						break;
-					}
-
-					// Collision case a2.
-					if ((node_state[0] == 0) &&
-						(node_state[1] == 1) &&
-						(node_state[2] == 0) &&
-						(node_state[3] == 0) &&
-						(node_state[4] == 1) &&
-						(node_state[5] == 0)) {
-
-						node_state_tmp[0] = rand_bool;
-						node_state_tmp[1] = 0;
-						node_state_tmp[2] = 1 - node_state_tmp[0];
-						node_state_tmp[3] = node_state_tmp[0];
-						node_state_tmp[4] = 0;
-						node_state_tmp[5] = node_state_tmp[2];
-
-						break;
-					}
-
-					// Collision case a3.
-					if ((node_state[0] == 0) &&
-						(node_state[1] == 0) &&
-						(node_state[2] == 1) &&
-						(node_state[3] == 0) &&
-						(node_state[4] == 0) &&
-						(node_state[5] == 1)) {
-
-						node_state_tmp[0] = rand_bool;
-						node_state_tmp[1] = 1 - node_state_tmp[0];
-						node_state_tmp[2] = 0;
-						node_state_tmp[3] = node_state_tmp[0];
-						node_state_tmp[4] = node_state_tmp[1];
-						node_state_tmp[5] = 0;
-
-						break;
-					}
-
-					// Collision case b1.
-					if ((node_state[0] == 0) &&
-						(node_state[1] == 1) &&
-						(node_state[2] == 0) &&
-						(node_state[3] == 1) &&
-						(node_state[4] == 0) &&
-						(node_state[5] == 1)) {
-
-						node_state_tmp[0] = 1;
-						node_state_tmp[1] = 0;
-						node_state_tmp[2] = 1;
-						node_state_tmp[3] = 0;
-						node_state_tmp[4] = 1;
-						node_state_tmp[5] = 0;
-
-						break;
-					}
-
-					// Collision case b2.
-					if ((node_state[0] == 1) &&
-						(node_state[1] == 0) &&
-						(node_state[2] == 1) &&
-						(node_state[3] == 0) &&
-						(node_state[4] == 1) &&
-						(node_state[5] == 0)) {
-
-						node_state_tmp[0] = 0;
-						node_state_tmp[1] = 1;
-						node_state_tmp[2] = 0;
-						node_state_tmp[3] = 1;
-						node_state_tmp[4] = 0;
-						node_state_tmp[5] = 1;
-
-						break;
-					}
-
-	//                    node_state_tmp[0] = node_state[0]
-	//                            - (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5]))
-	//                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-	//                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-	//                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
-	//                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
-	//
-	//                    node_state_tmp[1] = node_state[1]
-	//                            - (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5]))
-	//                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-	//                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-	//                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
-	//                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
-	//
-	//                    node_state_tmp[2] = node_state[2]
-	//                            - (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4]))
-	//                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-	//                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * (1 - rand_bool)
-	//                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
-	//                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
-	//
-	//                    node_state_tmp[3] = node_state[3]
-	//                            - (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5]))
-	//                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-	//                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-	//                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
-	//                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
-	//
-	//                    node_state_tmp[4] = node_state[4]
-	//                            - (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5]))
-	//                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-	//                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-	//                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
-	//                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
-	//
-	//                    node_state_tmp[5] = node_state[5]
-	//                            - (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4]))
-	//                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-	//                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * (1 - rand_bool)
-	//                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
-	//                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
-				}
-
-	#ifdef DEBUG
-				else {
-
-					printf("ERROR in OMP_Lattice::collide_and_propagate(): "
-						   "Invalid number of directions %d.\n", n_dir);
-				}
-	#endif
-
-				break;
-			}
-
-			// The cell working on is a solid cell of bounce back type.
-			case 1:
-			{
-				// Loop over all directions.
-#pragma unroll
-                for (int dir = 0; dir < num_dir_; ++dir) {
-
-					// Exchange the states of the nodes with the the states of
-					// the inverse directions.
-                    node_state_tmp[dir] = node_state[Model::INV_DIR[dir]];
-				}
-
-				break;
-			}
-
-			// TODO: The cell working on is a solid cell of bounce forward type.
-			case 2:
-			{
-				// Loop over all directions.
-#pragma unroll
-                for (int dir = 0; dir < num_dir_; ++dir) {
-
-					if (on_northern_boundary || on_southern_boundary) {
-
-						// Exchange the states of the nodes with the the states of
-						// the mirrored directions along the x axis.
-                        node_state_tmp[dir] = node_state[Model::MIR_DIR_X[dir]];
-					}
-
-					if (on_eastern_boundary || on_western_boundary) {
-
-						// Exchange the states of the nodes with the the states of
-						// the mirrored directions along the y axis.
-                        node_state_tmp[dir] = node_state[Model::MIR_DIR_Y[dir]];
-					}
-				}
-
-				break;
-			}
-
-	#ifdef DEBUG
-			// Invalid cell type.
-			default:
-			{
-				printf("ERROR in OMP_Lattice::collide_and_propagate(): "
-					   "Invalid cell type %d.\n", cell_type);
-				break;
-			}
-	#endif
-
-		}
-
-		// Execute propagation step.
-		//
-		// Loop over all directions.
-#pragma unroll
-        for (int dir = 0; dir < num_dir_; dir++)
-		{
-			// Reset the memory offset.
-			int offset = 0;
-
-            // The cell is located in a row with even index value.
-            if (pos_y % 2 == 0)
-            {
-				// Construct the correct memory offset.
-				//
-				// Apply a default offset value.
-                offset += m_model->offset_to_neighbor_even[dir];
-
-				// Correct the offset in the current direction if the cell is
-				// located on boundaries.
-				if (on_eastern_boundary) {
-
-                    offset += m_model->offset_to_western_boundary_even[dir];
-				}
-
-				if (on_northern_boundary) {
-
-                    offset += m_model->offset_to_southern_boundary_even[dir];
-				}
-
-				if (on_western_boundary) {
-
-                    offset += m_model->offset_to_eastern_boundary_even[dir];
-				}
-
-				if (on_southern_boundary) {
-
-                    offset += m_model->offset_to_northern_boundary_even[dir];
-				}
-
-            // The cell is located in a row with odd index value.
-            } else if (pos_y % 2 != 0) {
-
-				// Construct the correct memory offset.
-				//
-				// Apply a default offset value.
-                offset += m_model->offset_to_neighbor_odd[dir];
-
-				// Correct the offset in the current direction if the cell is
-				// located on boundaries.
-				if (on_eastern_boundary) {
-
-                    offset += m_model->offset_to_western_boundary_odd[dir];
-				}
-
-				if (on_northern_boundary) {
-
-                    offset += m_model->offset_to_southern_boundary_odd[dir];
-				}
-
-				if (on_western_boundary) {
-
-                    offset += m_model->offset_to_eastern_boundary_odd[dir];
-				}
-
-				if (on_southern_boundary) {
-
-                    offset += m_model->offset_to_northern_boundary_odd[dir];
-				}
+//                node_idx[dir] = cell + dir * this->m_num_cells;
+                node_idx[dir] = dir + cell * num_dir_;
+                node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
             }
 
-			// Push the states of the cell to its "neighbor" cells in the
-			// different directions.
-            node_state_tmp_cpu[node_idx[dir] + offset] = bool(node_state_tmp[dir]);
-		}
+            // TODO: Create a random boolean value for the collision step.
+            // bool rand_bool = cu_random_bool(seed, cell);
+            bool rand_bool =       ((pos_x % 2) == (pos_y % 2))
+                             - 1 * ((pos_x % 2) == (pos_y % 2)) * (step % 2)
+                             + 1 * ((pos_x % 2) != (pos_y % 2)) * (step % 2);
 
-    } /* FOR cell */
-    });
+            // Create a temporary array to copy the node states into.
+            char node_state_tmp[num_dir_];
+
+            // Copy the actual states of the nodes to the temporary array.
+#pragma unroll
+            for (int dir = 0; dir < num_dir_; ++dir) {
+
+                node_state_tmp[dir] = node_state[dir];
+            }
+
+            switch (cell_type) {
+
+                // The cell working on is a fluid cell ("normal" collision).
+                case 0:
+                {
+                    // Using the the HPP model.
+                    if (num_dir_ == 4) {
+
+        //                    // Collision case 1.
+        //                    if ((node_state[0] == 0) &&
+        //                        (node_state[1] == 1) &&
+        //                        (node_state[2] == 0) &&
+        //                        (node_state[3] == 1)) {
+        //
+        //                        node_state_tmp[0] = 1;
+        //                        node_state_tmp[1] = 0;
+        //                        node_state_tmp[2] = 1;
+        //                        node_state_tmp[3] = 0;
+        //
+        //                        break;
+        //                    }
+        //
+        //                    // Collision case 2.
+        //                    if ((node_state[0] == 1) &&
+        //                        (node_state[1] == 0) &&
+        //                        (node_state[2] == 1) &&
+        //                        (node_state[3] == 0)) {
+        //
+        //                        node_state_tmp[0] = 0;
+        //                        node_state_tmp[1] = 1;
+        //                        node_state_tmp[2] = 0;
+        //                        node_state_tmp[3] = 1;
+        //
+        //                        break;
+        //                    }
+
+                        node_state_tmp[0] = node_state[0]
+                                - (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]))
+                                + (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]));
+
+                        node_state_tmp[1] = node_state[1]
+                                - (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]))
+                                + (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]));
+
+                        node_state_tmp[2] = node_state[2]
+                                - (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]))
+                                + (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]));
+
+                        node_state_tmp[3] = node_state[3]
+                                - (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]))
+                                + (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]));
+
+                    // Collision cases of the FHP model.
+                    } else if (num_dir_ == 6) {
+
+                        // Collision case a1.
+                        if ((node_state[0] == 1) &&
+                            (node_state[1] == 0) &&
+                            (node_state[2] == 0) &&
+                            (node_state[3] == 1) &&
+                            (node_state[4] == 0) &&
+                            (node_state[5] == 0)) {
+
+                            node_state_tmp[0] = 0;
+                            node_state_tmp[1] = rand_bool;
+                            node_state_tmp[2] = 1 - node_state_tmp[1];
+                            node_state_tmp[3] = 0;
+                            node_state_tmp[4] = node_state_tmp[1];
+                            node_state_tmp[5] = node_state_tmp[2];
+
+                            break;
+                        }
+
+                        // Collision case a2.
+                        if ((node_state[0] == 0) &&
+                            (node_state[1] == 1) &&
+                            (node_state[2] == 0) &&
+                            (node_state[3] == 0) &&
+                            (node_state[4] == 1) &&
+                            (node_state[5] == 0)) {
+
+                            node_state_tmp[0] = rand_bool;
+                            node_state_tmp[1] = 0;
+                            node_state_tmp[2] = 1 - node_state_tmp[0];
+                            node_state_tmp[3] = node_state_tmp[0];
+                            node_state_tmp[4] = 0;
+                            node_state_tmp[5] = node_state_tmp[2];
+
+                            break;
+                        }
+
+                        // Collision case a3.
+                        if ((node_state[0] == 0) &&
+                            (node_state[1] == 0) &&
+                            (node_state[2] == 1) &&
+                            (node_state[3] == 0) &&
+                            (node_state[4] == 0) &&
+                            (node_state[5] == 1)) {
+
+                            node_state_tmp[0] = rand_bool;
+                            node_state_tmp[1] = 1 - node_state_tmp[0];
+                            node_state_tmp[2] = 0;
+                            node_state_tmp[3] = node_state_tmp[0];
+                            node_state_tmp[4] = node_state_tmp[1];
+                            node_state_tmp[5] = 0;
+
+                            break;
+                        }
+
+                        // Collision case b1.
+                        if ((node_state[0] == 0) &&
+                            (node_state[1] == 1) &&
+                            (node_state[2] == 0) &&
+                            (node_state[3] == 1) &&
+                            (node_state[4] == 0) &&
+                            (node_state[5] == 1)) {
+
+                            node_state_tmp[0] = 1;
+                            node_state_tmp[1] = 0;
+                            node_state_tmp[2] = 1;
+                            node_state_tmp[3] = 0;
+                            node_state_tmp[4] = 1;
+                            node_state_tmp[5] = 0;
+
+                            break;
+                        }
+
+                        // Collision case b2.
+                        if ((node_state[0] == 1) &&
+                            (node_state[1] == 0) &&
+                            (node_state[2] == 1) &&
+                            (node_state[3] == 0) &&
+                            (node_state[4] == 1) &&
+                            (node_state[5] == 0)) {
+
+                            node_state_tmp[0] = 0;
+                            node_state_tmp[1] = 1;
+                            node_state_tmp[2] = 0;
+                            node_state_tmp[3] = 1;
+                            node_state_tmp[4] = 0;
+                            node_state_tmp[5] = 1;
+
+                            break;
+                        }
+
+        //                    node_state_tmp[0] = node_state[0]
+        //                            - (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5]))
+        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
+        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
+        //                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
+        //                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
+        //
+        //                    node_state_tmp[1] = node_state[1]
+        //                            - (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5]))
+        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
+        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
+        //                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
+        //                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
+        //
+        //                    node_state_tmp[2] = node_state[2]
+        //                            - (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4]))
+        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
+        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * (1 - rand_bool)
+        //                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
+        //                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
+        //
+        //                    node_state_tmp[3] = node_state[3]
+        //                            - (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5]))
+        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
+        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
+        //                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
+        //                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
+        //
+        //                    node_state_tmp[4] = node_state[4]
+        //                            - (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5]))
+        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
+        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
+        //                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
+        //                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
+        //
+        //                    node_state_tmp[5] = node_state[5]
+        //                            - (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4]))
+        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
+        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * (1 - rand_bool)
+        //                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
+        //                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
+                    }
+
+        #ifndef NDEBUG
+                    else {
+
+                        printf("ERROR in OMP_Lattice::collide_and_propagate(): "
+                               "Invalid number of directions %d.\n", n_dir);
+                    }
+        #endif
+
+                    break;
+                }
+
+                // The cell working on is a solid cell of bounce back type.
+                case 1:
+                {
+                    // Loop over all directions.
+#pragma unroll
+                    for (int dir = 0; dir < num_dir_; ++dir) {
+
+                        // Exchange the states of the nodes with the the states of
+                        // the inverse directions.
+                        node_state_tmp[dir] = node_state[Model::INV_DIR[dir]];
+                    }
+
+                    break;
+                }
+
+                // TODO: The cell working on is a solid cell of bounce forward type.
+                case 2:
+                {
+                    // Loop over all directions.
+#pragma unroll
+                    for (int dir = 0; dir < num_dir_; ++dir) {
+
+                        if (on_northern_boundary || on_southern_boundary) {
+
+                            // Exchange the states of the nodes with the the states of
+                            // the mirrored directions along the x axis.
+                            node_state_tmp[dir] = node_state[Model::MIR_DIR_X[dir]];
+                        }
+
+                        if (on_eastern_boundary || on_western_boundary) {
+
+                            // Exchange the states of the nodes with the the states of
+                            // the mirrored directions along the y axis.
+                            node_state_tmp[dir] = node_state[Model::MIR_DIR_Y[dir]];
+                        }
+                    }
+
+                    break;
+                }
+
+#ifndef NDEBUG
+                // Invalid cell type.
+                default:
+                {
+                    printf("ERROR in OMP_Lattice::collide_and_propagate(): "
+                           "Invalid cell type %d.\n", cell_type);
+                    break;
+                }
+#endif
+            }
+
+            // Execute propagation step.
+            //
+            // Loop over all directions.
+#pragma unroll
+            for (int dir = 0; dir < num_dir_; dir++)
+            {
+                // Reset the memory offset.
+                int offset = 0;
+
+                // The cell is located in a row with even index value.
+                if (pos_y % 2 == 0)
+                {
+                    // Construct the correct memory offset.
+                    //
+                    // Apply a default offset value.
+                    offset += m_model->offset_to_neighbor_even[dir];
+
+                    // Correct the offset in the current direction if the cell is
+                    // located on boundaries.
+                    if (on_eastern_boundary) {
+
+                        offset += m_model->offset_to_western_boundary_even[dir];
+                    }
+
+                    if (on_northern_boundary) {
+
+                        offset += m_model->offset_to_southern_boundary_even[dir];
+                    }
+
+                    if (on_western_boundary) {
+
+                        offset += m_model->offset_to_eastern_boundary_even[dir];
+                    }
+
+                    if (on_southern_boundary) {
+
+                        offset += m_model->offset_to_northern_boundary_even[dir];
+                    }
+
+                // The cell is located in a row with odd index value.
+                } else if (pos_y % 2 != 0) {
+
+                    // Construct the correct memory offset.
+                    //
+                    // Apply a default offset value.
+                    offset += m_model->offset_to_neighbor_odd[dir];
+
+                    // Correct the offset in the current direction if the cell is
+                    // located on boundaries.
+                    if (on_eastern_boundary) {
+
+                        offset += m_model->offset_to_western_boundary_odd[dir];
+                    }
+
+                    if (on_northern_boundary) {
+
+                        offset += m_model->offset_to_southern_boundary_odd[dir];
+                    }
+
+                    if (on_western_boundary) {
+
+                        offset += m_model->offset_to_eastern_boundary_odd[dir];
+                    }
+
+                    if (on_southern_boundary) {
+
+                        offset += m_model->offset_to_northern_boundary_odd[dir];
+                    }
+                }
+
+                // Push the states of the cell to its "neighbor" cells in the
+                // different directions.
+//                m_node_state_tmp_cpu[node_idx[dir] + offset] = bool(node_state_tmp[dir]);
+                m_node_state_tmp_cpu[node_idx[dir] + offset * num_dir_] = bool(node_state_tmp[dir]);
+            }
+
+        } /* FOR cell */
+
+    }}); /* FOR block */
 
     // Update the node states.
     auto node_state_cpu_tmp = this->m_node_state_cpu.ptr();
-    this->m_node_state_cpu = node_state_tmp_cpu.ptr();
-    node_state_tmp_cpu = node_state_cpu_tmp;
+    this->m_node_state_cpu = m_node_state_tmp_cpu.ptr();
+    m_node_state_tmp_cpu = node_state_cpu_tmp;
 }
 
 // Applies a body force in the specified direction (x or y) and with the
@@ -504,7 +510,8 @@ void OMP_Lattice<num_dir_>:: OMP_Lattice::apply_body_force(const int forcing) {
 #pragma unroll
             for (int dir = 0; dir < num_dir_; ++dir) {
 
-                node_idx[dir] = cell + dir * this->m_num_cells;
+//                node_idx[dir] = cell + dir * this->m_num_cells;
+                node_idx[dir] = dir + cell * num_dir_;
                 node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
             }
 
@@ -647,7 +654,8 @@ void OMP_Lattice<num_dir_>::cell_post_process()
 #pragma unroll
         for (int dir = 0; dir < num_dir_; ++dir) {
 
-            int node_idx = cell + dir * this->m_num_cells;
+//            int node_idx = cell + dir * this->m_num_cells;
+            int node_idx = dir + cell * num_dir_;
             char node_state = bool(this->m_node_state_out_cpu[node_idx]);
 
             // Sum up the node states
@@ -672,10 +680,16 @@ void OMP_Lattice<num_dir_>::cell_post_process()
 template<int num_dir_>
 void OMP_Lattice<num_dir_>::mean_post_process()
 {
-    // Loop over all cells
-    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_cells), [&](const tbb::blocked_range<int>& r) {
-    for (int cell = r.begin(); cell != r.end(); ++cell)
+    const int r = this->m_coarse_graining_radius;
+
+    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_coarse_cells), [&](const tbb::blocked_range<int>& range) {
+    for (int coarse_cell = range.begin(); coarse_cell != range.end(); ++coarse_cell)
     {
+        // Get cell in the middle of the coarse cell
+        const int cell = r + r * this->m_dim_x
+                + (coarse_cell % this->m_coarse_dim_x) * (2 * r + 1)
+                + (coarse_cell / this->m_coarse_dim_x) * (2 * r + 1) * this->m_dim_x;
+
         // Calculate the position of the cell in x direction
         int pos_x = cell % this->m_dim_x;
 
@@ -690,9 +704,9 @@ void OMP_Lattice<num_dir_>::mean_post_process()
         // The thread working on the cell has to know the cell quantities of the coarse graining
         // neighbor cells, therefore looping over all neighbor cells and look it up
 #pragma unroll
-        for (int y = -this->m_coarse_graining_radius; y <= this->m_coarse_graining_radius; ++y) {
+        for (int y = -r; y <= r; ++y) {
 
-            for (int x = -this->m_coarse_graining_radius; x <= this->m_coarse_graining_radius; ++x) {
+            for (int x = -r; x <= r; ++x) {
 
                 // Get the index of the coarse graining neighbor cell
                 int neighbor_idx = cell + y * this->m_dim_x + x;
@@ -703,7 +717,7 @@ void OMP_Lattice<num_dir_>::mean_post_process()
                 // Check weather the coarse graining neighbor cell is valid
                 if ((neighbor_idx >= 0) &&
                     (neighbor_idx < this->m_num_cells) &&
-                    (abs(pos_x_neighbor - pos_x) <= this->m_coarse_graining_radius)) {
+                    (abs(pos_x_neighbor - pos_x) <= r)) {
 
                     // Increase the number of existing coarse graining neighbor cells
                     n_exist_neighbors++;
@@ -716,35 +730,34 @@ void OMP_Lattice<num_dir_>::mean_post_process()
         }
 
         // Write the computed coarse grained quantities to the related data arrays
-        this->m_mean_density_cpu [cell                    ] = mean_density    / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[cell                    ] = mean_momentum_x / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[cell + this->m_num_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
+        this->m_mean_density_cpu [coarse_cell                           ] = mean_density    / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[coarse_cell                           ] = mean_momentum_x / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[coarse_cell + this->m_num_coarse_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
 
-    } // for cell
-    });
+    }}); // for coarse_cell
 }
 
-// Allocates the memory for the arrays on the host (CPU).
+// Allocates the memory for the arrays on the host (CPU)
 template<int num_dir_>
 void OMP_Lattice<num_dir_>::allocate_memory()
 {
-    // Allocate host memory.
-    cu_verify(cudaMallocHost((void **) &this->m_cell_type_cpu,                           this->m_num_cells * sizeof(char)));
-    cu_verify(cudaMallocHost((void **) &this->m_cell_density_cpu,                        this->m_num_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_mean_density_cpu,                        this->m_num_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_cell_momentum_cpu, this->m_spatial_dim * this->m_num_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_mean_momentum_cpu, this->m_spatial_dim * this->m_num_cells * sizeof(Real)));
+    // Allocate host memory
+    cu_verify(cudaMallocHost((void **) &this->m_cell_type_cpu,                           this->m_num_cells        * sizeof(char)));
+    cu_verify(cudaMallocHost((void **) &this->m_cell_density_cpu,                        this->m_num_cells        * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_mean_density_cpu,                        this->m_num_coarse_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_cell_momentum_cpu, this->m_spatial_dim * this->m_num_cells        * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_mean_momentum_cpu, this->m_spatial_dim * this->m_num_coarse_cells * sizeof(Real)));
 
     this->m_node_state_cpu.resize    (this->m_num_nodes);
-            node_state_tmp_cpu.resize(this->m_num_nodes);
+          m_node_state_tmp_cpu.resize(this->m_num_nodes);
     this->m_node_state_out_cpu.resize(this->m_num_nodes);
 }
 
-// Frees the memory for the arrays on the host (CPU).
+// Frees the memory for the arrays on the host (CPU)
 template<int num_dir_>
 void OMP_Lattice<num_dir_>::free_memory()
 {
-    // Free CPU memory.
+    // Free CPU memory
     cu_verify(cudaFreeHost(this->m_cell_type_cpu));
     cu_verify(cudaFreeHost(this->m_cell_density_cpu));
     cu_verify(cudaFreeHost(this->m_mean_density_cpu));
@@ -758,7 +771,7 @@ void OMP_Lattice<num_dir_>::free_memory()
     this->m_mean_momentum_cpu   = NULL;
 }
 
-// Sets (proper) parallelization parameters.
+// Sets (proper) parallelization parameters
 template<int num_dir_>
 void OMP_Lattice<num_dir_>::setup_parallel()
 {

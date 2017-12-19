@@ -141,18 +141,17 @@ Lattice<num_dir_>::Lattice(const string test_case,
     if (num_dir_ == 6) assert(m_dim_y % 2 == 0);
     this->m_dim_y = m_dim_y;
 
-    // Set the total number of cells.
     m_num_cells = m_dim_x * m_dim_y;
-
-    // Set the total number of nodes in the lattice.
     m_num_nodes = m_num_cells * num_dir_;
 
-    // Set the initial number of particles in the lattice.
     m_num_particles = 0;
 
-    // Set the coarse graining radius.
     assert(coarse_graining_radius > 0);
     this->m_coarse_graining_radius = coarse_graining_radius;
+
+    this->m_coarse_dim_x     = (m_dim_x - 1) / (2 * m_coarse_graining_radius + 1) + 1;
+    this->m_coarse_dim_y     = (m_dim_y - 1) / (2 * m_coarse_graining_radius + 1) + 1;
+    this->m_num_coarse_cells = m_coarse_dim_x * m_coarse_dim_y;
 
     print_info();
 }
@@ -168,14 +167,6 @@ template<int num_dir_>
 void Lattice<num_dir_>::init_zero() {
 
     // Bitset is initialized with zeros anyway
-
-    // Loop over all the nodes.
-#pragma omp parallel for
-    for (int n = 0; n < m_num_nodes; ++n) {
-
-        // Initialize the lattice with zeros.
-        m_node_state_cpu[n] = bool(0);
-    }
 }
 
 // Prints the lattice to the screen.
@@ -225,6 +216,8 @@ void Lattice<num_dir_>::print() {
 // Returns the number of particles in the lattice.
 template<int num_dir_>
 unsigned int Lattice<num_dir_>::get_n_particles() {
+
+    // TODO Implement ad use count() function in Bitset class
 
     int n_particles = 0;
 
@@ -351,8 +344,10 @@ void Lattice<num_dir_>::init_single_collision() {
 	}
 
     std::vector<int> occupied_nodes;
-    occupied_nodes.push_back(m_dim_x * m_dim_y / 4 + 1);
-    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) + inverse_dir * m_num_cells);
+//    occupied_nodes.push_back(m_dim_x * m_dim_y / 4 + 1);
+//    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) + inverse_dir * m_num_cells);
+    occupied_nodes.push_back((m_dim_x * m_dim_y/2 + 1) * num_dir_);
+    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) * num_dir_ + inverse_dir);
 
     init_single(occupied_nodes);
 }
@@ -515,10 +510,6 @@ template<int num_dir_>
 void Lattice<num_dir_>::copy_data_to_output_buffer()
 {
     m_node_state_out_cpu.copy(m_node_state_cpu);
-
-//    std::memcpy(/*dest=*/(void*)node_state_out_cpu,
-//                /*src=*/(const void*)node_state_cpu,
-//                /*bytes=*/n_nodes * sizeof(char));
 }
 
 // Computes the number of particles to revert in the context of body force
@@ -569,7 +560,8 @@ void Lattice<num_dir_>::init_diffusion()
             for (int dir = 0; dir < num_dir_; ++dir) {
 
                 // Set random states for the nodes in the fluid cell.
-                m_node_state_cpu[cell + dir * m_num_cells] =
+//                m_node_state_cpu[cell + dir * m_num_cells] =
+                m_node_state_cpu[dir + cell * num_dir_] =
                         bool(random_uniform() > (1.0 - (1.0 / num_dir_)));
             }
 	    }

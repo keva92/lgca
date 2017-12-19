@@ -27,6 +27,7 @@
 #include "vtkFloatArray.h"
 #include "vtkSOADataArrayTemplate.h"
 #include "vtkCellData.h"
+#include "vtkPointData.h"
 #include "vtkXMLImageDataWriter.h"
 
 #include <sstream>
@@ -34,42 +35,49 @@
 namespace lgca {
 
 template<int num_dir_>
-IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : mLattice(lattice)
+IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattice(lattice)
 {
-    mImageData = vtkImageData::New();
-    assert(mLattice);
-    assert(mImageData);
+    assert(m_lattice);
 
-    mImageData->Initialize();
-    mImageData->SetDimensions(mLattice->dim_x() + 1, mLattice->dim_y() + 1, 1); // Number of points in each direction
+    m_cell_image_data = vtkImageData::New();
+    m_mean_image_data = vtkImageData::New();
+    assert(m_cell_image_data);
+    assert(m_mean_image_data);
+
+    m_cell_image_data->Initialize();
+    m_mean_image_data->Initialize();
+
+    m_mean_image_data->SetDimensions(m_lattice->coarse_dim_x(), m_lattice->coarse_dim_y(), 1);         // TODO Use vtkCellDataToPointData?
+    m_cell_image_data->SetDimensions(m_lattice->       dim_x() + 1, m_lattice->       dim_y() + 1, 1); // Number of points in each direction
 
     // Pass pointer to cell density array of the lattice to the image data object
     vtkFloatArray* cell_density = vtkFloatArray::New();
     cell_density->SetName("Cell density");
     cell_density->SetNumberOfComponents(1);
-    cell_density->SetArray((float*)(mLattice->cell_density()), mLattice->num_cells(), /*save=*/1);
-    mImageData->GetCellData()->AddArray(cell_density);
+    cell_density->SetArray((float*)(m_lattice->cell_density()), m_lattice->num_cells(), /*save=*/1);
+    m_cell_image_data->GetCellData()->AddArray(cell_density);
     cell_density->Delete();
 
     // Pass pointer to mean density array of the lattice to the image data object
     vtkFloatArray* mean_density = vtkFloatArray::New();
     mean_density->SetName("Mean density");
     mean_density->SetNumberOfComponents(1);
-    mean_density->SetArray((float*)(mLattice->mean_density()), mLattice->num_cells(), /*save=*/1);
-    mImageData->GetCellData()->AddArray(mean_density);
+    mean_density->SetArray((float*)(m_lattice->mean_density()), m_lattice->num_coarse_cells(), /*save=*/1);
+    m_mean_image_data->GetPointData()->AddArray(mean_density);
     mean_density->Delete();
 
     // Pass pointer to cell momentum array of the lattice to the image data object
     vtkSOADataArrayTemplate<float>* cell_momentum = vtkSOADataArrayTemplate<float>::New();
     cell_momentum->SetName("Cell momentum");
     cell_momentum->SetNumberOfComponents(2);
-    cell_momentum->SetArray(/*comp=*/0, (float*)(mLattice->cell_momentum()), mLattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
-    cell_momentum->SetArray(/*comp=*/1, (float*)(mLattice->cell_momentum()) + mLattice->num_cells(), mLattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
-    mImageData->GetCellData()->AddArray(cell_momentum);
+    cell_momentum->SetArray(/*comp=*/0, (float*)(m_lattice->cell_momentum()), m_lattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
+    cell_momentum->SetArray(/*comp=*/1, (float*)(m_lattice->cell_momentum()) + m_lattice->num_cells(), m_lattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
+    m_cell_image_data->GetCellData()->AddArray(cell_momentum);
     cell_momentum->Delete();
 
     // Set active array for on-line visualization
-    mImageData->GetCellData()->SetActiveScalars(scalars.c_str());
+    m_cell_image_data->GetCellData()->SetActiveScalars(scalars.c_str());
+    m_mean_image_data->GetPointData()->SetActiveScalars(scalars.c_str());
 
     // Mark image data object as modified
     this->update();
@@ -78,8 +86,11 @@ IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : mLatti
 template<int num_dir_>
 void IoVti<num_dir_>::update()
 {
-    assert(mImageData);
-    mImageData->Modified();
+    assert(m_cell_image_data);
+    assert(m_mean_image_data);
+
+    m_cell_image_data->Modified();
+    m_mean_image_data->Modified();
 }
 
 template<int num_dir_>
@@ -93,19 +104,29 @@ void IoVti<num_dir_>::write(const unsigned int step)
     bool write_cell_velocity = false;
     bool write_mean_velocity = false;
 
-    // Compose file name.
-    std::ostringstream filename;
-    filename << "../res/res_" << step << ".vti";
+    // Compose file name
+    std::ostringstream cell_filename, mean_filename;
+    cell_filename << "../res/cell_res_" << step << ".vti";
+    mean_filename << "../res/mean_res_" << step << ".vti";
 
-    printf("Writing results to file %s...\n", filename.str().c_str());
+    printf("Writing results to files %s and %s...\n",
+           cell_filename.str().c_str(), mean_filename.str().c_str());
 
-    vtkXMLImageDataWriter* writer = vtkXMLImageDataWriter::New();
-    writer->SetFileName(filename.str().c_str());
-    writer->SetInputData(mImageData);
-    writer->SetCompressorTypeToLZ4();
-    writer->SetDataModeToBinary();
-    writer->Write();
-    writer->Delete();
+    vtkXMLImageDataWriter* cell_data_writer = vtkXMLImageDataWriter::New();
+    cell_data_writer->SetFileName(cell_filename.str().c_str());
+    cell_data_writer->SetInputData(m_cell_image_data);
+    cell_data_writer->SetCompressorTypeToLZ4();
+    cell_data_writer->SetDataModeToBinary();
+    cell_data_writer->Write();
+    cell_data_writer->Delete();
+
+    vtkXMLImageDataWriter* mean_data_writer = vtkXMLImageDataWriter::New();
+    mean_data_writer->SetFileName(mean_filename.str().c_str());
+    mean_data_writer->SetInputData(m_mean_image_data);
+    mean_data_writer->SetCompressorTypeToLZ4();
+    mean_data_writer->SetDataModeToBinary();
+    mean_data_writer->Write();
+    mean_data_writer->Delete();
 
     printf("...done.\n");
 }

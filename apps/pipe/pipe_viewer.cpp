@@ -88,7 +88,7 @@ PipeView::PipeView(QWidget *parent) :
     m_vti_io_handler = new IoVti<NUM_DIR>(m_lattice, "Mean density");
 
     vtkNew<vtkImageDataGeometryFilter> geomFilter;
-    geomFilter->SetInputData(m_vti_io_handler->image());
+    geomFilter->SetInputData(m_vti_io_handler->mean_image());
     geomFilter->Update();
     vtkNew<vtkPolyDataMapper> mapper;
     mapper->SetInputConnection(geomFilter->GetOutputPort());
