@@ -32,7 +32,7 @@ class Bitset
 {
 public:
 
-    using Block = uint64_t;
+    using Block = uint8_t;
     using Mutex = tbb::spin_mutex; // TODO Maybe there's a more suitable mutex type
 
     static constexpr Block BITS_PER_BLOCK = std::numeric_limits<Block>::digits;
@@ -118,7 +118,22 @@ public:
     // Return a reference to the bit at position pos
     inline reference operator[](size_t pos)
     {
+        assert(pos < m_num_bits);
         return reference(m_bits[block_idx(pos)], m_mutexes[block_idx(pos)], bit_idx(pos));
+    }
+
+    // Return the value of the block at position pos
+    inline Block operator()(size_t pos) const
+    {
+        assert(pos < m_num_blocks);
+        return m_bits[pos];
+    }
+
+    // Return a reference to the block at position pos
+    inline Block& operator()(size_t pos)
+    {
+        assert(pos < m_num_blocks);
+        return m_bits[pos];
     }
 
     // Set the bit at position pos to the value value
@@ -210,7 +225,7 @@ private:
         return size / BITS_PER_BLOCK + static_cast<int>(size % BITS_PER_BLOCK != 0);
     }
 
-    // Bits are represented as a linear array of Blocks, and the size of a Block is 64 bits
+    // Bits are represented as a linear array of Blocks, and the size of a Block is 8 bits
     Block* m_bits;
     Mutex* m_mutexes;
 
