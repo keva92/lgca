@@ -114,11 +114,12 @@ void OMP_Lattice<num_dir_>::collide_and_propagate(unsigned int step) {
                 node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
             }
 
-            // TODO: Create a random boolean value for the collision step.
+            // TODO Create a random boolean value for the collision step.
             // bool rand_bool = cu_random_bool(seed, cell);
-            bool rand_bool =       ((pos_x % 2) == (pos_y % 2))
-                             - 1 * ((pos_x % 2) == (pos_y % 2)) * (step % 2)
-                             + 1 * ((pos_x % 2) != (pos_y % 2)) * (step % 2);
+//            bool rand_bool =       ((pos_x % 2) == (pos_y % 2))
+//                             - 1 * ((pos_x % 2) == (pos_y % 2)) * (step % 2)
+//                             + 1 * ((pos_x % 2) != (pos_y % 2)) * (step % 2);
+            bool rand_bool = false;
 
             // Create a temporary array to copy the node states into.
             char node_state_tmp[num_dir_];
@@ -654,9 +655,7 @@ void OMP_Lattice<num_dir_>::cell_post_process()
 #pragma unroll
         for (int dir = 0; dir < num_dir_; ++dir) {
 
-//            int node_idx = cell + dir * this->m_num_cells;
-            int node_idx = dir + cell * num_dir_;
-            char node_state = bool(this->m_node_state_out_cpu[node_idx]);
+            char node_state = bool(this->m_node_state_out_cpu[dir + cell * num_dir_]);
 
             // Sum up the node states
             cell_density += node_state;
@@ -668,9 +667,9 @@ void OMP_Lattice<num_dir_>::cell_post_process()
         }
 
         // Write the computed cell quantities to the related data arrays
-        this->m_cell_density_cpu [cell                    ] = (Real) cell_density;
-        this->m_cell_momentum_cpu[cell                    ] =        cell_momentum_x;
-        this->m_cell_momentum_cpu[cell + this->m_num_cells] =        cell_momentum_y;
+        this->m_cell_density_cpu [cell                        ] = (Real) cell_density;
+        this->m_cell_momentum_cpu[cell * this->SPATIAL_DIM    ] = cell_momentum_x;
+        this->m_cell_momentum_cpu[cell * this->SPATIAL_DIM + 1] = cell_momentum_y;
 
     } // for cell
     });
@@ -722,17 +721,17 @@ void OMP_Lattice<num_dir_>::mean_post_process()
                     // Increase the number of existing coarse graining neighbor cells
                     n_exist_neighbors++;
 
-                    mean_density    += this->m_cell_density_cpu [neighbor_idx                    ];
-                    mean_momentum_x += this->m_cell_momentum_cpu[neighbor_idx                    ];
-                    mean_momentum_y += this->m_cell_momentum_cpu[neighbor_idx + this->m_num_cells];
+                    mean_density    += this->m_cell_density_cpu [neighbor_idx                        ];
+                    mean_momentum_x += this->m_cell_momentum_cpu[neighbor_idx * this->SPATIAL_DIM    ];
+                    mean_momentum_y += this->m_cell_momentum_cpu[neighbor_idx * this->SPATIAL_DIM + 1];
                 }
             }
         }
 
         // Write the computed coarse grained quantities to the related data arrays
-        this->m_mean_density_cpu [coarse_cell                           ] = mean_density    / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[coarse_cell                           ] = mean_momentum_x / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[coarse_cell + this->m_num_coarse_cells] = mean_momentum_y / ((Real) n_exist_neighbors);
+        this->m_mean_density_cpu [coarse_cell                        ] = mean_density    / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[coarse_cell * this->SPATIAL_DIM    ] = mean_momentum_x / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[coarse_cell * this->SPATIAL_DIM + 1] = mean_momentum_y / ((Real) n_exist_neighbors);
 
     }}); // for coarse_cell
 }
@@ -745,8 +744,8 @@ void OMP_Lattice<num_dir_>::allocate_memory()
     cu_verify(cudaMallocHost((void **) &this->m_cell_type_cpu,                           this->m_num_cells        * sizeof(char)));
     cu_verify(cudaMallocHost((void **) &this->m_cell_density_cpu,                        this->m_num_cells        * sizeof(Real)));
     cu_verify(cudaMallocHost((void **) &this->m_mean_density_cpu,                        this->m_num_coarse_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_cell_momentum_cpu, this->m_spatial_dim * this->m_num_cells        * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_mean_momentum_cpu, this->m_spatial_dim * this->m_num_coarse_cells * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_cell_momentum_cpu,   this->SPATIAL_DIM * this->m_num_cells        * sizeof(Real)));
+    cu_verify(cudaMallocHost((void **) &this->m_mean_momentum_cpu,   this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(Real)));
 
     this->m_node_state_cpu.resize    (this->m_num_nodes);
           m_node_state_tmp_cpu.resize(this->m_num_nodes);
@@ -791,7 +790,7 @@ void OMP_Lattice<num_dir_>::setup_parallel()
 template<int num_dir_>
 std::vector<Real> OMP_Lattice<num_dir_>::get_mean_velocity() {
 
-    std::vector<Real> mean_velocity(this->m_spatial_dim, 0.0);
+    std::vector<Real> mean_velocity(this->SPATIAL_DIM, 0.0);
 
     Real sum_x_vel = 0.0;
     Real sum_y_vel = 0.0;
@@ -810,8 +809,8 @@ std::vector<Real> OMP_Lattice<num_dir_>::get_mean_velocity() {
 
 			if (cell_density > 1.0e-06) {
 
-                sum_x_vel += this->m_cell_momentum_cpu[n                    ] / cell_density;
-                sum_y_vel += this->m_cell_momentum_cpu[n + this->m_num_cells] / cell_density;
+                sum_x_vel += this->m_cell_momentum_cpu[n * this->SPATIAL_DIM    ] / cell_density;
+                sum_y_vel += this->m_cell_momentum_cpu[n * this->SPATIAL_DIM + 1] / cell_density;
 			}
 
 #ifdef DEBUG

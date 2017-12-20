@@ -22,6 +22,18 @@
 
 #include "lgca_common.h"
 
+#include <vtkNew.h>
+#include <vtkImageData.h>
+#include <vtkImageDataGeometryFilter.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkActor.h>
+#include <vtkProperty.h>
+#include <vtkRenderer.h>
+#include <vtkScalarBarActor.h>
+#include <vtkTextProperty.h>
+#include <vtkLookupTable.h>
+#include <vtkRenderWindow.h>
+
 #include <QMainWindow>
 
 // Forward Qt class declarations
@@ -52,12 +64,22 @@ public slots:
 
     void run();
     void stop();
+    void rescale();
 
 private:
 
     Ui::PipeView*     m_ui;
     Lattice<NUM_DIR>* m_lattice;
     IoVti  <NUM_DIR>* m_vti_io_handler;
+
+    vtkImageDataGeometryFilter* m_geom_filter;
+    vtkPolyDataMapper*          m_mapper;
+    vtkActor*                   m_actor;
+    vtkRenderer*                m_ren;
+    vtkScalarBarActor*          m_scalar_bar;
+    vtkTextProperty*            m_scalar_bar_txt;
+    vtkLookupTable*             m_lut;
+    vtkRenderWindow*            m_ren_win;
 
     int               m_mnups;
     int               m_num_particles;

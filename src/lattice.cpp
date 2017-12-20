@@ -55,13 +55,13 @@ Lattice<num_dir_>::Lattice(const string test_case,
     m_nu = 1.0 / 12.0 * 1.0 / (m_d * pow((1.0 - m_d), 3.0)) - 1.0 / 8.0;
 
     // Compute the Galilean breaking factor.
-    m_g = m_spatial_dim / (m_spatial_dim + 2.0) * (1.0 - 2.0 * m_d) / (1.0 - m_d);
+    m_g = SPATIAL_DIM / (SPATIAL_DIM + 2.0) * (1.0 - 2.0 * m_d) / (1.0 - m_d);
 
     // Compute the viscosity.
     m_nu_s = m_nu / m_g;
 
     // Get the scaled sound speed.
-    m_c_s = m_c / sqrt(m_spatial_dim);
+    m_c_s = m_c / sqrt(SPATIAL_DIM);
 
     // Get the velocity.
     m_u = this->m_Ma_s * m_c_s;

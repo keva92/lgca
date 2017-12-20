@@ -67,13 +67,20 @@ IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : m_latt
     mean_density->Delete();
 
     // Pass pointer to cell momentum array of the lattice to the image data object
-    vtkSOADataArrayTemplate<float>* cell_momentum = vtkSOADataArrayTemplate<float>::New();
+    vtkAOSDataArrayTemplate<float>* cell_momentum = vtkAOSDataArrayTemplate<float>::New();
     cell_momentum->SetName("Cell momentum");
     cell_momentum->SetNumberOfComponents(2);
-    cell_momentum->SetArray(/*comp=*/0, (float*)(m_lattice->cell_momentum()), m_lattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
-    cell_momentum->SetArray(/*comp=*/1, (float*)(m_lattice->cell_momentum()) + m_lattice->num_cells(), m_lattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
+    cell_momentum->SetArray((float*)(m_lattice->cell_momentum()), /*size=*/2 * m_lattice->num_cells(), /*save=*/1);
     m_cell_image_data->GetCellData()->AddArray(cell_momentum);
     cell_momentum->Delete();
+
+    // Pass pointer to mean momentum array of the lattice to the image data object
+    vtkAOSDataArrayTemplate<float>* mean_momentum = vtkAOSDataArrayTemplate<float>::New();
+    mean_momentum->SetName("Mean momentum");
+    mean_momentum->SetNumberOfComponents(2);
+    mean_momentum->SetArray((float*)(m_lattice->mean_momentum()), /*size=*/2 * m_lattice->num_coarse_cells(), /*save=*/1);
+    m_mean_image_data->GetPointData()->AddArray(mean_momentum);
+    mean_momentum->Delete();
 
     // Set active array for on-line visualization
     m_cell_image_data->GetCellData()->SetActiveScalars(scalars.c_str());
