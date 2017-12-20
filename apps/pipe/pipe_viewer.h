@@ -44,8 +44,8 @@ namespace Ui {
 namespace lgca {
 
 // Forward declarations
-template<int num_dir> class IoVti;
-template<int num_dir> class Lattice;
+template<Model model> class IoVti;
+template<Model model> class Lattice;
 
 class PipeView : public QMainWindow
 {
@@ -53,7 +53,7 @@ class PipeView : public QMainWindow
 
 public:
 
-    static constexpr int NUM_DIR = 6; // TODO Number of lattice directions
+    static constexpr Model MODEL = Model::FHP; // TODO
 
     explicit PipeView(QWidget *parent = 0);
     ~PipeView();
@@ -68,9 +68,9 @@ public slots:
 
 private:
 
-    Ui::PipeView*     m_ui;
-    Lattice<NUM_DIR>* m_lattice;
-    IoVti  <NUM_DIR>* m_vti_io_handler;
+    Ui::PipeView*   m_ui;
+    Lattice<MODEL>* m_lattice;
+    IoVti  <MODEL>* m_vti_io_handler;
 
     vtkImageDataGeometryFilter* m_geom_filter;
     vtkPolyDataMapper*          m_mapper;

@@ -29,16 +29,15 @@
 
 namespace lgca {
 
-template<int num_dir_> // Number of lattice directions defining the model under usage
+template<Model model_>
 class Lattice {
-
-    static_assert(num_dir_ == 4 || num_dir_ == 6, "Invalid lattice gas model.");
-
-private:
 
 protected:
 
-    static constexpr int SPATIAL_DIM = 2; // Dimension of the problem
+    using ModelDesc = ModelDescriptor<model_>;
+
+    static constexpr unsigned int SPATIAL_DIM = 2;                  // Dimension of the problem
+    static constexpr unsigned int NUM_DIR     = ModelDesc::NUM_DIR; // Number of lattice directions
 
     unsigned int m_dim_x;           // Number of cells in x direction
     unsigned int m_dim_y;           // Number of cells in y direction

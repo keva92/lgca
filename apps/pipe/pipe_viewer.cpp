@@ -42,7 +42,7 @@ PipeView::PipeView(QWidget *parent) :
     // Define some variables
     Real   Re                     = 80.0;     // Reynolds number
     Real   Ma                     = 0.2;      // Mach number
-    int    coarse_graining_radius = 15;       // Coarse graining radius
+    int    coarse_graining_radius = 10;       // Coarse graining radius
 
     srand48(time(NULL));
 
@@ -50,7 +50,7 @@ PipeView::PipeView(QWidget *parent) :
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<NUM_DIR>(/*case=*/"pipe", Re, Ma, coarse_graining_radius);
+    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"pipe", Re, Ma, coarse_graining_radius);
 
     // Apply boundary conditions
     m_lattice->apply_bc_pipe();
@@ -70,7 +70,7 @@ PipeView::PipeView(QWidget *parent) :
     // Set (proper) parallelization parameters
     m_lattice->setup_parallel();
 
-    m_vti_io_handler = new IoVti<NUM_DIR>(m_lattice, "Mean momentum");
+    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
 
     m_geom_filter   = vtkImageDataGeometryFilter::New();
     m_mapper        = vtkPolyDataMapper::New();

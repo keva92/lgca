@@ -40,8 +40,14 @@ using std::string;
 using std::chrono::steady_clock;
 using std::chrono::duration;
 
-// Define floating-point precision.
+// Define floating-point precision
 typedef float Real;
+
+// Number of lattice directions defines the different lattice gas models
+enum class Model {
+    HPP = 4,
+    FHP = 6
+};
 
 } // namespace lgca
 

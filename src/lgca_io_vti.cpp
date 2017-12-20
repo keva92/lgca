@@ -34,8 +34,8 @@
 
 namespace lgca {
 
-template<int num_dir_>
-IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattice(lattice)
+template<Model model_>
+IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattice(lattice)
 {
     assert(m_lattice);
 
@@ -90,8 +90,8 @@ IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : m_latt
     this->update();
 }
 
-template<int num_dir_>
-void IoVti<num_dir_>::update()
+template<Model model_>
+void IoVti<model_>::update()
 {
     assert(m_cell_image_data);
     assert(m_mean_image_data);
@@ -100,8 +100,8 @@ void IoVti<num_dir_>::update()
     m_mean_image_data->Modified();
 }
 
-template<int num_dir_>
-void IoVti<num_dir_>::write(const unsigned int step)
+template<Model model_>
+void IoVti<model_>::write(const unsigned int step)
 {
     // TODO Set flags which data should be written to file.
     bool write_cell_density  = true;
@@ -139,7 +139,7 @@ void IoVti<num_dir_>::write(const unsigned int step)
 }
 
 // Explicit instantiations
-template class IoVti<4>;
-template class IoVti<6>;
+template class IoVti<Model::HPP>;
+template class IoVti<Model::FHP>;
 
 } // namespace lgca

@@ -24,18 +24,18 @@
 
 namespace lgca {
 
-template<int num_dir_>
-class OMP_Lattice: public Lattice<num_dir_> {
+template<Model model_>
+class OMP_Lattice: public Lattice<model_> {
 
 private:
 
-    using Model = ModelDescriptor<num_dir_>;
+    using ModelDesc = ModelDescriptor<model_>;
 
     // Auxiliary array on the CPU.
     Bitset m_node_state_tmp_cpu;
 
     // Model-based values according to the number of lattice directions
-    Model* m_model;
+    ModelDesc* m_model;
 
 	// Computes cell quantities of interest as a post-processing procedure.
 	void cell_post_process();

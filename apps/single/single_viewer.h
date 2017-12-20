@@ -32,8 +32,8 @@ namespace Ui {
 namespace lgca {
 
 // Forward declarations
-template<int num_dir> class IoVti;
-template<int num_dir> class Lattice;
+template<Model model> class IoVti;
+template<Model model> class Lattice;
 
 class SingleView : public QMainWindow
 {
@@ -41,7 +41,7 @@ class SingleView : public QMainWindow
 
 public:
 
-    static constexpr int NUM_DIR = 6; // TODO Number of lattice directions
+    static constexpr Model MODEL = Model::FHP; // TODO
 
     explicit SingleView(QWidget *parent = 0);
     ~SingleView();
@@ -57,9 +57,9 @@ public slots:
 
 private:
 
-    Ui::SingleView*   m_ui;
-    Lattice<NUM_DIR>* m_lattice;
-    IoVti  <NUM_DIR>* m_vti_io_handler;
+    Ui::SingleView* m_ui;
+    Lattice<MODEL>* m_lattice;
+    IoVti  <MODEL>* m_vti_io_handler;
 
     int               m_mnups;
     int               m_num_particles;
