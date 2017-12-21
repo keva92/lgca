@@ -31,7 +31,7 @@ cd ../bin/
 
 ## Theory
 
-Hopefully, some theory on lattice gas cellular automatons will follow soon...
+Hopefully, some basic theory on lattice gas cellular automatons will follow soon. Unit then, feel free to have a look at Dieter Wolf-Gladrow's "Lattice-Gas Cellular Automata and Lattice Boltzmann Models".
 
 
 ## Backgrounds
