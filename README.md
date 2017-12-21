@@ -22,7 +22,7 @@ mkdir build
 cd build/
 ccmake ..
 ```
-Build the project and and run one of the apps:
+Build the project and run one of the apps:
 ```
 make
 cd ../bin/
