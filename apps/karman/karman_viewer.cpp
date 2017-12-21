@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "single_viewer.h"
-#include "ui_single_viewer.h"
+#include "karman_viewer.h"
+#include "ui_karman_viewer.h"
 
 #include "utils.h"
 #include "cuda_utils.cuh"
@@ -33,38 +33,37 @@
 
 namespace lgca {
 
-SingleView::SingleView(QWidget *parent) :
+KarmanView::KarmanView(QWidget *parent) :
     QMainWindow(parent),
-    m_ui(new Ui::SingleView)
+    m_ui(new Ui::KarmanView)
 {
     m_ui->setupUi(this);
-
-    // Define some variables
-    Real   Re                     = 80.0;     // Reynolds number
-    Real   Ma                     = 0.2;      // Mach number
-    int    coarse_graining_radius = 2;       // Coarse graining radius
 
     // Print startup message
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"collision", Re, Ma, coarse_graining_radius);
+    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"karman", m_Re, m_Ma, CG_RADIUS);
 
     // Apply boundary conditions
-    m_lattice->apply_bc_pipe();
+    m_lattice->apply_bc_karman_vortex_street();
 
     // Initialize the lattice gas automaton with particles
-    m_lattice->init_single_collision();
+    m_lattice->init_random();
     m_num_particles = m_lattice->get_n_particles();
 
     // Necessary to set up on-line visualization
     m_lattice->copy_data_to_output_buffer();
     m_lattice->post_process();
 
-    // Set parallelization parameters
+    // Calculate the number of particles to revert in the context of body force in order to
+    // accelerate the flow.
+    m_forcing = m_lattice->get_initial_forcing();
+
+    // Set (proper) parallelization parameters
     m_lattice->setup_parallel();
 
-    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Cell density");
+    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
 
     m_geom_filter   = vtkImageDataGeometryFilter::New();
     m_mapper        = vtkPolyDataMapper::New();
@@ -75,10 +74,10 @@ SingleView::SingleView(QWidget *parent) :
     m_lut           = vtkLookupTable::New();
     m_ren_win       = vtkRenderWindow::New();
 
-    m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
+    m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
     m_geom_filter->Update();
     m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
-    m_mapper->SetArrayName("Cell density");
+    m_mapper->SetArrayName("Mean momentum");
     double scalarRange[2];
     m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
     m_mapper->SetScalarRange(scalarRange);
@@ -105,17 +104,18 @@ SingleView::SingleView(QWidget *parent) :
     m_lut->Build();
     m_mapper->SetLookupTable(m_lut);
     m_scalar_bar->SetLookupTable(m_lut);
+    m_ren->ResetCamera();
 
     m_ui->qvtkWidget->SetRenderWindow(m_ren_win);
     m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(m_ren);
-    m_ren->ResetCamera();
     m_ui->qvtkWidget->show();
 
     connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
     connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
+    connect(m_ui->rescaleButton, SIGNAL(clicked()), this, SLOT(rescale()));
 }
 
-SingleView::~SingleView()
+KarmanView::~KarmanView()
 {
     m_geom_filter   ->Delete();
     m_mapper        ->Delete();
@@ -131,12 +131,27 @@ SingleView::~SingleView()
     delete m_ui;
 }
 
-void SingleView::run()
+void KarmanView::run()
 {
     tbb::task_group task_group;
 
     // Simulation
     task_group.run([&]{
+
+        // Get current mean velocity in x and y direction
+        m_mean_velocity = m_lattice->get_mean_velocity();
+
+        if (m_mean_velocity[0] < m_lattice->u()) {
+
+            // Reduce the forcing once the flow has been accelerated strong enough
+            if (m_mean_velocity[0] > 0.9 * m_lattice->u())
+                m_forcing = m_lattice->get_equilibrium_forcing();
+
+            // Apply a body force to the particles
+            m_lattice->apply_body_force(m_forcing);
+        }
+
+        auto sim_start = steady_clock::now();
 
 #pragma unroll
         for (int s = 0; s < WRITE_STEPS; ++s) {
@@ -144,6 +159,16 @@ void SingleView::run()
             // Perform the collision and propagation step on the lattice gas automaton
             m_lattice->collide_and_propagate(s);
         }
+
+        // Print current simulation performance
+        auto sim_end = steady_clock::now();
+        auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
+        fprintf(stderr, "Simulation took %f s.\n", sim_time);
+        m_mnups = (int)((m_lattice->num_cells() * WRITE_STEPS) / (sim_time * 1.0e06));
+        fprintf(stderr, "Current MNUPS: %d\n", m_mnups);
+
+        // Print current mean velocity in x and y direction
+        fprintf(stderr, "Current mean velocity: (%6.4f, %6.4f)\n", m_mean_velocity[0], m_mean_velocity[1]);
 
         // Copy results to a temporary buffer for post-processing and visualization
         m_lattice->copy_data_to_output_buffer();
@@ -153,20 +178,27 @@ void SingleView::run()
     task_group.run_and_wait([&]{
 
         // Compute quantities of interest as a post-processing procedure
+        auto pp_start = steady_clock::now();
         m_lattice->post_process();
+        auto pp_end = steady_clock::now();
+        auto pp_time = std::chrono::duration_cast<duration<double>>(pp_end - pp_start).count();
+        fprintf(stderr, "Postprocessing took %f s.\n", pp_time);
 
         // Update image data object
         m_vti_io_handler->update();
 
         // Update render window
+        auto ren_start = steady_clock::now();
         m_ui->qvtkWidget->GetRenderWindow()->Render();
-        sleep(1);
+        auto ren_end = steady_clock::now();
+        auto ren_time = std::chrono::duration_cast<duration<double>>(ren_end - ren_start).count();
+        fprintf(stderr, "Rendering took %f s.\n", ren_time);
     });
 
     QTimer::singleShot(0, this, SLOT(run()));
 }
 
-void SingleView::stop()
+void KarmanView::stop()
 {
     // Get the number of particles in the lattice.
     unsigned int num_particles_end = m_lattice->get_n_particles();
@@ -182,6 +214,13 @@ void SingleView::stop()
     }
 
     qApp->quit();
+}
+
+void KarmanView::rescale()
+{
+    double scalarRange[2];
+    m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
+    m_mapper->SetScalarRange(scalarRange);
 }
 
 } // namespace lgca

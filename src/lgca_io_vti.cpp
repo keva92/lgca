@@ -34,8 +34,8 @@
 
 namespace lgca {
 
-template<int num_dir_>
-IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattice(lattice)
+template<Model model_>
+IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattice(lattice)
 {
     assert(m_lattice);
 
@@ -67,13 +67,20 @@ IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : m_latt
     mean_density->Delete();
 
     // Pass pointer to cell momentum array of the lattice to the image data object
-    vtkSOADataArrayTemplate<float>* cell_momentum = vtkSOADataArrayTemplate<float>::New();
+    vtkAOSDataArrayTemplate<float>* cell_momentum = vtkAOSDataArrayTemplate<float>::New();
     cell_momentum->SetName("Cell momentum");
     cell_momentum->SetNumberOfComponents(2);
-    cell_momentum->SetArray(/*comp=*/0, (float*)(m_lattice->cell_momentum()), m_lattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
-    cell_momentum->SetArray(/*comp=*/1, (float*)(m_lattice->cell_momentum()) + m_lattice->num_cells(), m_lattice->num_cells(), /*updateMaxId=*/0, /*save=*/1);
+    cell_momentum->SetArray((float*)(m_lattice->cell_momentum()), /*size=*/2 * m_lattice->num_cells(), /*save=*/1);
     m_cell_image_data->GetCellData()->AddArray(cell_momentum);
     cell_momentum->Delete();
+
+    // Pass pointer to mean momentum array of the lattice to the image data object
+    vtkAOSDataArrayTemplate<float>* mean_momentum = vtkAOSDataArrayTemplate<float>::New();
+    mean_momentum->SetName("Mean momentum");
+    mean_momentum->SetNumberOfComponents(2);
+    mean_momentum->SetArray((float*)(m_lattice->mean_momentum()), /*size=*/2 * m_lattice->num_coarse_cells(), /*save=*/1);
+    m_mean_image_data->GetPointData()->AddArray(mean_momentum);
+    mean_momentum->Delete();
 
     // Set active array for on-line visualization
     m_cell_image_data->GetCellData()->SetActiveScalars(scalars.c_str());
@@ -83,8 +90,8 @@ IoVti<num_dir_>::IoVti(LatticeType* lattice, const std::string scalars) : m_latt
     this->update();
 }
 
-template<int num_dir_>
-void IoVti<num_dir_>::update()
+template<Model model_>
+void IoVti<model_>::update()
 {
     assert(m_cell_image_data);
     assert(m_mean_image_data);
@@ -93,8 +100,8 @@ void IoVti<num_dir_>::update()
     m_mean_image_data->Modified();
 }
 
-template<int num_dir_>
-void IoVti<num_dir_>::write(const unsigned int step)
+template<Model model_>
+void IoVti<model_>::write(const unsigned int step)
 {
     // TODO Set flags which data should be written to file.
     bool write_cell_density  = true;
@@ -132,7 +139,7 @@ void IoVti<num_dir_>::write(const unsigned int step)
 }
 
 // Explicit instantiations
-template class IoVti<4>;
-template class IoVti<6>;
+template class IoVti<Model::HPP>;
+template class IoVti<Model::FHP>;
 
 } // namespace lgca

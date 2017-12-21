@@ -27,13 +27,13 @@
 namespace lgca {
 
 // Forward declarations
-template<int num_dir>
+template<Model model>
 class Lattice;
 
-template<int num_dir_>
+template<Model model_>
 class IoVti
 {
-    using LatticeType = Lattice<num_dir_>;
+    using LatticeType = Lattice<model_>;
 
 public:
 

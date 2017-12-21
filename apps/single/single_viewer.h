@@ -22,6 +22,17 @@
 
 #include "lgca_common.h"
 
+#include <vtkImageData.h>
+#include <vtkImageDataGeometryFilter.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkActor.h>
+#include <vtkProperty.h>
+#include <vtkRenderer.h>
+#include <vtkScalarBarActor.h>
+#include <vtkTextProperty.h>
+#include <vtkLookupTable.h>
+#include <vtkRenderWindow.h>
+
 #include <QMainWindow>
 
 // Forward Qt class declarations
@@ -32,16 +43,14 @@ namespace Ui {
 namespace lgca {
 
 // Forward declarations
-template<int num_dir> class IoVti;
-template<int num_dir> class Lattice;
+template<Model model> class IoVti;
+template<Model model> class Lattice;
 
 class SingleView : public QMainWindow
 {
     Q_OBJECT
 
 public:
-
-    static constexpr int NUM_DIR = 6; // TODO Number of lattice directions
 
     explicit SingleView(QWidget *parent = 0);
     ~SingleView();
@@ -57,14 +66,30 @@ public slots:
 
 private:
 
-    Ui::SingleView*   m_ui;
-    Lattice<NUM_DIR>* m_lattice;
-    IoVti  <NUM_DIR>* m_vti_io_handler;
+    // Simulation parameters
+    static constexpr Model        MODEL       = Model::FHP;
+    static constexpr unsigned int WRITE_STEPS = 1;
+    static constexpr int          CG_RADIUS   = 1;              // Coarse graining radius
 
+    // Simulation variables
     int               m_mnups;
     int               m_num_particles;
+    Real              m_Re = 80.0; // Reynolds number
+    Real              m_Ma = 0.2;  // Mach number
 
-    const int         m_write_steps = 1; // Number of steps after which results are post-processed and visualized or written to file
+    Ui::SingleView* m_ui;
+
+    Lattice<MODEL>* m_lattice;
+    IoVti  <MODEL>* m_vti_io_handler;
+
+    vtkImageDataGeometryFilter* m_geom_filter;
+    vtkPolyDataMapper*          m_mapper;
+    vtkActor*                   m_actor;
+    vtkRenderer*                m_ren;
+    vtkScalarBarActor*          m_scalar_bar;
+    vtkTextProperty*            m_scalar_bar_txt;
+    vtkLookupTable*             m_lut;
+    vtkRenderWindow*            m_ren_win;
 };
 
 } // namespace lgca

@@ -29,16 +29,15 @@
 
 namespace lgca {
 
-template<int num_dir_> // Number of lattice directions defining the model under usage
+template<Model model_>
 class Lattice {
-
-    static_assert(num_dir_ == 4 || num_dir_ == 6, "Invalid lattice gas model.");
-
-private:
 
 protected:
 
-    static constexpr int m_spatial_dim = 2;    // Dimension of the problem
+    using ModelDesc = ModelDescriptor<model_>;
+
+    static constexpr unsigned int SPATIAL_DIM = 2;                  // Dimension of the problem
+    static constexpr unsigned int NUM_DIR     = ModelDesc::NUM_DIR; // Number of lattice directions
 
     unsigned int m_dim_x;           // Number of cells in x direction
     unsigned int m_dim_y;           // Number of cells in y direction
@@ -100,12 +99,12 @@ protected:
     // Vector valued quantities are stored in one-dimensional arrays in the
     // following sense:
     //
-    // [X_COMP_CELL_1|X_COMP_CELL_2|X_COMP_CELL_3|...|Y_COMP_CELL_1|Y_COMP_CELL_2|...]
+    // [X_COMP_CELL_0|Y_COMP_CELL_0|X_COMP_CELL_1|Y_COMP_CELL_1|X_COMP_CELL_2|...]
 
-    // Momentum vectors (1st momentum) related to the single cells (non-averaged).
+    // Momentum vectors (1st momentum) related to the single cells (non-averaged)
     Real* m_cell_momentum_cpu;
 
-    // Coarse grained momentum vectors (averaged over neighbor cells).
+    // Coarse grained momentum vectors (averaged over neighbor cells)
     Real* m_mean_momentum_cpu;
 
 public:
@@ -216,13 +215,13 @@ public:
     virtual void copy_data_to_output_buffer();
 
     // Get functions
-    Real                        u() const { return m_u; }
-    unsigned int            dim_x() const { return m_dim_x; }
-    unsigned int            dim_y() const { return m_dim_y; }
-    unsigned int        num_cells() const { return m_num_cells; }
-    unsigned int     coarse_dim_x() const { return m_coarse_dim_x; }
-    unsigned int     coarse_dim_y() const { return m_coarse_dim_y; }
-    unsigned int num_coarse_cells() const { return m_num_coarse_cells; }
+    Real         u()                const { return m_u;                 }
+    unsigned int dim_x()            const { return m_dim_x;             }
+    unsigned int dim_y()            const { return m_dim_y;             }
+    unsigned int num_cells()        const { return m_num_cells;         }
+    unsigned int coarse_dim_x()     const { return m_coarse_dim_x;      }
+    unsigned int coarse_dim_y()     const { return m_coarse_dim_y;      }
+    unsigned int num_coarse_cells() const { return m_num_coarse_cells;  }
 
           Real*  cell_density()       { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }
     const Real*  cell_density() const { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }

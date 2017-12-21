@@ -65,7 +65,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
 )
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps/pipe)
-#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/karman)
+add_subdirectory(${PROJECT_SOURCE_DIR}/apps/karman)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/apps/diffusion)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/apps/box)
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps/single)

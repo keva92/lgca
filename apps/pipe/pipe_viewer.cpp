@@ -27,21 +27,6 @@
 #include "cu_lattice.h"
 #include "lgca_io_vti.h"
 
-#include <vtkNew.h>
-#include <vtkImageData.h>
-#include <vtkImageDataGeometryFilter.h>
-#include <vtkImageMapper.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkActor.h>
-#include <vtkProperty.h>
-#include <vtkRenderer.h>
-#include <vtkScalarBarActor.h>
-#include <vtkTextProperty.h>
-#include <vtkLookupTable.h>
-#include <vtkRenderWindow.h>
-#include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkImageViewer.h>
-
 #include <tbb/task_group.h>
 
 #include <QVTKOpenGLWidget.h>
@@ -54,18 +39,11 @@ PipeView::PipeView(QWidget *parent) :
 {
     m_ui->setupUi(this);
 
-    // Define some variables
-    Real   Re                     = 80.0;     // Reynolds number
-    Real   Ma                     = 0.2;      // Mach number
-    int    coarse_graining_radius = 15;       // Coarse graining radius
-
-    srand48(time(NULL));
-
     // Print startup message
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<NUM_DIR>(/*case=*/"pipe", Re, Ma, coarse_graining_radius);
+    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"pipe", m_Re, m_Ma, CG_RADIUS);
 
     // Apply boundary conditions
     m_lattice->apply_bc_pipe();
@@ -85,58 +63,69 @@ PipeView::PipeView(QWidget *parent) :
     // Set (proper) parallelization parameters
     m_lattice->setup_parallel();
 
-    m_vti_io_handler = new IoVti<NUM_DIR>(m_lattice, "Mean density");
+    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
 
-    vtkNew<vtkImageDataGeometryFilter> geomFilter;
-    geomFilter->SetInputData(m_vti_io_handler->mean_image());
-    geomFilter->Update();
-    vtkNew<vtkPolyDataMapper> mapper;
-    mapper->SetInputConnection(geomFilter->GetOutputPort());
-    mapper->SetArrayName("Mean density");
+    m_geom_filter   = vtkImageDataGeometryFilter::New();
+    m_mapper        = vtkPolyDataMapper::New();
+    m_actor         = vtkActor::New();
+    m_ren           = vtkRenderer::New();
+    m_scalar_bar    = vtkScalarBarActor::New();
+    m_scalar_bar_txt = vtkTextProperty::New();
+    m_lut           = vtkLookupTable::New();
+    m_ren_win       = vtkRenderWindow::New();
+
+    m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_geom_filter->Update();
+    m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
+    m_mapper->SetArrayName("Mean momentum");
     double scalarRange[2];
-    geomFilter->GetOutput()->GetScalarRange(scalarRange);
-    mapper->SetScalarRange(scalarRange);
-    vtkNew<vtkActor> actor;
-    actor->SetMapper(mapper.GetPointer());
-    vtkNew<vtkRenderer> ren;
-    ren->AddActor(actor.GetPointer());
-    ren->SetBackground(1.0, 1.0, 1.0);
-    ren->SetBackground2(0.2, 0.3, 0.5);
-    ren->GradientBackgroundOn();
-    vtkNew<vtkScalarBarActor> scalarBar;
-    vtkNew<vtkTextProperty> text;
-    text->SetFontFamilyToArial();
-    text->SetFontSize(10);
-    text->BoldOff();
-    text->ItalicOff();
-    text->ShadowOff();
-    scalarBar->SetTitle(mapper->GetArrayName());
-    scalarBar->SetNumberOfLabels(4);
-    scalarBar->SetTitleTextProperty(text.GetPointer());
-    scalarBar->SetLabelTextProperty(text.GetPointer());
-    scalarBar->SetBarRatio(0.2);
-    ren->AddActor2D(scalarBar.GetPointer());
-    vtkNew<vtkLookupTable> lut;
-    lut->SetTableRange(mapper->GetScalarRange());
-    lut->SetHueRange(2.0/3.0, 0.0); // Blue to red rainbow
-    lut->SetSaturationRange(1.0, 1.0);
-    lut->SetValueRange(1.0, 1.0);
-    lut->Build();
-    mapper->SetLookupTable(lut.GetPointer());
-    scalarBar->SetLookupTable(lut.GetPointer());
+    m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
+    m_mapper->SetScalarRange(scalarRange);
+    m_actor->SetMapper(m_mapper);
+    m_ren->AddActor(m_actor);
+    m_ren->SetBackground(1.0, 1.0, 1.0);
+    m_ren->SetBackground2(0.2, 0.3, 0.5);
+    m_ren->GradientBackgroundOn();
+    m_scalar_bar_txt->SetFontFamilyToArial();
+    m_scalar_bar_txt->SetFontSize(10);
+    m_scalar_bar_txt->BoldOff();
+    m_scalar_bar_txt->ItalicOff();
+    m_scalar_bar_txt->ShadowOff();
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+    m_scalar_bar->SetNumberOfLabels(4);
+    m_scalar_bar->SetTitleTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->SetLabelTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->SetBarRatio(0.2);
+    m_ren->AddActor2D(m_scalar_bar);
+    m_lut->SetTableRange(m_mapper->GetScalarRange());
+    m_lut->SetHueRange(2.0/3.0, 0.0); // Blue to red rainbow
+    m_lut->SetSaturationRange(1.0, 1.0);
+    m_lut->SetValueRange(1.0, 1.0);
+    m_lut->Build();
+    m_mapper->SetLookupTable(m_lut);
+    m_scalar_bar->SetLookupTable(m_lut);
+    m_ren->ResetCamera();
 
-    vtkNew<vtkRenderWindow> renWin;
-    m_ui->qvtkWidget->SetRenderWindow(renWin.GetPointer());
-    m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(ren.GetPointer());
-    ren->ResetCamera();
+    m_ui->qvtkWidget->SetRenderWindow(m_ren_win);
+    m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(m_ren);
     m_ui->qvtkWidget->show();
 
     connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
     connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
+    connect(m_ui->rescaleButton, SIGNAL(clicked()), this, SLOT(rescale()));
 }
 
 PipeView::~PipeView()
 {
+    m_geom_filter   ->Delete();
+    m_mapper        ->Delete();
+    m_actor         ->Delete();
+    m_ren           ->Delete();
+    m_scalar_bar    ->Delete();
+    m_scalar_bar_txt->Delete();
+    m_lut           ->Delete();
+    m_ren_win       ->Delete();
+
     delete m_vti_io_handler;
     delete m_lattice;
     delete m_ui;
@@ -164,7 +153,8 @@ void PipeView::run()
 
         auto sim_start = steady_clock::now();
 
-        for (int s = 0; s < m_write_steps; ++s) {
+#pragma unroll
+        for (int s = 0; s < WRITE_STEPS; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
             m_lattice->collide_and_propagate(s);
@@ -174,7 +164,7 @@ void PipeView::run()
         auto sim_end = steady_clock::now();
         auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
         fprintf(stderr, "Simulation took %f s.\n", sim_time);
-        m_mnups = (int)((m_lattice->num_cells() * m_write_steps) / (sim_time * 1.0e06));
+        m_mnups = (int)((m_lattice->num_cells() * WRITE_STEPS) / (sim_time * 1.0e06));
         fprintf(stderr, "Current MNUPS: %d\n", m_mnups);
 
         // Print current mean velocity in x and y direction
@@ -186,7 +176,6 @@ void PipeView::run()
 
     // Visualization
     task_group.run_and_wait([&]{
-
 
         // Compute quantities of interest as a post-processing procedure
         auto pp_start = steady_clock::now();
@@ -225,6 +214,13 @@ void PipeView::stop()
     }
 
     qApp->quit();
+}
+
+void PipeView::rescale()
+{
+    double scalarRange[2];
+    m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
+    m_mapper->SetScalarRange(scalarRange);
 }
 
 } // namespace lgca

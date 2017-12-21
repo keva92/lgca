@@ -25,38 +25,40 @@
 namespace lgca {
 
 // Struct for model-based values according to the number of lattice directions
-template<int num_dir_>
+template<Model model_>
 struct ModelDescriptor;
 
 // HPP model
 template<>
-struct ModelDescriptor</*num_dir=*/4> {
+struct ModelDescriptor<Model::HPP> {
+
+    static constexpr unsigned int NUM_DIR = 4;
 
     // Inverse direction indices for each lattice direction
-    static constexpr char INV_DIR       [4] = {   2,    3,    0,    1};
+    static constexpr char INV_DIR       [NUM_DIR] = {   2,    3,    0,    1};
 
     // Mirrored direction indices for each lattice direction with respect to the x and y axis
-    static constexpr char MIR_DIR_X     [4] = {   0,    3,    2,    1};
-    static constexpr char MIR_DIR_Y     [4] = {   2,    1,    0,    3};
+    static constexpr char MIR_DIR_X     [NUM_DIR] = {   0,    3,    2,    1};
+    static constexpr char MIR_DIR_Y     [NUM_DIR] = {   2,    1,    0,    3};
 
     // Lattice vector components in the different directions
-    static constexpr Real LATTICE_VEC_X [4] = { 1.0,  0.0, -1.0,  0.0}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
-    static constexpr Real LATTICE_VEC_Y [4] = { 0.0,  1.0,  0.0, -1.0}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
+    static constexpr Real LATTICE_VEC_X [NUM_DIR] = { 1.0,  0.0, -1.0,  0.0}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
+    static constexpr Real LATTICE_VEC_Y [NUM_DIR] = { 0.0,  1.0,  0.0, -1.0}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
 
     // Memory offset to neighbor cells in the different directions for the propagation step
-    int offset_to_neighbor_even         [4];
-    int offset_to_neighbor_odd          [4];
+    int offset_to_neighbor_even         [NUM_DIR];
+    int offset_to_neighbor_odd          [NUM_DIR];
 
     // Memory offset to related cells of the opposite boundary in the different directions in case
     // of periodic boundaries
-    int offset_to_eastern_boundary_even [4];
-    int offset_to_eastern_boundary_odd  [4];
-    int offset_to_northern_boundary_even[4];
-    int offset_to_northern_boundary_odd [4];
-    int offset_to_western_boundary_even [4];
-    int offset_to_western_boundary_odd  [4];
-    int offset_to_southern_boundary_even[4];
-    int offset_to_southern_boundary_odd [4];
+    int offset_to_eastern_boundary_even [NUM_DIR];
+    int offset_to_eastern_boundary_odd  [NUM_DIR];
+    int offset_to_northern_boundary_even[NUM_DIR];
+    int offset_to_northern_boundary_odd [NUM_DIR];
+    int offset_to_western_boundary_even [NUM_DIR];
+    int offset_to_western_boundary_odd  [NUM_DIR];
+    int offset_to_southern_boundary_even[NUM_DIR];
+    int offset_to_southern_boundary_odd [NUM_DIR];
 
     ModelDescriptor(const unsigned int dim_x, const unsigned int dim_y)
     {
@@ -116,37 +118,39 @@ struct ModelDescriptor</*num_dir=*/4> {
 
 // FHP model
 template<>
-struct ModelDescriptor</*num_dir=*/6> {
+struct ModelDescriptor<Model::FHP> {
+
+    static constexpr unsigned int NUM_DIR = 6;
 
     static constexpr Real SIN = sin(M_PI/3);
 
     // Inverse direction indices for each lattice direction
-    static constexpr char INV_DIR       [6] = {   3,    4,    5,    0,    1,    2};
+    static constexpr char INV_DIR       [NUM_DIR] = {   3,    4,    5,    0,    1,    2};
 
     // Mirrored direction indices for each lattice direction with respect to the x and y axis
-    static constexpr char MIR_DIR_X     [6] = {   0,    5,    4,    3,    2,    1};
-    static constexpr char MIR_DIR_Y     [6] = {   3,    2,    1,    0,    5,    4};
+    static constexpr char MIR_DIR_X     [NUM_DIR] = {   0,    5,    4,    3,    2,    1};
+    static constexpr char MIR_DIR_Y     [NUM_DIR] = {   3,    2,    1,    0,    5,    4};
 
     // Lattice vector components in the different directions
-    static constexpr Real LATTICE_VEC_X [6] = { 1.0,  0.5, -0.5, -1.0, -0.5,  0.5}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
-    static constexpr Real LATTICE_VEC_Y [6] = { 0.0,  SIN,  SIN,  0.0, -SIN, -SIN}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
+    static constexpr Real LATTICE_VEC_X [NUM_DIR] = { 1.0,  0.5, -0.5, -1.0, -0.5,  0.5}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
+    static constexpr Real LATTICE_VEC_Y [NUM_DIR] = { 0.0,  SIN,  SIN,  0.0, -SIN, -SIN}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
 
     // Memory offset to neighbor cells in the different directions for the propagation step
     // Note that for the FHP model there is a difference in the offsets depending on weather the
     // cell is located in a row with even or odd index.
-    int offset_to_neighbor_even         [6];
-    int offset_to_neighbor_odd          [6];
+    int offset_to_neighbor_even         [NUM_DIR];
+    int offset_to_neighbor_odd          [NUM_DIR];
 
     // Memory offset to related cells of the opposite boundary in the different directions in case
     // of periodic boundaries
-    int offset_to_eastern_boundary_even [6];
-    int offset_to_eastern_boundary_odd  [6];
-    int offset_to_northern_boundary_even[6];
-    int offset_to_northern_boundary_odd [6];
-    int offset_to_western_boundary_even [6];
-    int offset_to_western_boundary_odd  [6];
-    int offset_to_southern_boundary_even[6];
-    int offset_to_southern_boundary_odd [6];
+    int offset_to_eastern_boundary_even [NUM_DIR];
+    int offset_to_eastern_boundary_odd  [NUM_DIR];
+    int offset_to_northern_boundary_even[NUM_DIR];
+    int offset_to_northern_boundary_odd [NUM_DIR];
+    int offset_to_western_boundary_even [NUM_DIR];
+    int offset_to_western_boundary_odd  [NUM_DIR];
+    int offset_to_southern_boundary_even[NUM_DIR];
+    int offset_to_southern_boundary_odd [NUM_DIR];
 
     ModelDescriptor(const unsigned int dim_x, const unsigned int dim_y)
     {
