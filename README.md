@@ -34,6 +34,6 @@ cd ../bin/
 Hopefully, some basic theory on lattice gas cellular automatons will follow soon. Until then, feel free to have a look at Dieter Wolf-Gladrow's "Lattice-Gas Cellular Automata and Lattice Boltzmann Models".
 
 
-## Backgrounds
+## Background
 
 The initial code has been developed at Hamburg University of Technology (TUHH) in 2015 in the framework of the postgrad course "Application of Innovative CFD Methods in Research and Development" by the then students Niklas Kühl and Kerstin Vater. The project has been initiated and supervised by Christian F. Janßen, postdoc at the Institute of Fluid Dynamics and Ship Theory at that time. 
