@@ -39,18 +39,11 @@ PipeView::PipeView(QWidget *parent) :
 {
     m_ui->setupUi(this);
 
-    // Define some variables
-    Real   Re                     = 80.0;     // Reynolds number
-    Real   Ma                     = 0.2;      // Mach number
-    int    coarse_graining_radius = 10;       // Coarse graining radius
-
-    srand48(time(NULL));
-
     // Print startup message
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"pipe", Re, Ma, coarse_graining_radius);
+    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"pipe", m_Re, m_Ma, CG_RADIUS);
 
     // Apply boundary conditions
     m_lattice->apply_bc_pipe();
@@ -160,7 +153,8 @@ void PipeView::run()
 
         auto sim_start = steady_clock::now();
 
-        for (int s = 0; s < m_write_steps; ++s) {
+#pragma unroll
+        for (int s = 0; s < WRITE_STEPS; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
             m_lattice->collide_and_propagate(s);
@@ -170,7 +164,7 @@ void PipeView::run()
         auto sim_end = steady_clock::now();
         auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
         fprintf(stderr, "Simulation took %f s.\n", sim_time);
-        m_mnups = (int)((m_lattice->num_cells() * m_write_steps) / (sim_time * 1.0e06));
+        m_mnups = (int)((m_lattice->num_cells() * WRITE_STEPS) / (sim_time * 1.0e06));
         fprintf(stderr, "Current MNUPS: %d\n", m_mnups);
 
         // Print current mean velocity in x and y direction
@@ -182,7 +176,6 @@ void PipeView::run()
 
     // Visualization
     task_group.run_and_wait([&]{
-
 
         // Compute quantities of interest as a post-processing procedure
         auto pp_start = steady_clock::now();
