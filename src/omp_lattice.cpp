@@ -28,6 +28,20 @@
 
 namespace lgca {
 
+// Definitions of static members
+constexpr char ModelDescriptor<Model::HPP>::INV_DIR[];
+constexpr char ModelDescriptor<Model::HPP>::MIR_DIR_X[];
+constexpr char ModelDescriptor<Model::HPP>::MIR_DIR_Y[];
+constexpr Real ModelDescriptor<Model::HPP>::LATTICE_VEC_X[];
+constexpr Real ModelDescriptor<Model::HPP>::LATTICE_VEC_Y[];
+
+constexpr char ModelDescriptor<Model::FHP>::INV_DIR[];
+constexpr char ModelDescriptor<Model::FHP>::MIR_DIR_X[];
+constexpr char ModelDescriptor<Model::FHP>::MIR_DIR_Y[];
+constexpr Real ModelDescriptor<Model::FHP>::LATTICE_VEC_X[];
+constexpr Real ModelDescriptor<Model::FHP>::LATTICE_VEC_Y[];
+
+
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.
 template<Model model_>
@@ -61,7 +75,7 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
 
 #ifndef NDEBUG
             // Check weather the domain dimensions are valid for the FHP model.
-            if (n_y % 2 != 0 && n_dir == 6) {
+            if (this->m_dim_y % 2 != 0 && model_ == Model::FHP) {
 
                 printf("ERROR in collide_and_propagate_kernel(): "
                        "Invalid domain dimension in y direction.\n");
