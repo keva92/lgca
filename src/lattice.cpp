@@ -186,7 +186,7 @@ unsigned int Lattice<model_>::get_n_particles() {
 
     // Loop over all the nodes.
 #pragma omp parallel for reduction(+:n_particles)
-    for (unsigned int n = 0; n < m_num_nodes; ++n) {
+    for (unsigned int n = 0; n < m_num_cells * 8; ++n) {
 
         n_particles += bool(m_node_state_cpu[n]);
     }
@@ -211,7 +211,8 @@ void Lattice<model_>::init_random() {
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
                 // Set random states for the nodes in the fluid cell.
-                m_node_state_cpu[cell + dir * m_num_cells] =
+//                m_node_state_cpu[cell + dir * m_num_cells] =
+                m_node_state_cpu[dir + cell * 8] =
                         bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
             }
 	    }
@@ -303,8 +304,10 @@ void Lattice<model_>::init_single_collision() {
 	}
 
     std::vector<int> occupied_nodes;
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * NUM_DIR);
-    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) * NUM_DIR + inverse_dir);
+//    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * NUM_DIR);
+//    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) * NUM_DIR + inverse_dir);
+    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8);
+    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) * 8 + inverse_dir);
 
     init_single(occupied_nodes);
 }

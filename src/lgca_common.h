@@ -32,6 +32,8 @@
 
 namespace lgca {
 
+#define WORD_SIZE 8;
+
 using std::cout;
 using std::endl;
 using std::flush;

@@ -142,7 +142,7 @@ void SingleView::run()
         for (int s = 0; s < WRITE_STEPS; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
-            m_lattice->collide_and_propagate(s);
+            m_lattice->collide_and_propagate();
         }
 
         // Copy results to a temporary buffer for post-processing and visualization

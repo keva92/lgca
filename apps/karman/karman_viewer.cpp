@@ -157,7 +157,7 @@ void KarmanView::run()
         for (int s = 0; s < WRITE_STEPS; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
-            m_lattice->collide_and_propagate(s);
+            m_lattice->collide_and_propagate();
         }
 
         // Print current simulation performance
