@@ -178,11 +178,11 @@ void Lattice<model_>::print() {
 
 // Returns the number of particles in the lattice.
 template<Model model_>
-unsigned int Lattice<model_>::get_n_particles() {
+unsigned long Lattice<model_>::get_n_particles() {
 
     // TODO Implement and use count() function in Bitset class
 
-    int n_particles = 0;
+    unsigned long n_particles = 0;
 
     // Loop over all the nodes.
 #pragma omp parallel for reduction(+:n_particles)

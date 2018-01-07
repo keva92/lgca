@@ -64,14 +64,14 @@ PipeView::PipeView(QWidget *parent) :
 
     m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
 
-    m_geom_filter   = vtkImageDataGeometryFilter::New();
-    m_mapper        = vtkPolyDataMapper::New();
-    m_actor         = vtkActor::New();
-    m_ren           = vtkRenderer::New();
-    m_scalar_bar    = vtkScalarBarActor::New();
+    m_geom_filter    = vtkImageDataGeometryFilter::New();
+    m_mapper         = vtkPolyDataMapper::New();
+    m_actor          = vtkActor::New();
+    m_ren            = vtkRenderer::New();
+    m_scalar_bar     = vtkScalarBarActor::New();
     m_scalar_bar_txt = vtkTextProperty::New();
-    m_lut           = vtkLookupTable::New();
-    m_ren_win       = vtkRenderWindow::New();
+    m_lut            = vtkLookupTable::New();
+    m_ren_win        = vtkRenderWindow::New();
 
     m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
     m_geom_filter->Update();

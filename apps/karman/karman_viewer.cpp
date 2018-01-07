@@ -64,14 +64,14 @@ KarmanView::KarmanView(QWidget *parent) :
 
     m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
 
-    m_geom_filter   = vtkImageDataGeometryFilter::New();
-    m_mapper        = vtkPolyDataMapper::New();
-    m_actor         = vtkActor::New();
-    m_ren           = vtkRenderer::New();
-    m_scalar_bar    = vtkScalarBarActor::New();
+    m_geom_filter    = vtkImageDataGeometryFilter::New();
+    m_mapper         = vtkPolyDataMapper::New();
+    m_actor          = vtkActor::New();
+    m_ren            = vtkRenderer::New();
+    m_scalar_bar     = vtkScalarBarActor::New();
     m_scalar_bar_txt = vtkTextProperty::New();
-    m_lut           = vtkLookupTable::New();
-    m_ren_win       = vtkRenderWindow::New();
+    m_lut            = vtkLookupTable::New();
+    m_ren_win        = vtkRenderWindow::New();
 
     m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
     m_geom_filter->Update();
@@ -109,9 +109,47 @@ KarmanView::KarmanView(QWidget *parent) :
     m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(m_ren);
     m_ui->qvtkWidget->show();
 
-    connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
-    connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
-    connect(m_ui->rescaleButton, SIGNAL(clicked()), this, SLOT(rescale()));
+    m_ui->mnupsLineEdit       ->setReadOnly(true);
+    m_ui->simTimeLineEdit     ->setReadOnly(true);
+    m_ui->ppTimeLineEdit      ->setReadOnly(true);
+    m_ui->velLineEdit         ->setReadOnly(true);
+    m_ui->reLineEdit          ->setReadOnly(true);
+    m_ui->maLineEdit          ->setReadOnly(true);
+    m_ui->numCellsLineEdit    ->setReadOnly(true);
+    m_ui->numParticlesLineEdit->setReadOnly(true);
+
+    m_ui->mnupsLineEdit       ->setAlignment(Qt::AlignRight);
+    m_ui->simTimeLineEdit     ->setAlignment(Qt::AlignRight);
+    m_ui->ppTimeLineEdit      ->setAlignment(Qt::AlignRight);
+    m_ui->velLineEdit         ->setAlignment(Qt::AlignRight);
+    m_ui->reLineEdit          ->setAlignment(Qt::AlignRight);
+    m_ui->maLineEdit          ->setAlignment(Qt::AlignRight);
+    m_ui->numCellsLineEdit    ->setAlignment(Qt::AlignRight);
+    m_ui->numParticlesLineEdit->setAlignment(Qt::AlignRight);
+
+    // Set defaults
+    m_mean_velocity = m_lattice->get_mean_velocity();
+    m_ui->mnupsLineEdit       ->setText(QString::number(0));
+    m_ui->simTimeLineEdit     ->setText(QString::number(0.0, 'f', /*prec=*/2));
+    m_ui->ppTimeLineEdit      ->setText(QString::number(0.0, 'f', /*prec=*/2));
+    m_ui->velLineEdit         ->setText(QStringLiteral("[%1, %2]").arg(
+                                   m_mean_velocity[0], /*width=*/5, 'f', /*prec=*/2).arg(
+                                   m_mean_velocity[1], /*width=*/5, 'f', /*prec=*/2));
+    m_ui->reLineEdit          ->setText(QString::number(m_lattice->dim_y() / 3 * m_mean_velocity[0] / m_lattice->nu_s(), 'f', /*prec=*/2));
+    m_ui->maLineEdit          ->setText(QString::number(m_mean_velocity[0] / m_lattice->c_s()                          , 'f', /*prec=*/2));
+    m_ui->numCellsLineEdit    ->setText(QStringLiteral("%1 x %2").arg(m_lattice->dim_x()).arg(m_lattice->dim_y()));
+    m_ui->numParticlesLineEdit->setText(QString::number(m_lattice->get_n_particles()));
+
+    m_ui->meanMomentumRadioButton->setChecked(true);
+
+    // Connect widgets
+    connect(m_ui->startButton,             SIGNAL(clicked()), this, SLOT(run()));
+    connect(m_ui->stopButton,              SIGNAL(clicked()), this, SLOT(stop()));
+    connect(m_ui->rescaleButton,           SIGNAL(clicked()), this, SLOT(rescale()));
+    connect(m_ui->cellDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_cell_density()));
+    connect(m_ui->cellMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_cell_momentum()));
+    connect(m_ui->meanDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_mean_density()));
+    connect(m_ui->meanMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_mean_momentum()));
 }
 
 KarmanView::~KarmanView()
@@ -140,6 +178,13 @@ void KarmanView::run()
         // Get current mean velocity in x and y direction
         m_mean_velocity = m_lattice->get_mean_velocity();
 
+        // Print current mean velocity in x and y direction
+        m_ui->velLineEdit->setText(QStringLiteral("[%1, %2]").arg(
+                                       m_mean_velocity[0], /*width=*/5, 'f', /*prec=*/2).arg(
+                                       m_mean_velocity[1], /*width=*/5, 'f', /*prec=*/2));
+        m_ui->reLineEdit->setText(QString::number(m_lattice->dim_y() / 3 * m_mean_velocity[0] / m_lattice->nu_s(), 'f', /*prec=*/2));
+        m_ui->maLineEdit->setText(QString::number(m_mean_velocity[0] / m_lattice->c_s()                          , 'f', /*prec=*/2));
+
         if (m_mean_velocity[0] < m_lattice->u()) {
 
             // Reduce the forcing once the flow has been accelerated strong enough
@@ -162,12 +207,9 @@ void KarmanView::run()
         // Print current simulation performance
         auto sim_end = steady_clock::now();
         auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
-        fprintf(stderr, "Simulation took %f s.\n", sim_time);
         m_mnups = (int)((m_lattice->num_cells() * WRITE_STEPS) / (sim_time * 1.0e06));
-        fprintf(stderr, "Current MNUPS: %d\n", m_mnups);
-
-        // Print current mean velocity in x and y direction
-        fprintf(stderr, "Current mean velocity: (%6.4f, %6.4f)\n", m_mean_velocity[0], m_mean_velocity[1]);
+        m_ui->mnupsLineEdit  ->setText(QString::number(m_mnups));
+        m_ui->simTimeLineEdit->setText(QString::number(sim_time, 'f', /*prec=*/2));
 
         // Copy results to a temporary buffer for post-processing and visualization
         m_lattice->copy_data_to_output_buffer();
@@ -181,17 +223,17 @@ void KarmanView::run()
         m_lattice->post_process();
         auto pp_end = steady_clock::now();
         auto pp_time = std::chrono::duration_cast<duration<double>>(pp_end - pp_start).count();
-        fprintf(stderr, "Postprocessing took %f s.\n", pp_time);
+        m_ui->ppTimeLineEdit->setText(QString::number(pp_time, 'f', /*prec=*/2));
 
         // Update image data object
         m_vti_io_handler->update();
 
         // Update render window
-        auto ren_start = steady_clock::now();
+//        auto ren_start = steady_clock::now();
         m_ui->qvtkWidget->GetRenderWindow()->Render();
-        auto ren_end = steady_clock::now();
-        auto ren_time = std::chrono::duration_cast<duration<double>>(ren_end - ren_start).count();
-        fprintf(stderr, "Rendering took %f s.\n", ren_time);
+//        auto ren_end = steady_clock::now();
+//        auto ren_time = std::chrono::duration_cast<duration<double>>(ren_end - ren_start).count();
+//        fprintf(stderr, "Rendering took %f s.\n", ren_time);
     });
 
     QTimer::singleShot(0, this, SLOT(run()));
@@ -212,7 +254,7 @@ void KarmanView::stop()
         printf("Error check FAILED: There is a difference in the number of particles of %d.\n", num_particles_end - m_num_particles);
     }
 
-    qApp->quit();
+    qApp->exit();
 }
 
 void KarmanView::rescale()
@@ -220,6 +262,58 @@ void KarmanView::rescale()
     double scalarRange[2];
     m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
     m_mapper->SetScalarRange(scalarRange);
+}
+
+void KarmanView::view_cell_density()
+{
+    m_vti_io_handler->set_scalars("Cell Density");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Cell Density");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
+}
+
+void KarmanView::view_cell_momentum()
+{
+    m_vti_io_handler->set_scalars("Cell Momentum");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Cell Momentum");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
+}
+
+void KarmanView::view_mean_density()
+{
+    m_vti_io_handler->set_scalars("Mean Density");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Mean Density");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
+}
+
+void KarmanView::view_mean_momentum()
+{
+    m_vti_io_handler->set_scalars("Mean Momentum");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Mean Momentum");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
 }
 
 } // namespace lgca

@@ -61,7 +61,13 @@ public slots:
 
     void run();
     void stop();
+
     void rescale();
+
+    void view_cell_density();
+    void view_cell_momentum();
+    void view_mean_density();
+    void view_mean_momentum();
 
 private:
 

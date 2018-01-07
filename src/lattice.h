@@ -42,8 +42,8 @@ protected:
     unsigned int m_dim_x;           // Number of cells in x direction
     unsigned int m_dim_y;           // Number of cells in y direction
     unsigned int m_num_cells;       // Total number of cells
-    unsigned int m_num_nodes;       // Total number of nodes in the lattice
-    unsigned int m_num_particles;   // Number of particles in the lattice
+    unsigned long m_num_nodes;      // Total number of nodes in the lattice
+    unsigned long m_num_particles;  // Number of particles in the lattice
 
     // Coarse graining radius, i.e. the number of neighbor cells in one direction taken into account
     // for averaging purposes
@@ -163,7 +163,7 @@ public:
     void init_diffusion();
 
     // Returns the number of particles in the lattice
-    unsigned int get_n_particles();
+    unsigned long get_n_particles();
 
     // Prints the lattice to the screen
     void print();
