@@ -68,7 +68,7 @@ private:
     // Simulation parameters
     static constexpr Model        MODEL       = Model::FHP;
     static constexpr unsigned int WRITE_STEPS = 10;
-    static constexpr int          CG_RADIUS   = 15;             // Coarse graining radius
+    static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
 
     // Simulation variables
     int               m_mnups;

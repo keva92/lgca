@@ -47,7 +47,7 @@ IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattic
     m_cell_image_data->Initialize();
     m_mean_image_data->Initialize();
 
-    m_mean_image_data->SetDimensions(m_lattice->coarse_dim_x(), m_lattice->coarse_dim_y(), 1);         // TODO Use vtkCellDataToPointData?
+    m_mean_image_data->SetDimensions(m_lattice->coarse_dim_x(),     m_lattice->coarse_dim_y(),     1); // TODO Use vtkCellDataToPointData?
     m_cell_image_data->SetDimensions(m_lattice->       dim_x() + 1, m_lattice->       dim_y() + 1, 1); // Number of points in each direction
 
     // Pass pointer to cell density array of the lattice to the image data object
@@ -83,7 +83,7 @@ IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattic
     mean_momentum->Delete();
 
     // Set active array for on-line visualization
-    m_cell_image_data->GetCellData()->SetActiveScalars(scalars.c_str());
+    m_cell_image_data->GetCellData() ->SetActiveScalars(scalars.c_str());
     m_mean_image_data->GetPointData()->SetActiveScalars(scalars.c_str());
 
     // Mark image data object as modified

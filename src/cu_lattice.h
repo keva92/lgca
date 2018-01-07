@@ -22,11 +22,7 @@
 
 #include "lgca_common.h"
 
-#include "cuda_utils.cuh"
 #include "lattice.h"
-
-#include <curand.h>
-#include <curand_kernel.h>
 
 namespace lgca {
 

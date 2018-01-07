@@ -21,7 +21,6 @@
 #include "ui_karman_viewer.h"
 
 #include "utils.h"
-#include "cuda_utils.cuh"
 #include "lattice.h"
 #include "omp_lattice.h"
 #include "cu_lattice.h"
@@ -157,7 +156,7 @@ void KarmanView::run()
         for (int s = 0; s < WRITE_STEPS; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
-            m_lattice->collide_and_propagate(s);
+            m_lattice->collide_and_propagate();
         }
 
         // Print current simulation performance

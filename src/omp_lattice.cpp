@@ -20,13 +20,28 @@
 #include "lgca_common.h"
 
 #include "omp_lattice.h"
-#include "cuda_utils.cuh"
 
 #include <omp.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
 
 namespace lgca {
+
+// Definitions of static members
+constexpr char          ModelDescriptor<Model::HPP>::INV_DIR[];
+constexpr char          ModelDescriptor<Model::HPP>::MIR_DIR_X[];
+constexpr char          ModelDescriptor<Model::HPP>::MIR_DIR_Y[];
+constexpr Real          ModelDescriptor<Model::HPP>::LATTICE_VEC_X[];
+constexpr Real          ModelDescriptor<Model::HPP>::LATTICE_VEC_Y[];
+constexpr unsigned char ModelDescriptor<Model::HPP>::COLLISION_LUT[];
+
+constexpr char          ModelDescriptor<Model::FHP>::INV_DIR[];
+constexpr char          ModelDescriptor<Model::FHP>::MIR_DIR_X[];
+constexpr char          ModelDescriptor<Model::FHP>::MIR_DIR_Y[];
+constexpr Real          ModelDescriptor<Model::FHP>::LATTICE_VEC_X[];
+constexpr Real          ModelDescriptor<Model::FHP>::LATTICE_VEC_Y[];
+constexpr unsigned char ModelDescriptor<Model::FHP>::COLLISION_LUT[];
+
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.
@@ -54,16 +69,13 @@ OMP_Lattice<model_>::~OMP_Lattice() {
 
 // Performs the collision and propagation step on the lattice gas automaton.
 template<Model model_>
-void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
-
-    // TODO Set the seed for the random number generation.
-    int seed = time(NULL);
+void OMP_Lattice<model_>::collide_and_propagate() {
 
 #ifndef NDEBUG
             // Check weather the domain dimensions are valid for the FHP model.
-            if (n_y % 2 != 0 && n_dir == 6) {
+            if (this->m_dim_y % 2 != 0 && model_ == Model::FHP) {
 
-                printf("ERROR in collide_and_propagate_kernel(): "
+                printf("ERROR in OMP_Lattice<Model::FHP>::collide_and_propagate(): "
                        "Invalid domain dimension in y direction.\n");
                 abort();
             }
@@ -77,9 +89,6 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
         for (int cell = block * Bitset::BITS_PER_BLOCK; cell < (block+1) * Bitset::BITS_PER_BLOCK; ++cell) {
 
             if (cell >= this->m_num_cells) break;
-
-            // Calculate the position of the cell in x direction (column index).
-            int pos_x = cell % this->m_dim_x;
 
             // Calculate the position of the cell in y direction (row index).
             int pos_y = cell / this->m_dim_x;
@@ -99,7 +108,8 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
             int node_idx[this->NUM_DIR];
 
             // Define an array for the states of the nodes in the cell.
-            char node_state[this->NUM_DIR];
+            unsigned char node_state[this->NUM_DIR];
+//            Bitset node_state(this->NUM_DIR);
 
             // Execute collision step.
             //
@@ -109,223 +119,33 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
 #pragma unroll
             for (int dir = 0; dir < this->NUM_DIR; ++dir) {
 
-                node_idx[dir] = dir + cell * this->NUM_DIR;
+                node_idx[dir] = dir + cell * 8;
                 node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
             }
-
-            // TODO Create a random boolean value for the collision step.
-//            bool rand_bool = cu_random_bool(seed, cell);
-//            bool rand_bool =       ((pos_x % 2) == (pos_y % 2))
-//                             - 1 * ((pos_x % 2) == (pos_y % 2)) * (step % 2)
-//                             + 1 * ((pos_x % 2) != (pos_y % 2)) * (step % 2);
-//            bool rand_bool = true;
-            bool rand_bool = false;
+//            node_state(0) = this->m_node_state_cpu(cell);
 
             // Create a temporary array to copy the node states into.
-            char node_state_tmp[this->NUM_DIR];
+            unsigned char node_state_tmp[this->NUM_DIR];
+//            Bitset node_state_tmp(this->NUM_DIR);
 
             // Copy the actual states of the nodes to the temporary array.
 #pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-
-                node_state_tmp[dir] = node_state[dir];
-            }
+            for (int dir = 0; dir < this->NUM_DIR; ++dir) node_state_tmp[dir] = node_state[dir];
+//            node_state_tmp(0) = node_state(0);
 
             switch (cell_type) {
 
                 // The cell working on is a fluid cell ("normal" collision).
                 case 0:
                 {
-                    // Using the the HPP model.
-                    if (model_ == Model::HPP) {
-
-        //                    // Collision case 1.
-        //                    if ((node_state[0] == 0) &&
-        //                        (node_state[1] == 1) &&
-        //                        (node_state[2] == 0) &&
-        //                        (node_state[3] == 1)) {
-        //
-        //                        node_state_tmp[0] = 1;
-        //                        node_state_tmp[1] = 0;
-        //                        node_state_tmp[2] = 1;
-        //                        node_state_tmp[3] = 0;
-        //
-        //                        break;
-        //                    }
-        //
-        //                    // Collision case 2.
-        //                    if ((node_state[0] == 1) &&
-        //                        (node_state[1] == 0) &&
-        //                        (node_state[2] == 1) &&
-        //                        (node_state[3] == 0)) {
-        //
-        //                        node_state_tmp[0] = 0;
-        //                        node_state_tmp[1] = 1;
-        //                        node_state_tmp[2] = 0;
-        //                        node_state_tmp[3] = 1;
-        //
-        //                        break;
-        //                    }
-
-                        node_state_tmp[0] = node_state[0]
-                                - (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]))
-                                + (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]));
-
-                        node_state_tmp[1] = node_state[1]
-                                - (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]))
-                                + (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]));
-
-                        node_state_tmp[2] = node_state[2]
-                                - (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]))
-                                + (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]));
-
-                        node_state_tmp[3] = node_state[3]
-                                - (node_state[1] * node_state[3] * (1 - node_state[0]) * (1 - node_state[2]))
-                                + (node_state[0] * node_state[2] * (1 - node_state[1]) * (1 - node_state[3]));
-
-                    // Collision cases of the FHP model.
-                    } else if (model_ == Model::FHP) {
-
-                        // Collision case a1.
-                        if ((node_state[0] == 1) &&
-                            (node_state[1] == 0) &&
-                            (node_state[2] == 0) &&
-                            (node_state[3] == 1) &&
-                            (node_state[4] == 0) &&
-                            (node_state[5] == 0)) {
-
-                            node_state_tmp[0] = 0;
-                            node_state_tmp[1] = rand_bool;
-                            node_state_tmp[2] = 1 - node_state_tmp[1];
-                            node_state_tmp[3] = 0;
-                            node_state_tmp[4] = node_state_tmp[1];
-                            node_state_tmp[5] = node_state_tmp[2];
-
-                            break;
-                        }
-
-                        // Collision case a2.
-                        if ((node_state[0] == 0) &&
-                            (node_state[1] == 1) &&
-                            (node_state[2] == 0) &&
-                            (node_state[3] == 0) &&
-                            (node_state[4] == 1) &&
-                            (node_state[5] == 0)) {
-
-                            node_state_tmp[0] = rand_bool;
-                            node_state_tmp[1] = 0;
-                            node_state_tmp[2] = 1 - node_state_tmp[0];
-                            node_state_tmp[3] = node_state_tmp[0];
-                            node_state_tmp[4] = 0;
-                            node_state_tmp[5] = node_state_tmp[2];
-
-                            break;
-                        }
-
-                        // Collision case a3.
-                        if ((node_state[0] == 0) &&
-                            (node_state[1] == 0) &&
-                            (node_state[2] == 1) &&
-                            (node_state[3] == 0) &&
-                            (node_state[4] == 0) &&
-                            (node_state[5] == 1)) {
-
-                            node_state_tmp[0] = rand_bool;
-                            node_state_tmp[1] = 1 - node_state_tmp[0];
-                            node_state_tmp[2] = 0;
-                            node_state_tmp[3] = node_state_tmp[0];
-                            node_state_tmp[4] = node_state_tmp[1];
-                            node_state_tmp[5] = 0;
-
-                            break;
-                        }
-
-                        // Collision case b1.
-                        if ((node_state[0] == 0) &&
-                            (node_state[1] == 1) &&
-                            (node_state[2] == 0) &&
-                            (node_state[3] == 1) &&
-                            (node_state[4] == 0) &&
-                            (node_state[5] == 1)) {
-
-                            node_state_tmp[0] = 1;
-                            node_state_tmp[1] = 0;
-                            node_state_tmp[2] = 1;
-                            node_state_tmp[3] = 0;
-                            node_state_tmp[4] = 1;
-                            node_state_tmp[5] = 0;
-
-                            break;
-                        }
-
-                        // Collision case b2.
-                        if ((node_state[0] == 1) &&
-                            (node_state[1] == 0) &&
-                            (node_state[2] == 1) &&
-                            (node_state[3] == 0) &&
-                            (node_state[4] == 1) &&
-                            (node_state[5] == 0)) {
-
-                            node_state_tmp[0] = 0;
-                            node_state_tmp[1] = 1;
-                            node_state_tmp[2] = 0;
-                            node_state_tmp[3] = 1;
-                            node_state_tmp[4] = 0;
-                            node_state_tmp[5] = 1;
-
-                            break;
-                        }
-
-        //                    node_state_tmp[0] = node_state[0]
-        //                            - (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5]))
-        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-        //                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
-        //                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
-        //
-        //                    node_state_tmp[1] = node_state[1]
-        //                            - (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5]))
-        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-        //                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
-        //                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
-        //
-        //                    node_state_tmp[2] = node_state[2]
-        //                            - (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4]))
-        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * (1 - rand_bool)
-        //                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
-        //                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
-        //
-        //                    node_state_tmp[3] = node_state[3]
-        //                            - (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5]))
-        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-        //                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
-        //                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
-        //
-        //                    node_state_tmp[4] = node_state[4]
-        //                            - (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5]))
-        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-        //                            + (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4])) * (1 - rand_bool)
-        //                            - (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]))
-        //                            + (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]));
-        //
-        //                    node_state_tmp[5] = node_state[5]
-        //                            - (node_state[2] * node_state[5] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[1]) * (1 - node_state[4]))
-        //                            + (node_state[0] * node_state[3] * (1 - node_state[1]) * (1 - node_state[4]) * (1 - node_state[2]) * (1 - node_state[5])) * rand_bool
-        //                            + (node_state[1] * node_state[4] * (1 - node_state[0]) * (1 - node_state[3]) * (1 - node_state[2]) * (1 - node_state[5])) * (1 - rand_bool)
-        //                            - (node_state[1] * node_state[3] * node_state[5] * (1 - node_state[0]) * (1 - node_state[2]) * (1 - node_state[4]))
-        //                            + (node_state[0] * node_state[2] * node_state[4] * (1 - node_state[1]) * (1 - node_state[3]) * (1 - node_state[5]));
-                    }
-
+                    ModelDesc::collide(&node_state[0], &node_state_tmp[0]);
+//                    ModelDesc::collide(&node_state(0), &node_state_tmp(0));
                     break;
                 }
 
                 // The cell working on is a solid cell of bounce back type.
                 case 1:
                 {
-                    // Loop over all directions.
 #pragma unroll
                     for (int dir = 0; dir < this->NUM_DIR; ++dir) {
 
@@ -334,13 +154,16 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
                         node_state_tmp[dir] = node_state[ModelDesc::INV_DIR[dir]];
                     }
 
+//                    // Exchange the states of the nodes with the the states of
+//                    // the inverse directions.
+//                    ModelDesc::bounce_back(&node_state(0), &node_state_tmp(0));
+
                     break;
                 }
 
-                // TODO: The cell working on is a solid cell of bounce forward type.
+                // The cell working on is a solid cell of bounce forward type.
                 case 2:
                 {
-                    // Loop over all directions.
 #pragma unroll
                     for (int dir = 0; dir < this->NUM_DIR; ++dir) {
 
@@ -364,8 +187,6 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
             }
 
             // Execute propagation step
-            //
-            // Loop over all directions
 #pragma unroll
             for (int dir = 0; dir < this->NUM_DIR; dir++)
             {
@@ -404,45 +225,30 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
                 // The cell is located in a row with odd index value
                 } else if (pos_y % 2 != 0) {
 
-                    // Construct the correct memory offset.
+                    // Construct the correct memory offset
                     //
                     // Apply a default offset value
                     offset += m_model->offset_to_neighbor_odd[dir];
 
                     // Correct the offset in the current direction if the cell is located on boundaries
-                    if (on_eastern_boundary) {
-
-                        offset += m_model->offset_to_western_boundary_odd[dir];
-                    }
-
-                    if (on_northern_boundary) {
-
-                        offset += m_model->offset_to_southern_boundary_odd[dir];
-                    }
-
-                    if (on_western_boundary) {
-
-                        offset += m_model->offset_to_eastern_boundary_odd[dir];
-                    }
-
-                    if (on_southern_boundary) {
-
-                        offset += m_model->offset_to_northern_boundary_odd[dir];
-                    }
+                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_odd [dir];
+                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_odd[dir];
+                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_odd [dir];
+                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_odd[dir];
                 }
 
                 // Push the states of the cell to its "neighbor" cells in the different directions
-                m_node_state_tmp_cpu[node_idx[dir] + offset * this->NUM_DIR] = bool(node_state_tmp[dir]);
+                m_node_state_tmp_cpu[node_idx[dir] + offset * 8] = bool(node_state_tmp[dir]);
             }
 
         } /* FOR cell */
 
     }}); /* FOR block */
 
-    // Update the node states.
+    // Update the node states
     auto node_state_cpu_tmp = this->m_node_state_cpu.ptr();
-    this->m_node_state_cpu = m_node_state_tmp_cpu.ptr();
-    m_node_state_tmp_cpu = node_state_cpu_tmp;
+    this->m_node_state_cpu  = m_node_state_tmp_cpu.ptr();
+    m_node_state_tmp_cpu    = node_state_cpu_tmp;
 }
 
 // Applies a body force in the specified direction (x or y) and with the
@@ -450,9 +256,6 @@ void OMP_Lattice<model_>::collide_and_propagate(unsigned int step) {
 // every 100th particle changes it's direction, if feasible.
 template<Model model_>
 void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
-
-    // TODO: Set the seed for the random number generation on the device.
-    int seed = time(NULL);
 
     // Set a maximum number of iterations to find particles which can be reverted.
     const int it_max = 2 * this->m_num_cells;
@@ -477,31 +280,19 @@ void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
         // Check weather the cell working on is a fluid cell.
         if (cell_type == 0) {
 
-            // Define an array for the global indices of the nodes in the cell.
-            int node_idx[this->NUM_DIR];
-
             // Define an array for the states of the nodes in the cell.
-            char node_state[this->NUM_DIR];
+            Bitset node_state(this->NUM_DIR);
 
             // The thread working on the cell has to know about the states of the
             // nodes within the cell, therefore looping over all directions and
             // look it up.
-#pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-
-                node_idx[dir] = dir + cell * this->NUM_DIR;
-                node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
-            }
+            node_state(0) = this->m_node_state_cpu(cell);
 
             // Create a temporary array to copy the node states into.
-            char node_state_tmp[this->NUM_DIR];
+            Bitset node_state_tmp(this->NUM_DIR);
 
             // Copy the current states of the nodes to the temporary array.
-#pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-
-                node_state_tmp[dir] = node_state[dir];
-            }
+            node_state_tmp(0) = node_state(0);
 
             if (model_ == Model::HPP) {
 
@@ -550,54 +341,8 @@ void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
 				}
         	}
 
-//            // Loop over all directions.
-//#pragma unroll
-//            for (int dir = 0; dir < n_dir; ++dir) {
-//
-//                // Body force acting in x direction.
-//                if (bf_dir == 'x') {
-//
-//					// TODO: Exchange the states of the nodes with the the states of
-//					//       the mirrored directions along the y axis if feasible.
-//					if ((fabs(lattice_vec_x[dir] - 1.0) < 1.0e-06) &&
-//						(node_state[dir] < node_state[mirrored_dir_y[dir]])) {
-//
-//						node_state_tmp[dir                ] = node_state[mirrored_dir_y[dir]];
-//						node_state_tmp[mirrored_dir_y[dir]] = node_state[dir                ];
-//					}
-//                }
-//
-//                // Body force acting in y direction.
-//                else if (bf_dir == 'y') {
-//
-//					// TODO: Exchange the states of the nodes with the the states of
-//					//       the mirrored directions along the x axis if feasible.
-//					if ((lattice_vec_y[dir] < 1.0e-06) &&
-//						(node_state[dir] < node_state[mirrored_dir_x[dir]])) {
-//
-//						node_state_tmp[dir                ] = node_state[mirrored_dir_x[dir]];
-//						node_state_tmp[mirrored_dir_x[dir]] = node_state[dir                ];
-//					}
-//                }
-//
-//#ifdef DEBUG
-//                // Invalid body force direction.
-//                else {
-//
-//                    printf("ERROR in apply_body_force(): "
-//                           "Invalid body force direction %c.\n", bf_dir);
-//                }
-//#endif
-//            }
-
             // Write the new node states back to the data array.
-            //
-            // Loop over all directions.
-#pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; dir++)
-            {
-                this->m_node_state_cpu[node_idx[dir]] = bool(node_state_tmp[dir]);
-            }
+            this->m_node_state_cpu(cell) = node_state_tmp(0);
 
         } /* IF cell_type */
 
@@ -632,7 +377,7 @@ void OMP_Lattice<model_>::cell_post_process()
 #pragma unroll
         for (int dir = 0; dir < this->NUM_DIR; ++dir) {
 
-            char node_state = bool(this->m_node_state_out_cpu[dir + cell * this->NUM_DIR]);
+            char node_state = bool(this->m_node_state_out_cpu[dir + cell * 8]);
 
             // Sum up the node states
             cell_density += node_state;
@@ -718,15 +463,15 @@ template<Model model_>
 void OMP_Lattice<model_>::allocate_memory()
 {
     // Allocate host memory
-    cu_verify(cudaMallocHost((void **) &this->m_cell_type_cpu,                           this->m_num_cells        * sizeof(char)));
-    cu_verify(cudaMallocHost((void **) &this->m_cell_density_cpu,                        this->m_num_cells        * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_mean_density_cpu,                        this->m_num_coarse_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_cell_momentum_cpu,   this->SPATIAL_DIM * this->m_num_cells        * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_mean_momentum_cpu,   this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(Real)));
+    this->m_cell_type_cpu     = (char*)malloc(                       this->m_num_cells        * sizeof(char));
+    this->m_cell_density_cpu  = (Real*)malloc(                       this->m_num_cells        * sizeof(Real));
+    this->m_mean_density_cpu  = (Real*)malloc(                       this->m_num_coarse_cells * sizeof(Real));
+    this->m_cell_momentum_cpu = (Real*)malloc(   this->SPATIAL_DIM * this->m_num_cells        * sizeof(Real));
+    this->m_mean_momentum_cpu = (Real*)malloc(   this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(Real));
 
-    this->m_node_state_cpu.resize    (this->m_num_nodes);
-          m_node_state_tmp_cpu.resize(this->m_num_nodes);
-    this->m_node_state_out_cpu.resize(this->m_num_nodes);
+    this->m_node_state_cpu.resize    (this->m_num_cells * 8);
+          m_node_state_tmp_cpu.resize(this->m_num_cells * 8);
+    this->m_node_state_out_cpu.resize(this->m_num_cells * 8);
 }
 
 // Frees the memory for the arrays on the host (CPU)
@@ -734,11 +479,11 @@ template<Model model_>
 void OMP_Lattice<model_>::free_memory()
 {
     // Free CPU memory
-    cu_verify(cudaFreeHost(this->m_cell_type_cpu));
-    cu_verify(cudaFreeHost(this->m_cell_density_cpu));
-    cu_verify(cudaFreeHost(this->m_mean_density_cpu));
-    cu_verify(cudaFreeHost(this->m_cell_momentum_cpu));
-    cu_verify(cudaFreeHost(this->m_mean_momentum_cpu));
+    free(this->m_cell_type_cpu);
+    free(this->m_cell_density_cpu);
+    free(this->m_mean_density_cpu);
+    free(this->m_cell_momentum_cpu);
+    free(this->m_mean_momentum_cpu);
 
     this->m_cell_type_cpu       = NULL;
     this->m_cell_density_cpu    = NULL;
