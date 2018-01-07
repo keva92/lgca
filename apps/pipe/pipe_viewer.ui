@@ -98,7 +98,7 @@
             <x>10</x>
             <y>10</y>
             <width>211</width>
-            <height>61</height>
+            <height>64</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="modelFormLayout">
@@ -213,7 +213,7 @@
        </widget>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="3" column="0" colspan="2">
       <widget class="QGroupBox" name="visGroupBox">
        <property name="title">
         <string>Visualization</string>
@@ -223,15 +223,43 @@
          <rect>
           <x>10</x>
           <y>30</y>
-          <width>231</width>
+          <width>991</width>
           <height>31</height>
          </rect>
         </property>
-        <layout class="QGridLayout" name="visGridLayout">
+        <layout class="QGridLayout" name="visGridLayout" columnstretch="4,3,3,3,3">
          <item row="0" column="0">
           <widget class="QPushButton" name="rescaleButton">
            <property name="text">
             <string>Rescale</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QRadioButton" name="cellMomentumRadioButton">
+           <property name="text">
+            <string>Cell Momentum</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QRadioButton" name="cellDensityRadioButton">
+           <property name="text">
+            <string>Cell Density</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QRadioButton" name="meanDensityRadioButton">
+           <property name="text">
+            <string>Mean Density</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4">
+          <widget class="QRadioButton" name="meanMomentumRadioButton">
+           <property name="text">
+            <string>Mean Momentum</string>
            </property>
           </widget>
          </item>

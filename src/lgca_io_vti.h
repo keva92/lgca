@@ -40,10 +40,13 @@ public:
     IoVti(LatticeType* lattice, const std::string scalars);
     virtual ~IoVti() { m_cell_image_data->Delete(); m_mean_image_data->Delete(); }
 
-    // Update image data object.
+    // Set active array for on-line visualization
+    void set_scalars(const std::string scalars);
+
+    // Update image data object
     void update();
 
-    // Write current image data to file.
+    // Write current image data to file
     void write(const unsigned int step);
 
           LatticeType* lattice()       { assert(m_lattice); return m_lattice; }

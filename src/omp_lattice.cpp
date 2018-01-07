@@ -34,6 +34,9 @@ constexpr char          ModelDescriptor<Model::HPP>::MIR_DIR_Y[];
 constexpr Real          ModelDescriptor<Model::HPP>::LATTICE_VEC_X[];
 constexpr Real          ModelDescriptor<Model::HPP>::LATTICE_VEC_Y[];
 constexpr unsigned char ModelDescriptor<Model::HPP>::COLLISION_LUT[];
+constexpr unsigned char ModelDescriptor<Model::HPP>::BB_LUT[];
+constexpr unsigned char ModelDescriptor<Model::HPP>::BF_X_LUT[];
+constexpr unsigned char ModelDescriptor<Model::HPP>::BF_Y_LUT[];
 
 constexpr char          ModelDescriptor<Model::FHP>::INV_DIR[];
 constexpr char          ModelDescriptor<Model::FHP>::MIR_DIR_X[];
@@ -41,6 +44,9 @@ constexpr char          ModelDescriptor<Model::FHP>::MIR_DIR_Y[];
 constexpr Real          ModelDescriptor<Model::FHP>::LATTICE_VEC_X[];
 constexpr Real          ModelDescriptor<Model::FHP>::LATTICE_VEC_Y[];
 constexpr unsigned char ModelDescriptor<Model::FHP>::COLLISION_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP>::BB_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP>::BF_X_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP>::BF_Y_LUT[];
 
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
@@ -109,6 +115,7 @@ void OMP_Lattice<model_>::collide_and_propagate() {
 
             // Define an array for the states of the nodes in the cell
             unsigned char node_state[this->NUM_DIR];
+//            Bitset node_state(this->NUM_DIR);
 
             // Execute propagation step
 #pragma unroll
@@ -152,13 +159,15 @@ void OMP_Lattice<model_>::collide_and_propagate() {
             }
 
             // Execute collision step
-
+            //
             // Create a temporary array to copy the node states
             unsigned char node_state_tmp[this->NUM_DIR];
+//            Bitset node_state_tmp(this->NUM_DIR);
 
             // Copy the actual states of the nodes to the temporary array
 #pragma unroll
             for (int dir = 0; dir < this->NUM_DIR; ++dir) node_state_tmp[dir] = node_state[dir];
+//            node_state_tmp(0) = node_state(0);
 
             switch (cell_type) {
 
@@ -166,43 +175,36 @@ void OMP_Lattice<model_>::collide_and_propagate() {
             case CellType::FLUID:
             {
                 ModelDesc::collide(&node_state[0], &node_state_tmp[0]);
+//                ModelDesc::collide(&node_state(0), &node_state_tmp(0));
                 break;
             }
 
             // The cell working on is a solid cell of bounce back type
             case CellType::SOLID_NO_SLIP:
             {
-#pragma unroll
-                for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-
-                    // Exchange the states of the nodes with the the states of the inverse directions
-                    node_state_tmp[dir] = node_state[ModelDesc::INV_DIR[dir]];
-                }
-
+                ModelDesc::bounce_back(&node_state[0], &node_state_tmp[0]);
+//                ModelDesc::bounce_back(&node_state(0), &node_state_tmp(0));
                 break;
             }
 
             // The cell working on is a solid cell of bounce forward type
             case CellType::SOLID_SLIP:
             {
-#pragma unroll
-                for (int dir = 0; dir < this->NUM_DIR; ++dir) {
+                if (on_northern_boundary || on_southern_boundary) {
 
-                    if (on_northern_boundary || on_southern_boundary) {
-
-                        // Exchange the states of the nodes with the the states of the mirrored
-                        // directions along the x axis
-                        node_state_tmp[dir] = node_state[ModelDesc::MIR_DIR_X[dir]];
-                    }
-
-                    if (on_eastern_boundary || on_western_boundary) {
-
-                        // Exchange the states of the nodes with the the states of
-                        // the mirrored directions along the y axis
-                        node_state_tmp[dir] = node_state[ModelDesc::MIR_DIR_Y[dir]];
-                    }
+                    // Exchange the states of the nodes with the the states of the mirrored
+                    // directions along the x axis
+                    ModelDesc::bounce_forward_x(&node_state[0], &node_state_tmp[0]);
+//                    ModelDesc::bounce_forward_x(&node_state(0), &node_state_tmp(0));
                 }
 
+                if (on_eastern_boundary || on_western_boundary) {
+
+                    // Exchange the states of the nodes with the the states of
+                    // the mirrored directions along the y axis
+                    ModelDesc::bounce_forward_y(&node_state[0], &node_state_tmp[0]);
+//                    ModelDesc::bounce_forward_y(&node_state(0), &node_state_tmp(0));
+                }
                 break;
             }
             }
@@ -213,6 +215,7 @@ void OMP_Lattice<model_>::collide_and_propagate() {
             {
                 this->m_node_state_tmp_cpu[dir + cell * 8] = bool(node_state_tmp[dir]);
             }
+//            this->m_node_state_tmp_cpu(cell) = node_state_tmp(0);
 
         } /* FOR cell */
 

@@ -127,6 +127,7 @@ PipeView::PipeView(QWidget *parent) :
     m_ui->numCellsLineEdit    ->setAlignment(Qt::AlignRight);
     m_ui->numParticlesLineEdit->setAlignment(Qt::AlignRight);
 
+    // Set defaults
     m_mean_velocity = m_lattice->get_mean_velocity();
     m_ui->mnupsLineEdit       ->setText(QString::number(0));
     m_ui->simTimeLineEdit     ->setText(QString::number(0.0, 'f', /*prec=*/2));
@@ -139,9 +140,16 @@ PipeView::PipeView(QWidget *parent) :
     m_ui->numCellsLineEdit    ->setText(QStringLiteral("%1 x %2").arg(m_lattice->dim_x()).arg(m_lattice->dim_y()));
     m_ui->numParticlesLineEdit->setText(QString::number(m_lattice->get_n_particles()));
 
-    connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
-    connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
-    connect(m_ui->rescaleButton, SIGNAL(clicked()), this, SLOT(rescale()));
+    m_ui->meanMomentumRadioButton->setChecked(true);
+
+    // Connect widgets
+    connect(m_ui->startButton,             SIGNAL(clicked()), this, SLOT(run()));
+    connect(m_ui->stopButton,              SIGNAL(clicked()), this, SLOT(stop()));
+    connect(m_ui->rescaleButton,           SIGNAL(clicked()), this, SLOT(rescale()));
+    connect(m_ui->cellDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_cell_density()));
+    connect(m_ui->cellMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_cell_momentum()));
+    connect(m_ui->meanDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_mean_density()));
+    connect(m_ui->meanMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_mean_momentum()));
 }
 
 PipeView::~PipeView()
@@ -254,6 +262,58 @@ void PipeView::rescale()
     double scalarRange[2];
     m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
     m_mapper->SetScalarRange(scalarRange);
+}
+
+void PipeView::view_cell_density()
+{
+    m_vti_io_handler->set_scalars("Cell Density");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Cell Density");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
+}
+
+void PipeView::view_cell_momentum()
+{
+    m_vti_io_handler->set_scalars("Cell Momentum");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Cell Momentum");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
+}
+
+void PipeView::view_mean_density()
+{
+    m_vti_io_handler->set_scalars("Mean Density");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Mean Density");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
+}
+
+void PipeView::view_mean_momentum()
+{
+    m_vti_io_handler->set_scalars("Mean Momentum");
+
+    m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_geom_filter->Update();
+    m_mapper->SetArrayName("Mean Momentum");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
 }
 
 } // namespace lgca

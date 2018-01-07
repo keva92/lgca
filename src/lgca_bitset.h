@@ -44,39 +44,39 @@ public:
         friend class Bitset;
 
         // The one and only non-copy constructor
-        reference(Block& b, Mutex& m, Block pos)
-            : mBlock(b), mMutex(m), mMask((assert(pos < BITS_PER_BLOCK), Block(1) << pos)) { }
+        reference(Block& b/*, Mutex& m*/, Block pos)
+            : mBlock(b)/*, mMutex(m)*/, mMask((assert(pos < BITS_PER_BLOCK), Block(1) << pos)) { }
 
         void operator&(); // Left undefined
 
     public:
 
-        operator bool() const { return (mBlock & mMask) != 0; }
-        bool operator~() const { return (mBlock & mMask) == 0; }
+        inline operator bool()  const { return (mBlock & mMask) != 0; }
+        inline bool operator~() const { return (mBlock & mMask) == 0; }
 
-        reference& flip() { tbb::spin_mutex::scoped_lock lock(mMutex); do_flip(); return *this; }
+        inline reference& flip() { /*tbb::spin_mutex::scoped_lock lock(mMutex);*/ do_flip(); return *this; }
 
-        reference& operator=(bool x)               { Mutex::scoped_lock lock(mMutex); do_assign(  x); return *this; } // For b[i] = x
-        reference& operator=(const reference& rhs) { Mutex::scoped_lock lock(mMutex); do_assign(rhs); return *this; } // For b[i] = b[j]
+        inline reference& operator=(bool x)               { /*Mutex::scoped_lock lock(mMutex);*/ do_assign(  x); return *this; } // For b[i] = x
+        inline reference& operator=(const reference& rhs) { /*Mutex::scoped_lock lock(mMutex);*/ do_assign(rhs); return *this; } // For b[i] = b[j]
 
-        reference& operator|=(bool x) { Mutex::scoped_lock lock(mMutex); if  (x) do_set();   return *this; }
-        reference& operator&=(bool x) { Mutex::scoped_lock lock(mMutex); if (!x) do_reset(); return *this; }
-        reference& operator^=(bool x) { Mutex::scoped_lock lock(mMutex); if  (x) do_flip();  return *this; }
-        reference& operator-=(bool x) { Mutex::scoped_lock lock(mMutex); if  (x) do_reset(); return *this; }
+        inline reference& operator|=(bool x) { /*Mutex::scoped_lock lock(mMutex);*/ if  (x) do_set();   return *this; }
+        inline reference& operator&=(bool x) { /*Mutex::scoped_lock lock(mMutex);*/ if (!x) do_reset(); return *this; }
+        inline reference& operator^=(bool x) { /*Mutex::scoped_lock lock(mMutex);*/ if  (x) do_flip();  return *this; }
+        inline reference& operator-=(bool x) { /*Mutex::scoped_lock lock(mMutex);*/ if  (x) do_reset(); return *this; }
 
      private:
 
         Block& mBlock;
-        Mutex& mMutex;
+//        Mutex& mMutex;
         const Block mMask;
 
-        void do_set() { mBlock |= mMask; }
-        void do_reset() { mBlock &= ~mMask; }
-        void do_flip() { mBlock ^= mMask; }
-        void do_assign(bool x) { x? do_set() : do_reset(); }
+        inline void do_set() { mBlock |= mMask; }
+        inline void do_reset() { mBlock &= ~mMask; }
+        inline void do_flip() { mBlock ^= mMask; }
+        inline void do_assign(bool x) { x? do_set() : do_reset(); }
     };
 
-    Bitset() : m_bits(nullptr), m_mutexes(nullptr), m_num_bits(0), m_num_blocks(0) {}
+    Bitset() : m_bits(nullptr)/*, m_mutexes(nullptr)*/, m_num_bits(0), m_num_blocks(0) {}
 
     // Allocate a block of memory for an array of getNumBlocks(size) elements,
     // each of them sizeof(Block) bytes long, and initialize all its bits to zero
@@ -84,7 +84,7 @@ public:
         : m_num_bits(size), m_num_blocks(get_num_blocks(size))
     {
         m_bits = (Block*)calloc(m_num_blocks, sizeof(Block));
-        m_mutexes = new Mutex[m_num_blocks];
+//        m_mutexes = new Mutex[m_num_blocks];
     }
 
     ~Bitset()
@@ -92,20 +92,20 @@ public:
         free(m_bits);
         m_bits = nullptr;
 
-        delete[] m_mutexes;
-        m_mutexes = nullptr;
+//        delete[] m_mutexes;
+//        m_mutexes = nullptr;
     }
 
     // Resize bitset and set all its bits to zero
     inline void resize(size_t size)
     {
-        if (m_bits) { free(m_bits); delete[] m_mutexes; };
+        if (m_bits) { free(m_bits); /*delete[] m_mutexes;*/ };
 
         m_num_bits   = size;
         m_num_blocks = get_num_blocks(size);
 
         m_bits = (Block*)calloc(m_num_blocks, sizeof(Block));
-        m_mutexes = new Mutex[m_num_blocks];
+//        m_mutexes = new Mutex[m_num_blocks];
     }
 
     // Return the value of the bit at position pos
@@ -119,7 +119,7 @@ public:
     inline reference operator[](size_t pos)
     {
         assert(pos < m_num_bits);
-        return reference(m_bits[block_idx(pos)], m_mutexes[block_idx(pos)], bit_idx(pos));
+        return reference(m_bits[block_idx(pos)]/*, m_mutexes[block_idx(pos)]*/, bit_idx(pos));
     }
 
     // Return the value of the block at position pos
@@ -227,7 +227,7 @@ private:
 
     // Bits are represented as a linear array of Blocks, and the size of a Block is 8 bits
     Block* m_bits;
-    Mutex* m_mutexes;
+//    Mutex* m_mutexes;
 
     size_t m_num_bits;
     size_t m_num_blocks;

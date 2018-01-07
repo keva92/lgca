@@ -91,6 +91,16 @@ IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattic
 }
 
 template<Model model_>
+void IoVti<model_>::set_scalars(const std::string scalars)
+{
+    // Set active array for on-line visualization
+    m_cell_image_data->GetCellData() ->SetActiveScalars(scalars.c_str());
+    m_mean_image_data->GetPointData()->SetActiveScalars(scalars.c_str());
+
+    this->update();
+}
+
+template<Model model_>
 void IoVti<model_>::update()
 {
     assert(m_cell_image_data);

@@ -286,24 +286,11 @@ template<Model model_>
 void Lattice<model_>::init_single_collision() {
 
     // Get the inverse direction of the 0-th one
-	int inverse_dir;
-
-    if (model_ == Model::HPP) {
-
-		inverse_dir = 2;
-
-    } else if (model_ == Model::FHP) {
-
-		inverse_dir = 3;
-
-	} else {
-
-        printf("ERROR in init_single_collision(): Invalid lattice gas model!\n"); abort();
-	}
+    int inverse_dir = ModelDesc::INV_DIR[0];
 
     std::vector<int> occupied_nodes;
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8);
-    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) * 8 + inverse_dir);
+    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 5) * 8);
+    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8 + inverse_dir);
 
     init_single(occupied_nodes);
 }
@@ -352,7 +339,7 @@ void Lattice<model_>::apply_bc_reflecting(const string bounce_type) {
 template<Model model_>
 void Lattice<model_>::apply_cell_type_all(const CellType cell_type) {
 
-    // Loop over all cells.
+    // Loop over all cells
 #pragma omp parallel for
     for (unsigned int cell = 0; cell < m_num_cells; ++cell) {
 
