@@ -21,7 +21,6 @@
 #include "ui_single_viewer.h"
 
 #include "utils.h"
-#include "cuda_utils.cuh"
 #include "lattice.h"
 #include "omp_lattice.h"
 #include "cu_lattice.h"

@@ -21,7 +21,6 @@
 #include "ui_pipe_viewer.h"
 
 #include "utils.h"
-#include "cuda_utils.cuh"
 #include "lattice.h"
 #include "omp_lattice.h"
 #include "cu_lattice.h"
@@ -128,7 +127,16 @@ PipeView::PipeView(QWidget *parent) :
     m_ui->numCellsLineEdit    ->setAlignment(Qt::AlignRight);
     m_ui->numParticlesLineEdit->setAlignment(Qt::AlignRight);
 
-    m_ui->numCellsLineEdit->setText(QStringLiteral("%1 x %2").arg(m_lattice->dim_x()).arg(m_lattice->dim_y()));
+    m_mean_velocity = m_lattice->get_mean_velocity();
+    m_ui->mnupsLineEdit       ->setText(QString::number(0));
+    m_ui->simTimeLineEdit     ->setText(QString::number(0.0, 'f', /*prec=*/2));
+    m_ui->ppTimeLineEdit      ->setText(QString::number(0.0, 'f', /*prec=*/2));
+    m_ui->velLineEdit         ->setText(QStringLiteral("[%1, %2]").arg(
+                                   m_mean_velocity[0], /*width=*/5, 'f', /*prec=*/2).arg(
+                                   m_mean_velocity[1], /*width=*/5, 'f', /*prec=*/2));
+    m_ui->reLineEdit          ->setText(QString::number(m_lattice->dim_y() * m_mean_velocity[0] / m_lattice->nu_s(), 'f', /*prec=*/2));
+    m_ui->maLineEdit          ->setText(QString::number(m_mean_velocity[0] / m_lattice->c_s()                      , 'f', /*prec=*/2));
+    m_ui->numCellsLineEdit    ->setText(QStringLiteral("%1 x %2").arg(m_lattice->dim_x()).arg(m_lattice->dim_y()));
     m_ui->numParticlesLineEdit->setText(QString::number(m_lattice->get_n_particles()));
 
     connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
@@ -163,7 +171,6 @@ void PipeView::run()
         m_mean_velocity = m_lattice->get_mean_velocity();
 
         // Print current mean velocity in x and y direction
-//        fprintf(stderr, "Current mean velocity: (%6.4f, %6.4f)\n", m_mean_velocity[0], m_mean_velocity[1]);
         m_ui->velLineEdit->setText(QStringLiteral("[%1, %2]").arg(
                                        m_mean_velocity[0], /*width=*/5, 'f', /*prec=*/2).arg(
                                        m_mean_velocity[1], /*width=*/5, 'f', /*prec=*/2));
@@ -193,8 +200,6 @@ void PipeView::run()
         auto sim_end = steady_clock::now();
         auto sim_time = std::chrono::duration_cast<duration<double>>(sim_end - sim_start).count();
         m_mnups = (int)((m_lattice->num_cells() * WRITE_STEPS) / (sim_time * 1.0e06));
-//        fprintf(stderr, "Simulation took %f s.\n", sim_time);
-//        fprintf(stderr, "Current MNUPS: %d\n", m_mnups);
         m_ui->mnupsLineEdit  ->setText(QString::number(m_mnups));
         m_ui->simTimeLineEdit->setText(QString::number(sim_time, 'f', /*prec=*/2));
 
@@ -210,7 +215,6 @@ void PipeView::run()
         m_lattice->post_process();
         auto pp_end = steady_clock::now();
         auto pp_time = std::chrono::duration_cast<duration<double>>(pp_end - pp_start).count();
-//        fprintf(stderr, "Postprocessing took %f s.\n", pp_time);
         m_ui->ppTimeLineEdit->setText(QString::number(pp_time, 'f', /*prec=*/2));
 
         // Update image data object

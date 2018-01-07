@@ -20,7 +20,6 @@
 #include "lgca_common.h"
 
 #include "omp_lattice.h"
-#include "cuda_utils.cuh"
 
 #include <omp.h>
 #include <tbb/blocked_range.h>
@@ -464,11 +463,11 @@ template<Model model_>
 void OMP_Lattice<model_>::allocate_memory()
 {
     // Allocate host memory
-    cu_verify(cudaMallocHost((void **) &this->m_cell_type_cpu,                           this->m_num_cells        * sizeof(char)));
-    cu_verify(cudaMallocHost((void **) &this->m_cell_density_cpu,                        this->m_num_cells        * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_mean_density_cpu,                        this->m_num_coarse_cells * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_cell_momentum_cpu,   this->SPATIAL_DIM * this->m_num_cells        * sizeof(Real)));
-    cu_verify(cudaMallocHost((void **) &this->m_mean_momentum_cpu,   this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(Real)));
+    this->m_cell_type_cpu     = (char*)malloc(                       this->m_num_cells        * sizeof(char));
+    this->m_cell_density_cpu  = (Real*)malloc(                       this->m_num_cells        * sizeof(Real));
+    this->m_mean_density_cpu  = (Real*)malloc(                       this->m_num_coarse_cells * sizeof(Real));
+    this->m_cell_momentum_cpu = (Real*)malloc(   this->SPATIAL_DIM * this->m_num_cells        * sizeof(Real));
+    this->m_mean_momentum_cpu = (Real*)malloc(   this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(Real));
 
     this->m_node_state_cpu.resize    (this->m_num_cells * 8);
           m_node_state_tmp_cpu.resize(this->m_num_cells * 8);
@@ -480,11 +479,11 @@ template<Model model_>
 void OMP_Lattice<model_>::free_memory()
 {
     // Free CPU memory
-    cu_verify(cudaFreeHost(this->m_cell_type_cpu));
-    cu_verify(cudaFreeHost(this->m_cell_density_cpu));
-    cu_verify(cudaFreeHost(this->m_mean_density_cpu));
-    cu_verify(cudaFreeHost(this->m_cell_momentum_cpu));
-    cu_verify(cudaFreeHost(this->m_mean_momentum_cpu));
+    free(this->m_cell_type_cpu);
+    free(this->m_cell_density_cpu);
+    free(this->m_mean_density_cpu);
+    free(this->m_cell_momentum_cpu);
+    free(this->m_mean_momentum_cpu);
 
     this->m_cell_type_cpu       = NULL;
     this->m_cell_density_cpu    = NULL;
