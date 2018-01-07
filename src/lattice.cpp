@@ -200,18 +200,17 @@ unsigned int Lattice<model_>::get_n_particles() {
 template<Model model_>
 void Lattice<model_>::init_random() {
 
-	// Loop over all cells.
+    // Loop over all cells
 #pragma omp parallel for
     for (int cell = 0; cell < m_num_cells; ++cell) {
 
-	    // Check weather the cell is a fluid cell.
-        if (m_cell_type_cpu[cell] == 0) {
+        // Check weather the cell is a fluid cell
+        if (m_cell_type_cpu[cell] == CellType::FLUID) {
 
             // Loop over all nodes in the fluid cell.
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
-                // Set random states for the nodes in the fluid cell.
-//                m_node_state_cpu[cell + dir * m_num_cells] =
+                // Set random states for the nodes in the fluid cell
                 m_node_state_cpu[dir + cell * 8] =
                         bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
             }
@@ -224,10 +223,10 @@ void Lattice<model_>::init_random() {
 template<Model model_>
 void Lattice<model_>::apply_bc_periodic() {
 
-    // Set the cell type to fluid cells.
-    int cell_type = 0;
+    // Set the cell type to fluid cells
+    CellType cell_type = CellType::FLUID;
 
-    // Set all cell types to fluid cells.
+    // Set all cell types to fluid cells
     apply_cell_type_all(cell_type);
 }
 
@@ -236,17 +235,16 @@ void Lattice<model_>::apply_bc_periodic() {
 template<Model model_>
 void Lattice<model_>::apply_bc_pipe() {
 
-    // Set the cell type to fluid cells.
-    int cell_type = 0;
+    // Set the cell type to fluid cells
+    CellType cell_type = CellType::FLUID;
 
-    // Set all cell types to fluid cells.
+    // Set all cell types to fluid cells
     apply_cell_type_all(cell_type);
 
-    // Set the cell type to solid boundary cells of bounce back type.
-    cell_type = 1;
+    // Set the cell type to solid boundary cells of bounce back type
+    cell_type = CellType::SOLID_NO_SLIP;
 
-    // Apply the specified cell type to cells located on the boundaries
-    // of the rectangular domain.
+    // Apply the specified cell type to cells located on the boundaries of the rectangular domain
     apply_boundary_cell_type_north(cell_type);
     apply_boundary_cell_type_south(cell_type);
 }
@@ -256,20 +254,20 @@ void Lattice<model_>::apply_bc_pipe() {
 template<Model model_>
 void Lattice<model_>::apply_bc_karman_vortex_street() {
 
-    // Apply boundary conditions for a pipe flow, i.e. reflecting boundaries
-    // at the upper and the lower edge of the rectangular domain.
+    // Apply boundary conditions for a pipe flow, i.e. reflecting boundaries at the upper and the
+    // lower edge of the rectangular domain
     apply_bc_pipe();
 
-    // Define the position and size of the barrier.
+    // Define the position and size of the barrier
     int  center_x = m_dim_x / 6;
     int  center_y = m_dim_y / 2 + 1 / 10 * m_dim_y;
     Real diameter = m_dim_y / 3;
 
-    // Loop over all cells.
+    // Loop over all cells
 #pragma omp parallel for
     for (int cell = 0; cell < m_num_cells; ++cell) {
 
-        // Get the position of the current cell.
+        // Get the position of the current cell
         int pos_x = cell % m_dim_x;
         int pos_y = cell / m_dim_x;
 
@@ -277,8 +275,8 @@ void Lattice<model_>::apply_bc_karman_vortex_street() {
 
         if (dist < (diameter / 2.0)) {
 
-            // Set the cell type to solid cells of bounce back type.
-            m_cell_type_cpu[cell] = 1;
+            // Set the cell type to solid cells of bounce back type
+            m_cell_type_cpu[cell] = CellType::SOLID_NO_SLIP;
         }
     }
 }
@@ -304,8 +302,6 @@ void Lattice<model_>::init_single_collision() {
 	}
 
     std::vector<int> occupied_nodes;
-//    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * NUM_DIR);
-//    occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) * NUM_DIR + inverse_dir);
     occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8);
     occupied_nodes.push_back(occupied_nodes[0] + (m_dim_x - 9) * 8 + inverse_dir);
 
@@ -331,98 +327,84 @@ template<Model model_>
 void Lattice<model_>::apply_bc_reflecting(const string bounce_type) {
 
     // Set the cell type to fluid cells
-    int cell_type = 0;
+    CellType cell_type = CellType::FLUID;
 
     // Set all cell types to fluid cells
     apply_cell_type_all(cell_type);
 
     // Get the type of the boundary cells according to the bounce type
-    if (bounce_type == "back") {
-
-        cell_type = 1;
-
-    } else if (bounce_type == "forward") {
-
-        cell_type = 2;
-
-    } else {
+    if      (bounce_type ==    "back") cell_type = CellType::SOLID_NO_SLIP;
+    else if (bounce_type == "forward") cell_type = CellType::SOLID_SLIP;
+    else {
 
         printf("ERROR in apply_bc_reflecting(): Invalid bounce type %s.\n", bounce_type.c_str());
         abort();
     }
 
     // Apply the specified cell type to cells located on the boundaries of the rectangular domain
-    apply_boundary_cell_type_east(cell_type);
+    apply_boundary_cell_type_east (cell_type);
     apply_boundary_cell_type_north(cell_type);
-    apply_boundary_cell_type_west(cell_type);
+    apply_boundary_cell_type_west (cell_type);
     apply_boundary_cell_type_south(cell_type);
 }
 
-// Applies the specified cell type to all cells in the domain.
+// Applies the specified cell type to all cells in the domain
 template<Model model_>
-void Lattice<model_>::apply_cell_type_all(const int cell_type) {
+void Lattice<model_>::apply_cell_type_all(const CellType cell_type) {
 
     // Loop over all cells.
 #pragma omp parallel for
     for (unsigned int cell = 0; cell < m_num_cells; ++cell) {
 
-        // Set the cell type to the specified type.
+        // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
     }
 }
 
-// Applies the specified cell type to cells located on the eastern boundary
-// of the rectangular domain.
+// Applies the specified cell type to cells located on the eastern boundary of the rectangular domain
 template<Model model_>
-void Lattice<model_>::apply_boundary_cell_type_east(const int cell_type) {
+void Lattice<model_>::apply_boundary_cell_type_east(const CellType cell_type) {
 
-    // Loop over the cells located at the eastern boundary of
-    // the rectangular domain.
+    // Loop over the cells located at the eastern boundary of the rectangular domain
     for (int cell = m_dim_x - 1; cell < m_num_cells; cell += m_dim_x) {
 
-        // Set the cell type to the specified type.
+        // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
     }
 }
 
-// Applies the specified cell type to cells located on the northern boundary
-// of the rectangular domain.
+// Applies the specified cell type to cells located on the northern boundary of the rectangular domain
 template<Model model_>
-void Lattice<model_>::apply_boundary_cell_type_north(const int cell_type) {
+void Lattice<model_>::apply_boundary_cell_type_north(const CellType cell_type) {
 
-    // Loop over the cells located at the northern boundary of
-    // the rectangular domain.
+    // Loop over the cells located at the northern boundary of the rectangular domain
     for (int cell = m_num_cells - m_dim_x; cell < m_num_cells; ++cell) {
 
-        // Set the cell type to the specified type.
+        // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
     }
 }
 
-// Applies the specified cell type to cells located on the western boundary
-// of the rectangular domain.
+// Applies the specified cell type to cells located on the western boundary of the rectangular domain
 template<Model model_>
-void Lattice<model_>::apply_boundary_cell_type_west(const int cell_type) {
+void Lattice<model_>::apply_boundary_cell_type_west(const CellType cell_type) {
 
-    // Loop over the cells located at the western boundary of
-    // the rectangular domain.
+    // Loop over the cells located at the western boundary of the rectangular domain
     for (int cell = 0; cell < m_num_cells; cell += m_dim_x) {
 
-        // Set the cell type to the specified type.
+        // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
     }
 }
 
-// Applies the specified cell type to cells located on the southern boundary
-// of the rectangular domain.
+// Applies the specified cell type to cells located on the southern boundary of the rectangular domain
 template<Model model_>
-void Lattice<model_>::apply_boundary_cell_type_south(const int cell_type) {
+void Lattice<model_>::apply_boundary_cell_type_south(const CellType cell_type) {
 
-    // Loop over the cells located at the southern boundary of
-    // the rectangular domain.
+    // Loop over the cells located at the southern boundary of the rectangular domain
     for (int cell = 0; cell < m_dim_x; ++cell) {
 
-        // Set the cell type to the specified type.
+        // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
     }
 }
@@ -495,29 +477,29 @@ int Lattice<model_>::get_equilibrium_forcing()
 template<Model model_>
 void Lattice<model_>::init_diffusion()
 {
-    // Define the position and size of the center area.
+    // Define the position and size of the center area
     int  center_x = m_dim_x / 2;
     int  center_y = m_dim_y / 2;
     Real diameter = m_dim_y / 4;
 
-	// Loop over all cells.
+    // Loop over all cells
 #pragma omp parallel for
     for (int cell = 0; cell < m_num_cells; ++cell) {
 
-		// Get the x and y position of the current cell.
+        // Get the x and y position of the current cell
         int pos_x = cell % m_dim_x;
         int pos_y = cell / m_dim_x;
 
         Real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
 
-	    // Check weather the cell is a fluid cell in the center area of the domain.
-        if (m_cell_type_cpu[cell] == 0 &&
+        // Check weather the cell is a fluid cell in the center area of the domain
+        if (m_cell_type_cpu[cell] == CellType::FLUID &&
 	    	dist                < (diameter / 2.0))
 	    {
-            // Loop over all nodes in the fluid cell.
+            // Loop over all nodes in the fluid cell
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
-                // Set random states for the nodes in the fluid cell.
+                // Set random states for the nodes in the fluid cell
                 m_node_state_cpu[dir + cell * NUM_DIR] =
                         bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
             }

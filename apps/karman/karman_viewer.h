@@ -76,7 +76,7 @@ private:
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
     Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.3;  // Mach number
+    Real              m_Ma = 0.2;  // Mach number
 
     Ui::KarmanView* m_ui;
 

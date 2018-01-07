@@ -85,112 +85,36 @@ void OMP_Lattice<model_>::collide_and_propagate() {
     const int num_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
     tbb::parallel_for(tbb::blocked_range<int>(0, num_blocks), [&](const tbb::blocked_range<int>& r) {
     for (int block = r.begin(); block != r.end(); ++block)
-    {        
+    {
         for (int cell = block * Bitset::BITS_PER_BLOCK; cell < (block+1) * Bitset::BITS_PER_BLOCK; ++cell) {
 
             if (cell >= this->m_num_cells) break;
 
-            // Calculate the position of the cell in y direction (row index).
+            // Calculate the position of the cell in y direction (row index)
             int pos_y = cell / this->m_dim_x;
 
-            // Get the type of the cell, i.e. fluid or solid.
-            // This has to be taken into account during the collision step, where
-            // cells behave different according to their type.
-            char cell_type = this->m_cell_type_cpu[cell];
+            // Get the type of the cell, i.e. fluid or solid
+            // This has to be taken into account during the collision step, where cells behave
+            // different according to their type
+            CellType cell_type = this->m_cell_type_cpu[cell];
 
-            // Check weather the cell is located on boundaries.
+            // Check weather the cell is located on boundaries
             bool on_eastern_boundary  = (cell + 1) % this->m_dim_x == 0;
             bool on_northern_boundary = cell >= (this->m_num_cells - this->m_dim_x);
             bool on_western_boundary  = cell % this->m_dim_x == 0;
             bool on_southern_boundary = cell < this->m_dim_x;
 
-            // Define an array for the global indices of the nodes in the cell.
+            // Define an array for the global indices of the nodes in the cell
             int node_idx[this->NUM_DIR];
 
-            // Define an array for the states of the nodes in the cell.
+            // Define an array for the states of the nodes in the cell
             unsigned char node_state[this->NUM_DIR];
-//            Bitset node_state(this->NUM_DIR);
-
-            // Execute collision step.
-            //
-            // The thread working on the cell has to know about the states of the
-            // nodes within the cell, therefore looping over all directions and
-            // look it up.
-#pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-
-                node_idx[dir] = dir + cell * 8;
-                node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
-            }
-//            node_state(0) = this->m_node_state_cpu(cell);
-
-            // Create a temporary array to copy the node states into.
-            unsigned char node_state_tmp[this->NUM_DIR];
-//            Bitset node_state_tmp(this->NUM_DIR);
-
-            // Copy the actual states of the nodes to the temporary array.
-#pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) node_state_tmp[dir] = node_state[dir];
-//            node_state_tmp(0) = node_state(0);
-
-            switch (cell_type) {
-
-                // The cell working on is a fluid cell ("normal" collision).
-                case 0:
-                {
-                    ModelDesc::collide(&node_state[0], &node_state_tmp[0]);
-//                    ModelDesc::collide(&node_state(0), &node_state_tmp(0));
-                    break;
-                }
-
-                // The cell working on is a solid cell of bounce back type.
-                case 1:
-                {
-#pragma unroll
-                    for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-
-                        // Exchange the states of the nodes with the the states of
-                        // the inverse directions.
-                        node_state_tmp[dir] = node_state[ModelDesc::INV_DIR[dir]];
-                    }
-
-//                    // Exchange the states of the nodes with the the states of
-//                    // the inverse directions.
-//                    ModelDesc::bounce_back(&node_state(0), &node_state_tmp(0));
-
-                    break;
-                }
-
-                // The cell working on is a solid cell of bounce forward type.
-                case 2:
-                {
-#pragma unroll
-                    for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-
-                        if (on_northern_boundary || on_southern_boundary) {
-
-                            // Exchange the states of the nodes with the the states of
-                            // the mirrored directions along the x axis.
-                            node_state_tmp[dir] = node_state[ModelDesc::MIR_DIR_X[dir]];
-                        }
-
-                        if (on_eastern_boundary || on_western_boundary) {
-
-                            // Exchange the states of the nodes with the the states of
-                            // the mirrored directions along the y axis.
-                            node_state_tmp[dir] = node_state[ModelDesc::MIR_DIR_Y[dir]];
-                        }
-                    }
-
-                    break;
-                }
-            }
 
             // Execute propagation step
 #pragma unroll
             for (int dir = 0; dir < this->NUM_DIR; dir++)
             {
-                // Reset the memory offset.
+                // Reset the memory offset
                 int offset = 0;
 
                 // The cell is located in a row with even index value
@@ -202,25 +126,10 @@ void OMP_Lattice<model_>::collide_and_propagate() {
                     offset += m_model->offset_to_neighbor_even[dir];
 
                     // Correct the offset in the current direction if the cell is located on boundaries
-                    if (on_eastern_boundary) {
-
-                        offset += m_model->offset_to_western_boundary_even[dir];
-                    }
-
-                    if (on_northern_boundary) {
-
-                        offset += m_model->offset_to_southern_boundary_even[dir];
-                    }
-
-                    if (on_western_boundary) {
-
-                        offset += m_model->offset_to_eastern_boundary_even[dir];
-                    }
-
-                    if (on_southern_boundary) {
-
-                        offset += m_model->offset_to_northern_boundary_even[dir];
-                    }
+                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_even [dir];
+                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_even[dir];
+                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_even [dir];
+                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_even[dir];
 
                 // The cell is located in a row with odd index value
                 } else if (pos_y % 2 != 0) {
@@ -237,8 +146,72 @@ void OMP_Lattice<model_>::collide_and_propagate() {
                     if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_odd[dir];
                 }
 
-                // Push the states of the cell to its "neighbor" cells in the different directions
-                m_node_state_tmp_cpu[node_idx[dir] + offset * 8] = bool(node_state_tmp[dir]);
+                // Pull the states of the cell from its "neighbor" cells in the different directions
+                node_idx  [dir] = dir + (cell + offset) * 8;
+                node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
+            }
+
+            // Execute collision step
+
+            // Create a temporary array to copy the node states
+            unsigned char node_state_tmp[this->NUM_DIR];
+
+            // Copy the actual states of the nodes to the temporary array
+#pragma unroll
+            for (int dir = 0; dir < this->NUM_DIR; ++dir) node_state_tmp[dir] = node_state[dir];
+
+            switch (cell_type) {
+
+            // The cell working on is a fluid cell ("normal" collision)
+            case CellType::FLUID:
+            {
+                ModelDesc::collide(&node_state[0], &node_state_tmp[0]);
+                break;
+            }
+
+            // The cell working on is a solid cell of bounce back type
+            case CellType::SOLID_NO_SLIP:
+            {
+#pragma unroll
+                for (int dir = 0; dir < this->NUM_DIR; ++dir) {
+
+                    // Exchange the states of the nodes with the the states of the inverse directions
+                    node_state_tmp[dir] = node_state[ModelDesc::INV_DIR[dir]];
+                }
+
+                break;
+            }
+
+            // The cell working on is a solid cell of bounce forward type
+            case CellType::SOLID_SLIP:
+            {
+#pragma unroll
+                for (int dir = 0; dir < this->NUM_DIR; ++dir) {
+
+                    if (on_northern_boundary || on_southern_boundary) {
+
+                        // Exchange the states of the nodes with the the states of the mirrored
+                        // directions along the x axis
+                        node_state_tmp[dir] = node_state[ModelDesc::MIR_DIR_X[dir]];
+                    }
+
+                    if (on_eastern_boundary || on_western_boundary) {
+
+                        // Exchange the states of the nodes with the the states of
+                        // the mirrored directions along the y axis
+                        node_state_tmp[dir] = node_state[ModelDesc::MIR_DIR_Y[dir]];
+                    }
+                }
+
+                break;
+            }
+            }
+
+            // Write new node states back to global array
+#pragma unroll
+            for (int dir = 0; dir < this->NUM_DIR; dir++)
+            {
+                this->m_node_state_tmp_cpu[dir + cell * 8] = bool(node_state_tmp[dir]);
             }
 
         } /* FOR cell */
@@ -257,16 +230,16 @@ void OMP_Lattice<model_>::collide_and_propagate() {
 template<Model model_>
 void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
 
-    // Set a maximum number of iterations to find particles which can be reverted.
+    // Set a maximum number of iterations to find particles which can be reverted
     const int it_max = 2 * this->m_num_cells;
 
-    // Set the number of iterations to zero.
+    // Set the number of iterations to zero
     int it = 0;
 
-    // Number of particles which have been reverted.
+    // Number of particles which have been reverted
     int reverted_particles = 0;
 
-    // Loop over all cells.
+    // Loop over all cells
     do
     {
         int cell = rand() % this->m_num_cells;
@@ -275,23 +248,22 @@ void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
 
         // Get the type of the cell, i.e. fluid or solid.
         // Note that body forces are applied to fluid cells only.
-        char cell_type = this->m_cell_type_cpu[cell];
+        CellType cell_type = this->m_cell_type_cpu[cell];
 
-        // Check weather the cell working on is a fluid cell.
-        if (cell_type == 0) {
+        // Check weather the cell working on is a fluid cell
+        if (cell_type == CellType::FLUID) {
 
-            // Define an array for the states of the nodes in the cell.
+            // Define an array for the states of the nodes in the cell
             Bitset node_state(this->NUM_DIR);
 
-            // The thread working on the cell has to know about the states of the
-            // nodes within the cell, therefore looping over all directions and
-            // look it up.
+            // The thread working on the cell has to know about the states of the nodes within the
+            // cell, therefore looping over all directions and look it up
             node_state(0) = this->m_node_state_cpu(cell);
 
-            // Create a temporary array to copy the node states into.
+            // Create a temporary array to copy the node states
             Bitset node_state_tmp(this->NUM_DIR);
 
-            // Copy the current states of the nodes to the temporary array.
+            // Copy the current states of the nodes to the temporary array
             node_state_tmp(0) = node_state(0);
 
             if (model_ == Model::HPP) {
@@ -341,7 +313,7 @@ void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
 				}
         	}
 
-            // Write the new node states back to the data array.
+            // Write the new node states back to the data array
             this->m_node_state_cpu(cell) = node_state_tmp(0);
 
         } /* IF cell_type */
@@ -349,18 +321,18 @@ void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
     } while ((reverted_particles < forcing) && (it < it_max));
 }
 
-// Computes quantities of interest as a post-processing procedure.
+// Computes quantities of interest as a post-processing procedure
 template<Model model_>
 void OMP_Lattice<model_>::post_process() {
 
-	// Computes cell quantities of interest as a post-processing procedure.
+    // Computes cell quantities of interest as a post-processing procedure
 	cell_post_process();
 
-	// Computes coarse grained quantities of interest as a post-processing procedure.
+    // Computes coarse grained quantities of interest as a post-processing procedure
 	mean_post_process();
 }
 
-// Computes cell quantities of interest as a post-processing procedure.
+// Computes cell quantities of interest as a post-processing procedure
 template<Model model_>
 void OMP_Lattice<model_>::cell_post_process()
 {
@@ -463,11 +435,11 @@ template<Model model_>
 void OMP_Lattice<model_>::allocate_memory()
 {
     // Allocate host memory
-    this->m_cell_type_cpu     = (char*)malloc(                       this->m_num_cells        * sizeof(char));
-    this->m_cell_density_cpu  = (Real*)malloc(                       this->m_num_cells        * sizeof(Real));
-    this->m_mean_density_cpu  = (Real*)malloc(                       this->m_num_coarse_cells * sizeof(Real));
-    this->m_cell_momentum_cpu = (Real*)malloc(   this->SPATIAL_DIM * this->m_num_cells        * sizeof(Real));
-    this->m_mean_momentum_cpu = (Real*)malloc(   this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(Real));
+    this->m_cell_type_cpu     = (CellType*)malloc(                    this->m_num_cells        * sizeof(CellType));
+    this->m_cell_density_cpu  = (    Real*)malloc(                    this->m_num_cells        * sizeof(    Real));
+    this->m_mean_density_cpu  = (    Real*)malloc(                    this->m_num_coarse_cells * sizeof(    Real));
+    this->m_cell_momentum_cpu = (    Real*)malloc(this->SPATIAL_DIM * this->m_num_cells        * sizeof(    Real));
+    this->m_mean_momentum_cpu = (    Real*)malloc(this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(    Real));
 
     this->m_node_state_cpu.resize    (this->m_num_cells * 8);
           m_node_state_tmp_cpu.resize(this->m_num_cells * 8);
@@ -523,7 +495,7 @@ std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {
 #pragma omp parallel for reduction(+: sum_x_vel, sum_y_vel)
     for (unsigned int n = 0; n < this->m_num_cells; ++n) {
 
-        if (this->m_cell_type_cpu[n] == 0) {
+        if (this->m_cell_type_cpu[n] == CellType::FLUID) {
 
         	counter++;
 

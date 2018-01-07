@@ -51,6 +51,12 @@ enum class Model {
     FHP = 6
 };
 
+enum class CellType {
+    FLUID         = 0,
+    SOLID_NO_SLIP = 1,
+    SOLID_SLIP    = 2
+};
+
 } // namespace lgca
 
 #endif /* LGCA_COMMON_H_ */
