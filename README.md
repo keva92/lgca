@@ -7,7 +7,7 @@ LGCA is a C++ implementation of a Lattice Gas Cellular Automaton (LGCA) in 2D. F
 * File I/O using vtkImageData (.vti) (supported by ParaView)
 
 
-## Installation
+## Build from Source
 
 Please make sure you have installed CMake version 3.8 or higher on your local machine. You will also need Git and some basic development tools (gcc, g++, make...).
 
