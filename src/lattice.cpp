@@ -138,7 +138,7 @@ Lattice<model_>::Lattice(const string test_case,
 
     // Set the number of cells in y direction.
     assert(m_dim_y > 0);
-    if (model_ == Model::FHP) assert(m_dim_y % 2 == 0);
+    if ((model_ == Model::FHP_I) || (model_ == Model::FHP_II) || (model_ == Model::FHP_III)) assert(m_dim_y % 2 == 0);
     this->m_dim_y = m_dim_y;
 
     m_num_cells = m_dim_x * m_dim_y;
@@ -496,6 +496,7 @@ void Lattice<model_>::init_diffusion()
 
 // Explicit instantiations
 template class Lattice<Model::HPP>;
-template class Lattice<Model::FHP>;
+template class Lattice<Model::FHP_I>;
+template class Lattice<Model::FHP_II>;
 
 } // namespace lgca

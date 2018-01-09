@@ -106,7 +106,7 @@ DiffusionView::DiffusionView(QWidget *parent) :
     m_ui->qvtkWidget->show();
 
     connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
-    connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
+    connect(m_ui->stopButton,  SIGNAL(clicked()), this, SLOT(stop()));
 }
 
 DiffusionView::~DiffusionView()

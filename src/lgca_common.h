@@ -45,10 +45,12 @@ using std::chrono::duration;
 // Define floating-point precision
 typedef float Real;
 
-// Number of lattice directions defines the different lattice gas models
+// Lattice gas models
 enum class Model {
-    HPP = 4,
-    FHP = 6
+    HPP,
+    FHP_I,
+    FHP_II,
+    FHP_III
 };
 
 enum class CellType {

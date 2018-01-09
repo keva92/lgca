@@ -38,15 +38,25 @@ constexpr unsigned char ModelDescriptor<Model::HPP>::BB_LUT[];
 constexpr unsigned char ModelDescriptor<Model::HPP>::BF_X_LUT[];
 constexpr unsigned char ModelDescriptor<Model::HPP>::BF_Y_LUT[];
 
-constexpr char          ModelDescriptor<Model::FHP>::INV_DIR[];
-constexpr char          ModelDescriptor<Model::FHP>::MIR_DIR_X[];
-constexpr char          ModelDescriptor<Model::FHP>::MIR_DIR_Y[];
-constexpr Real          ModelDescriptor<Model::FHP>::LATTICE_VEC_X[];
-constexpr Real          ModelDescriptor<Model::FHP>::LATTICE_VEC_Y[];
-constexpr unsigned char ModelDescriptor<Model::FHP>::COLLISION_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP>::BB_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP>::BF_X_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP>::BF_Y_LUT[];
+constexpr char          ModelDescriptor<Model::FHP_I>::INV_DIR[];
+constexpr char          ModelDescriptor<Model::FHP_I>::MIR_DIR_X[];
+constexpr char          ModelDescriptor<Model::FHP_I>::MIR_DIR_Y[];
+constexpr Real          ModelDescriptor<Model::FHP_I>::LATTICE_VEC_X[];
+constexpr Real          ModelDescriptor<Model::FHP_I>::LATTICE_VEC_Y[];
+constexpr unsigned char ModelDescriptor<Model::FHP_I>::COLLISION_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_I>::BB_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_I>::BF_X_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_I>::BF_Y_LUT[];
+
+constexpr char          ModelDescriptor<Model::FHP_II>::INV_DIR[];
+constexpr char          ModelDescriptor<Model::FHP_II>::MIR_DIR_X[];
+constexpr char          ModelDescriptor<Model::FHP_II>::MIR_DIR_Y[];
+constexpr Real          ModelDescriptor<Model::FHP_II>::LATTICE_VEC_X[];
+constexpr Real          ModelDescriptor<Model::FHP_II>::LATTICE_VEC_Y[];
+constexpr unsigned char ModelDescriptor<Model::FHP_II>::COLLISION_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_II>::BB_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_II>::BF_X_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_II>::BF_Y_LUT[];
 
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
@@ -79,7 +89,7 @@ void OMP_Lattice<model_>::collide_and_propagate() {
 
 #ifndef NDEBUG
             // Check weather the domain dimensions are valid for the FHP model.
-            if (this->m_dim_y % 2 != 0 && model_ == Model::FHP) {
+            if (this->m_dim_y % 2 != 0 && (model_ == Model::FHP_I || model_ == Model::FHP_II || model_ == Model::FHP_III)) {
 
                 printf("ERROR in OMP_Lattice<Model::FHP>::collide_and_propagate(): "
                        "Invalid domain dimension in y direction.\n");
@@ -287,7 +297,7 @@ void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
 				}
         	}
 
-            else if (model_ == Model::FHP) {
+            else if (model_ == Model::FHP_I || model_ == Model::FHP_II || model_ == Model::FHP_III) {
 
                 if (this->m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[3] == 1)) {
 
@@ -537,6 +547,7 @@ std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {
 
 // Explicit instantiations
 template class OMP_Lattice<Model::HPP>;
-template class OMP_Lattice<Model::FHP>;
+template class OMP_Lattice<Model::FHP_I>;
+template class OMP_Lattice<Model::FHP_II>;
 
 } // namespace lgca

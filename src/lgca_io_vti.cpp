@@ -150,6 +150,7 @@ void IoVti<model_>::write(const unsigned int step)
 
 // Explicit instantiations
 template class IoVti<Model::HPP>;
-template class IoVti<Model::FHP>;
+template class IoVti<Model::FHP_I>;
+template class IoVti<Model::FHP_II>;
 
 } // namespace lgca

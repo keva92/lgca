@@ -67,14 +67,14 @@ public slots:
 private:
 
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP;
+    static constexpr Model        MODEL       = Model::FHP_II;
     static constexpr unsigned int WRITE_STEPS = 1;
     static constexpr int          CG_RADIUS   = 1;              // Coarse graining radius
 
     // Simulation variables
     int               m_mnups;
     int               m_num_particles;
-    Real              m_Re = 500.0; // Reynolds number  (interpreted as number of cells in y direction here)
+    Real              m_Re = 200.0; // Reynolds number  (interpreted as number of cells in y direction here)
     Real              m_Ma =   0.2; // Mach number      (not interpreted in this case)
 
     Ui::DiffusionView* m_ui;

@@ -72,7 +72,7 @@ public slots:
 private:
 
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP;
+    static constexpr Model        MODEL       = Model::FHP_II;
     static constexpr unsigned int WRITE_STEPS = 10;
     static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
 
