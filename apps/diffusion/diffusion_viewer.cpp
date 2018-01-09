@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "single_viewer.h"
-#include "ui_single_viewer.h"
+#include "diffusion_viewer.h"
+#include "ui_diffusion_viewer.h"
 
 #include "utils.h"
 #include "lattice.h"
@@ -32,9 +32,9 @@
 
 namespace lgca {
 
-SingleView::SingleView(QWidget *parent) :
+DiffusionView::DiffusionView(QWidget *parent) :
     QMainWindow(parent),
-    m_ui(new Ui::SingleView)
+    m_ui(new Ui::DiffusionView)
 {
     m_ui->setupUi(this);
 
@@ -42,13 +42,13 @@ SingleView::SingleView(QWidget *parent) :
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"collision", m_Re, m_Ma, CG_RADIUS);
+    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"diffusion", m_Re, m_Ma, CG_RADIUS);
 
     // Apply boundary conditions
-    m_lattice->apply_bc_pipe();
+    m_lattice->apply_bc_reflecting("back");
 
     // Initialize the lattice gas automaton with particles
-    m_lattice->init_single_collision();
+    m_lattice->init_diffusion();
     m_num_particles = m_lattice->get_n_particles();
 
     // Necessary to set up on-line visualization
@@ -109,7 +109,7 @@ SingleView::SingleView(QWidget *parent) :
     connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
 }
 
-SingleView::~SingleView()
+DiffusionView::~DiffusionView()
 {
     m_geom_filter   ->Delete();
     m_mapper        ->Delete();
@@ -125,7 +125,7 @@ SingleView::~SingleView()
     delete m_ui;
 }
 
-void SingleView::run()
+void DiffusionView::run()
 {
     tbb::task_group task_group;
 
@@ -154,13 +154,12 @@ void SingleView::run()
 
         // Update render window
         m_ui->qvtkWidget->GetRenderWindow()->Render();
-        sleep(1);
     });
 
     QTimer::singleShot(0, this, SLOT(run()));
 }
 
-void SingleView::stop()
+void DiffusionView::stop()
 {
     // Get the number of particles in the lattice.
     unsigned int num_particles_end = m_lattice->get_n_particles();

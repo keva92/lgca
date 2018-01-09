@@ -21,8 +21,6 @@
 
 #include "karman_viewer.h"
 
-#include "lgca_bitset.h"
-
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLWidget.h>

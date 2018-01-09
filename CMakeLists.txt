@@ -11,11 +11,11 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CUDA_STANDARD 11)
 
 # Find packages
-set(CMAKE_MODULE_PATH "/opt/vtk/VTK-8.0.1/CMake")
+set(CMAKE_MODULE_PATH "/opt/vtk/VTK-8.1.0/CMake")
 find_package(TBB REQUIRED)
 find_package(OpenMP REQUIRED)
 
-set(VTK_DIR "/opt/vtk/VTK-8.0.1/build")
+set(VTK_DIR "/opt/vtk/VTK-8.1.0/build")
 find_package(VTK 8.0 REQUIRED)
 include(${VTK_USE_FILE})
 
@@ -46,7 +46,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps/pipe)
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps/karman)
-#add_subdirectory(${PROJECT_SOURCE_DIR}/apps/diffusion)
+add_subdirectory(${PROJECT_SOURCE_DIR}/apps/diffusion)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/apps/box)
 add_subdirectory(${PROJECT_SOURCE_DIR}/apps/single)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/apps/periodic)

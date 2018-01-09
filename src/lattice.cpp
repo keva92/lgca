@@ -487,7 +487,7 @@ void Lattice<model_>::init_diffusion()
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
                 // Set random states for the nodes in the fluid cell
-                m_node_state_cpu[dir + cell * NUM_DIR] =
+                m_node_state_cpu[dir + cell * 8] =
                         bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
             }
 	    }
