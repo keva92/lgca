@@ -58,6 +58,16 @@ constexpr unsigned char ModelDescriptor<Model::FHP_II>::BB_LUT[];
 constexpr unsigned char ModelDescriptor<Model::FHP_II>::BF_X_LUT[];
 constexpr unsigned char ModelDescriptor<Model::FHP_II>::BF_Y_LUT[];
 
+constexpr char          ModelDescriptor<Model::FHP_III>::INV_DIR[];
+constexpr char          ModelDescriptor<Model::FHP_III>::MIR_DIR_X[];
+constexpr char          ModelDescriptor<Model::FHP_III>::MIR_DIR_Y[];
+constexpr Real          ModelDescriptor<Model::FHP_III>::LATTICE_VEC_X[];
+constexpr Real          ModelDescriptor<Model::FHP_III>::LATTICE_VEC_Y[];
+constexpr unsigned char ModelDescriptor<Model::FHP_III>::COLLISION_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_III>::BB_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_III>::BF_X_LUT[];
+constexpr unsigned char ModelDescriptor<Model::FHP_III>::BF_Y_LUT[];
+
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
 // of the specified properties.
@@ -549,5 +559,6 @@ std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {
 template class OMP_Lattice<Model::HPP>;
 template class OMP_Lattice<Model::FHP_I>;
 template class OMP_Lattice<Model::FHP_II>;
+template class OMP_Lattice<Model::FHP_III>;
 
 } // namespace lgca

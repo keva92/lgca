@@ -72,7 +72,7 @@ public slots:
 private:
 
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP_II;
+    static constexpr Model        MODEL       = Model::FHP_III;
     static constexpr unsigned int WRITE_STEPS = 10;
     static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
 
@@ -81,7 +81,7 @@ private:
     int               m_num_particles;
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
-    Real              m_Re = 80.0; // Reynolds number
+    Real              m_Re = 50.0; // Reynolds number
     Real              m_Ma = 0.2;  // Mach number
 
     Ui::KarmanView* m_ui;

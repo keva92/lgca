@@ -498,5 +498,6 @@ void Lattice<model_>::init_diffusion()
 template class Lattice<Model::HPP>;
 template class Lattice<Model::FHP_I>;
 template class Lattice<Model::FHP_II>;
+template class Lattice<Model::FHP_III>;
 
 } // namespace lgca
