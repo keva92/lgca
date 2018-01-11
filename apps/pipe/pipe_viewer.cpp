@@ -97,7 +97,7 @@ PipeView::PipeView(QWidget *parent) :
     m_scalar_bar->SetBarRatio(0.2);
     m_ren->AddActor2D(m_scalar_bar);
     m_lut->SetTableRange(m_mapper->GetScalarRange());
-    m_lut->SetHueRange(2.0/3.0, 0.0); // Blue to red rainbow
+    m_lut->SetHueRange(2.0/3.0, 0.0); // Blue to Red Rainbow
     m_lut->SetSaturationRange(1.0, 1.0);
     m_lut->SetValueRange(1.0, 1.0);
     m_lut->Build();

@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "diffusion_viewer.h"
-#include "ui_diffusion_viewer.h"
+#include "box_viewer.h"
+#include "ui_box_viewer.h"
 
 #include "utils.h"
 #include "lattice.h"
@@ -32,9 +32,9 @@
 
 namespace lgca {
 
-DiffusionView::DiffusionView(QWidget *parent) :
+BoxView::BoxView(QWidget *parent) :
     QMainWindow(parent),
-    m_ui(new Ui::DiffusionView)
+    m_ui(new Ui::BoxView)
 {
     m_ui->setupUi(this);
 
@@ -42,13 +42,13 @@ DiffusionView::DiffusionView(QWidget *parent) :
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"diffusion", m_Re, m_Ma, CG_RADIUS);
+    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"box", m_Re, m_Ma, CG_RADIUS);
 
     // Apply boundary conditions
     m_lattice->apply_bc_reflecting("back");
 
     // Initialize the lattice gas automaton with particles
-    m_lattice->init_diffusion();
+    m_lattice->init_random();
     m_num_particles = m_lattice->get_n_particles();
 
     // Necessary to set up on-line visualization
@@ -116,7 +116,7 @@ DiffusionView::DiffusionView(QWidget *parent) :
     connect(m_ui->stopButton,  SIGNAL(clicked()), this, SLOT(stop()));
 }
 
-DiffusionView::~DiffusionView()
+BoxView::~BoxView()
 {
     m_geom_filter   ->Delete();
     m_mapper        ->Delete();
@@ -132,7 +132,7 @@ DiffusionView::~DiffusionView()
     delete m_ui;
 }
 
-void DiffusionView::run()
+void BoxView::run()
 {
     tbb::task_group task_group;
 
@@ -166,7 +166,7 @@ void DiffusionView::run()
     QTimer::singleShot(0, this, SLOT(run()));
 }
 
-void DiffusionView::stop()
+void BoxView::stop()
 {
     // Get the number of particles in the lattice.
     unsigned int num_particles_end = m_lattice->get_n_particles();

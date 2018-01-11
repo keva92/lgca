@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LGCA_KARMAN_VIEWER_H_
-#define LGCA_KARMAN_VIEWER_H_
+#ifndef LGCA_BOX_VIEWER_H_
+#define LGCA_BOX_VIEWER_H_
 
 #include "lgca_common.h"
 
@@ -37,7 +37,7 @@
 
 // Forward Qt class declarations
 namespace Ui {
-    class KarmanView;
+    class BoxView;
 }
 
 namespace lgca {
@@ -46,45 +46,38 @@ namespace lgca {
 template<Model model> class IoVti;
 template<Model model> class Lattice;
 
-class KarmanView : public QMainWindow
+class BoxView : public QMainWindow
 {
     Q_OBJECT
 
 public:
 
-    explicit KarmanView(QWidget *parent = 0);
-    ~KarmanView();
+    explicit BoxView(QWidget *parent = 0);
+    ~BoxView();
 
 signals:
+
+
 
 public slots:
 
     void run();
     void stop();
 
-    void rescale();
-
-    void view_cell_density();
-    void view_cell_momentum();
-    void view_mean_density();
-    void view_mean_momentum();
-
 private:
 
     // Simulation parameters
     static constexpr Model        MODEL       = Model::FHP_III;
-    static constexpr unsigned int WRITE_STEPS = 10;
-    static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
+    static constexpr unsigned int WRITE_STEPS = 1;
+    static constexpr int          CG_RADIUS   = 1;              // Coarse graining radius
 
     // Simulation variables
     int               m_mnups;
     int               m_num_particles;
-    std::vector<Real> m_mean_velocity;
-    int               m_forcing;
-    Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.2;  // Mach number
+    Real              m_Re = 200.0; // Reynolds number  (interpreted as number of cells in y direction here)
+    Real              m_Ma =   0.2; // Mach number      (not interpreted in this case)
 
-    Ui::KarmanView* m_ui;
+    Ui::BoxView* m_ui;
 
     Lattice<MODEL>* m_lattice;
     IoVti  <MODEL>* m_vti_io_handler;
@@ -101,4 +94,4 @@ private:
 
 } // namespace lgca
 
-#endif /* LGCA_KARMAN_VIEWER_H_ */
+#endif /* LGCA_BOX_VIEWER_H_ */
