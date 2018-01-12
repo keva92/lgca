@@ -66,6 +66,12 @@ public slots:
 
 private:
 
+    // Setup visualization pipeline
+    void setup_visual();
+
+    // Setup UI
+    void setup_ui();
+
     // Simulation parameters
     static constexpr Model        MODEL       = Model::FHP_III;
     static constexpr unsigned int WRITE_STEPS = 1;

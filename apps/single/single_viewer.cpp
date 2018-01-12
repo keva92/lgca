@@ -58,53 +58,13 @@ SingleView::SingleView(QWidget *parent) :
     // Set parallelization parameters
     m_lattice->setup_parallel();
 
-    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Cell density");
+    // Setup visualization pipeline
+    this->setup_visual();
 
-    m_geom_filter   = vtkImageDataGeometryFilter::New();
-    m_mapper        = vtkPolyDataMapper::New();
-    m_actor         = vtkActor::New();
-    m_ren           = vtkRenderer::New();
-    m_scalar_bar    = vtkScalarBarActor::New();
-    m_scalar_bar_txt = vtkTextProperty::New();
-    m_lut           = vtkLookupTable::New();
-    m_ren_win       = vtkRenderWindow::New();
+    // Setup UI
+    this->setup_ui();
 
-    m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
-    m_geom_filter->Update();
-    m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
-    m_mapper->SetArrayName("Cell density");
-    double scalarRange[2];
-    m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
-    m_mapper->SetScalarRange(scalarRange);
-    m_actor->SetMapper(m_mapper);
-    m_ren->AddActor(m_actor);
-    m_ren->SetBackground(1.0, 1.0, 1.0);
-    m_ren->SetBackground2(0.2, 0.3, 0.5);
-    m_ren->GradientBackgroundOn();
-    m_scalar_bar_txt->SetFontFamilyToArial();
-    m_scalar_bar_txt->SetFontSize(10);
-    m_scalar_bar_txt->BoldOff();
-    m_scalar_bar_txt->ItalicOff();
-    m_scalar_bar_txt->ShadowOff();
-    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
-    m_scalar_bar->SetNumberOfLabels(4);
-    m_scalar_bar->SetTitleTextProperty(m_scalar_bar_txt);
-    m_scalar_bar->SetLabelTextProperty(m_scalar_bar_txt);
-    m_scalar_bar->SetBarRatio(0.2);
-    m_ren->AddActor2D(m_scalar_bar);
-    m_lut->SetTableRange(m_mapper->GetScalarRange());
-    m_lut->SetHueRange(2.0/3.0, 0.0); // Blue to red rainbow
-    m_lut->SetSaturationRange(1.0, 1.0);
-    m_lut->SetValueRange(1.0, 1.0);
-    m_lut->Build();
-    m_mapper->SetLookupTable(m_lut);
-    m_scalar_bar->SetLookupTable(m_lut);
-
-    m_ui->qvtkWidget->SetRenderWindow(m_ren_win);
-    m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(m_ren);
-    m_ren->ResetCamera();
-    m_ui->qvtkWidget->show();
-
+    // Connect widgets
     connect(m_ui->startButton, SIGNAL(clicked()), this, SLOT(run()));
     connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(stop()));
 }
@@ -176,6 +136,59 @@ void SingleView::stop()
     }
 
     qApp->quit();
+}
+
+void SingleView::setup_visual()
+{
+    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Cell density");
+
+    m_geom_filter   = vtkImageDataGeometryFilter::New();
+    m_mapper        = vtkPolyDataMapper::New();
+    m_actor         = vtkActor::New();
+    m_ren           = vtkRenderer::New();
+    m_scalar_bar    = vtkScalarBarActor::New();
+    m_scalar_bar_txt = vtkTextProperty::New();
+    m_lut           = vtkLookupTable::New();
+    m_ren_win       = vtkRenderWindow::New();
+
+    m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
+    m_geom_filter->Update();
+    m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
+    m_mapper->SetArrayName("Cell density");
+    double scalarRange[2];
+    m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
+    m_mapper->SetScalarRange(scalarRange);
+    m_actor->SetMapper(m_mapper);
+    m_ren->AddActor(m_actor);
+    m_ren->SetBackground(1.0, 1.0, 1.0);
+    m_ren->SetBackground2(0.2, 0.3, 0.5);
+    m_ren->GradientBackgroundOn();
+    m_scalar_bar_txt->SetFontFamilyToArial();
+    m_scalar_bar_txt->SetFontSize(10);
+    m_scalar_bar_txt->BoldOff();
+    m_scalar_bar_txt->ItalicOff();
+    m_scalar_bar_txt->ShadowOff();
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+    m_scalar_bar->SetNumberOfLabels(4);
+    m_scalar_bar->SetTitleTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->SetLabelTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->SetBarRatio(0.2);
+    m_ren->AddActor2D(m_scalar_bar);
+    m_lut->SetTableRange(m_mapper->GetScalarRange());
+    m_lut->SetHueRange(2.0/3.0, 0.0); // Blue to red rainbow
+    m_lut->SetSaturationRange(1.0, 1.0);
+    m_lut->SetValueRange(1.0, 1.0);
+    m_lut->Build();
+    m_mapper->SetLookupTable(m_lut);
+    m_scalar_bar->SetLookupTable(m_lut);
+    m_ren->ResetCamera();
+}
+
+void SingleView::setup_ui()
+{
+    m_ui->qvtkWidget->SetRenderWindow(m_ren_win);
+    m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(m_ren);
+    m_ui->qvtkWidget->show();
 }
 
 } // namespace lgca

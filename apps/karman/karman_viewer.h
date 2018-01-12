@@ -71,9 +71,15 @@ public slots:
 
 private:
 
+    // Setup visualization pipeline
+    void setup_visual();
+
+    // Setup UI
+    void setup_ui();
+
     // Simulation parameters
     static constexpr Model        MODEL       = Model::FHP_III;
-    static constexpr unsigned int WRITE_STEPS = 10;
+    static constexpr unsigned int WRITE_STEPS = 5;
     static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
 
     // Simulation variables

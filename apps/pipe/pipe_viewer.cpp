@@ -62,8 +62,6 @@ PipeView::PipeView(QWidget *parent) :
     // Set (proper) parallelization parameters
     m_lattice->setup_parallel();
 
-    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
-
     // Setup visualization pipeline
     this->setup_visual();
 
@@ -166,10 +164,10 @@ void PipeView::run()
 
 void PipeView::stop()
 {
-    // Get the number of particles in the lattice.
+    // Get the number of particles in the lattice
     unsigned int num_particles_end = m_lattice->get_n_particles();
 
-    // Check weather the number of particles has changed.
+    // Check weather the number of particles has changed
     if ((num_particles_end - m_num_particles) == 0) {
 
         fprintf(stderr, "Error check PASSED: There is no difference in the number of particles.\n");
@@ -242,6 +240,8 @@ void PipeView::view_mean_momentum()
 
 void PipeView::setup_visual()
 {
+    m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
+
     m_geom_filter    = vtkImageDataGeometryFilter::New();
     m_mapper         = vtkPolyDataMapper::New();
     m_actor          = vtkActor::New();
