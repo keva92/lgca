@@ -52,6 +52,8 @@ class PipeView : public QMainWindow
 
 public:
 
+    friend class PipeRunnable;
+
     explicit PipeView(QWidget *parent = 0);
     ~PipeView();
 
@@ -71,9 +73,15 @@ public slots:
 
 private:
 
+    // Setup visualization pipeline
+    void setup_visual();
+
+    // Setup UI
+    void setup_ui();
+
     // Simulation parameters
     static constexpr Model        MODEL       = Model::FHP_III;
-    static constexpr unsigned int WRITE_STEPS = 20;
+    static constexpr unsigned int PP_INTERVAL = 5;
     static constexpr int          CG_RADIUS   = 10;             // Coarse graining radius
 
     // Simulation variables
@@ -97,7 +105,8 @@ private:
     vtkTextProperty*            m_scalar_bar_txt;
     vtkLookupTable*             m_lut;
     vtkRenderWindow*            m_ren_win;
-};
+
+}; // class PipeView
 
 } // namespace lgca
 

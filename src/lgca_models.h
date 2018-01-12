@@ -1160,6 +1160,15 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[4] == 0) &&
             (node_state_in[5] == 0)) {
 
+            // Rotate counter-clockwise
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 1;
+//            node_state_out[2] = 0;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 1;
+//            node_state_out[5] = 0;
+
+            // Rotate clockwise
             node_state_out[0] = 0;
             node_state_out[1] = 0;
             node_state_out[2] = 1;
@@ -1178,12 +1187,21 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[4] == 1) &&
             (node_state_in[5] == 0)) {
 
+            // Rotate counter-clockwise
             node_state_out[0] = 0;
             node_state_out[1] = 0;
             node_state_out[2] = 1;
             node_state_out[3] = 0;
             node_state_out[4] = 0;
             node_state_out[5] = 1;
+
+            // Rotate clockwise
+//            node_state_out[0] = 1;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 0;
+//            node_state_out[3] = 1;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 0;
 
             return;
         }
@@ -1196,6 +1214,15 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[4] == 0) &&
             (node_state_in[5] == 1)) {
 
+            // Rotate counter-clockwise
+//            node_state_out[0] = 1;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 0;
+//            node_state_out[3] = 1;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 0;
+
+            // Rotate clockwise
             node_state_out[0] = 0;
             node_state_out[1] = 1;
             node_state_out[2] = 0;
