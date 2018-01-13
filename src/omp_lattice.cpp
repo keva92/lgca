@@ -130,9 +130,6 @@ void OMP_Lattice<model_>::collide_and_propagate() {
             bool on_western_boundary  = cell % this->m_dim_x == 0;
             bool on_southern_boundary = cell < this->m_dim_x;
 
-            // Define an array for the global indices of the nodes in the cell
-            int node_idx[this->NUM_DIR];
-
             // Define an array for the states of the nodes in the cell
             unsigned char node_state[this->NUM_DIR];
 //            Bitset node_state(this->NUM_DIR);
@@ -141,6 +138,8 @@ void OMP_Lattice<model_>::collide_and_propagate() {
 #pragma unroll
             for (int dir = 0; dir < this->NUM_DIR; dir++)
             {
+                int inv_dir = ModelDesc::INV_DIR[dir];
+
                 // Reset the memory offset
                 int offset = 0;
 
@@ -150,13 +149,13 @@ void OMP_Lattice<model_>::collide_and_propagate() {
                     // Construct the correct memory offset
                     //
                     // Apply a default offset value
-                    offset += m_model->offset_to_neighbor_even[dir];
+                    offset += m_model->offset_to_neighbor_even[inv_dir];
 
                     // Correct the offset in the current direction if the cell is located on boundaries
-                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_even [dir];
-                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_even[dir];
-                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_even [dir];
-                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_even[dir];
+                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_even [inv_dir];
+                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_even[inv_dir];
+                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_even [inv_dir];
+                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_even[inv_dir];
 
                 // The cell is located in a row with odd index value
                 } else if (pos_y % 2 != 0) {
@@ -164,18 +163,17 @@ void OMP_Lattice<model_>::collide_and_propagate() {
                     // Construct the correct memory offset
                     //
                     // Apply a default offset value
-                    offset += m_model->offset_to_neighbor_odd[dir];
+                    offset += m_model->offset_to_neighbor_odd[inv_dir];
 
                     // Correct the offset in the current direction if the cell is located on boundaries
-                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_odd [dir];
-                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_odd[dir];
-                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_odd [dir];
-                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_odd[dir];
+                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_odd [inv_dir];
+                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_odd[inv_dir];
+                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_odd [inv_dir];
+                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_odd[inv_dir];
                 }
 
                 // Pull the states of the cell from its "neighbor" cells in the different directions
-                node_idx  [dir] = dir + (cell + offset) * 8;
-                node_state[dir] = bool(this->m_node_state_cpu[node_idx[dir]]);
+                node_state[dir] = bool(this->m_node_state_cpu[dir + (cell + offset) * 8]);
             }
 
             // Execute collision step

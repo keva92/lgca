@@ -289,8 +289,8 @@ void Lattice<model_>::init_single_collision() {
     int inverse_dir = ModelDesc::INV_DIR[0];
 
     std::vector<int> occupied_nodes;
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 5) * 8);
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8 + inverse_dir);
+    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8);
+    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 5) * 8 + inverse_dir);
 
     init_single(occupied_nodes);
 }
