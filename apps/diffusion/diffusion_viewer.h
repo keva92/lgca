@@ -17,8 +17,8 @@
  * along with lgca. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LGCA_SINGLE_VIEWER_H_
-#define LGCA_SINGLE_VIEWER_H_
+#ifndef LGCA_DIFFUSION_VIEWER_H_
+#define LGCA_DIFFUSION_VIEWER_H_
 
 #include "lgca_common.h"
 
@@ -37,7 +37,7 @@
 
 // Forward Qt class declarations
 namespace Ui {
-    class SingleView;
+    class DiffusionView;
 }
 
 namespace lgca {
@@ -46,14 +46,14 @@ namespace lgca {
 template<Model model> class IoVti;
 template<Model model> class Lattice;
 
-class SingleView : public QMainWindow
+class DiffusionView : public QMainWindow
 {
     Q_OBJECT
 
 public:
 
-    explicit SingleView(QWidget *parent = 0);
-    ~SingleView();
+    explicit DiffusionView(QWidget *parent = 0);
+    ~DiffusionView();
 
 signals:
 
@@ -80,10 +80,10 @@ private:
     // Simulation variables
     int               m_mnups;
     int               m_num_particles;
-    Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.2;  // Mach number
+    Real              m_Re = 200.0; // Reynolds number  (interpreted as number of cells in y direction here)
+    Real              m_Ma =   0.2; // Mach number      (not interpreted in this case)
 
-    Ui::SingleView* m_ui;
+    Ui::DiffusionView* m_ui;
 
     Lattice<MODEL>* m_lattice;
     IoVti  <MODEL>* m_vti_io_handler;
@@ -100,4 +100,4 @@ private:
 
 } // namespace lgca
 
-#endif /* LGCA_SINGLE_VIEWER_H_ */
+#endif /* LGCA_DIFFUSION_VIEWER_H_ */

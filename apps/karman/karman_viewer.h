@@ -61,13 +61,25 @@ public slots:
 
     void run();
     void stop();
+
     void rescale();
+
+    void view_cell_density();
+    void view_cell_momentum();
+    void view_mean_density();
+    void view_mean_momentum();
 
 private:
 
+    // Setup visualization pipeline
+    void setup_visual();
+
+    // Setup UI
+    void setup_ui();
+
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP;
-    static constexpr unsigned int WRITE_STEPS = 10;
+    static constexpr Model        MODEL       = Model::FHP_III;
+    static constexpr unsigned int WRITE_STEPS = 5;
     static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
 
     // Simulation variables
@@ -75,8 +87,8 @@ private:
     int               m_num_particles;
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
-    Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.3;  // Mach number
+    Real              m_Re = 50.0; // Reynolds number
+    Real              m_Ma = 0.2;  // Mach number
 
     Ui::KarmanView* m_ui;
 
