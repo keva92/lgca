@@ -670,11 +670,18 @@ struct ModelDescriptor<Model::FHP_II> {
             (node_state_in[5] == 0)) {
 
             node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
+            node_state_out[1] = p;
+            node_state_out[2] = 1-p;
             node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
+            node_state_out[4] = p;
+            node_state_out[5] = 1-p;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }
@@ -687,12 +694,19 @@ struct ModelDescriptor<Model::FHP_II> {
             (node_state_in[4] == 1) &&
             (node_state_in[5] == 0)) {
 
-            node_state_out[0] = 0;
+            node_state_out[0] = 1;
             node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
+            node_state_out[2] = 0;
+            node_state_out[3] = 1;
             node_state_out[4] = 0;
-            node_state_out[5] = 1;
+            node_state_out[5] = 0;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }
@@ -705,12 +719,19 @@ struct ModelDescriptor<Model::FHP_II> {
             (node_state_in[4] == 0) &&
             (node_state_in[5] == 1)) {
 
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
+            node_state_out[0] = 1;
+            node_state_out[1] = 0;
             node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
+            node_state_out[3] = 1;
+            node_state_out[4] = 0;
             node_state_out[5] = 0;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 1;
+//            node_state_out[2] = 0;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 1;
+//            node_state_out[5] = 0;
 
             return;
         }
@@ -751,7 +772,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c1 (rest particle circle)
+        // Collision case c1 (rest particle/circle)
         if ((node_state_in[0] == 1) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -771,7 +792,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c2 (rest particle circle)
+        // Collision case c2 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 1) &&
             (node_state_in[2] == 0) &&
@@ -791,7 +812,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c3 (rest particle circle)
+        // Collision case c3 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 1) &&
@@ -811,7 +832,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c4 (rest particle circle)
+        // Collision case c4 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -831,7 +852,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c5 (rest particle circle)
+        // Collision case c5 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -851,7 +872,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c6 (rest particle circle)
+        // Collision case c6 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -871,7 +892,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c7 (rest particle circle)
+        // Collision case c7 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 1) &&
             (node_state_in[2] == 0) &&
@@ -891,7 +912,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c8 (rest particle circle)
+        // Collision case c8 (rest particle/circle)
         if ((node_state_in[0] == 1) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 1) &&
@@ -911,7 +932,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c9 (rest particle circle)
+        // Collision case c9 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 1) &&
             (node_state_in[2] == 0) &&
@@ -931,7 +952,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c10 (rest particle circle)
+        // Collision case c10 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 1) &&
@@ -951,7 +972,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c11 (rest particle circle)
+        // Collision case c11 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -971,7 +992,7 @@ struct ModelDescriptor<Model::FHP_II> {
             return;
         }
 
-        // Collision case c12 (rest particle circle)
+        // Collision case c12 (rest particle/circle)
         if ((node_state_in[0] == 1) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -1182,11 +1203,18 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[5] == 0)) {
 
             node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
+            node_state_out[1] = p;
+            node_state_out[2] = 1-p;
             node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
+            node_state_out[4] = p;
+            node_state_out[5] = 1-p;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }
@@ -1199,12 +1227,19 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[4] == 1) &&
             (node_state_in[5] == 0)) {
 
-            node_state_out[0] = 0;
+            node_state_out[0] = 1;
             node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
+            node_state_out[2] = 0;
+            node_state_out[3] = 1;
             node_state_out[4] = 0;
-            node_state_out[5] = 1;
+            node_state_out[5] = 0;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }
@@ -1217,12 +1252,19 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[4] == 0) &&
             (node_state_in[5] == 1)) {
 
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
+            node_state_out[0] = 1;
+            node_state_out[1] = 0;
             node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
+            node_state_out[3] = 1;
+            node_state_out[4] = 0;
             node_state_out[5] = 0;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 1;
+//            node_state_out[2] = 0;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 1;
+//            node_state_out[5] = 0;
 
             return;
         }
@@ -1263,7 +1305,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c1 (rest particle circle)
+        // Collision case c1 (rest particle/circle)
         if ((node_state_in[0] == 1) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -1283,7 +1325,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c2 (rest particle circle)
+        // Collision case c2 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 1) &&
             (node_state_in[2] == 0) &&
@@ -1303,7 +1345,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c3 (rest particle circle)
+        // Collision case c3 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 1) &&
@@ -1323,7 +1365,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c4 (rest particle circle)
+        // Collision case c4 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -1343,7 +1385,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c5 (rest particle circle)
+        // Collision case c5 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -1363,7 +1405,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c6 (rest particle circle)
+        // Collision case c6 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -1383,7 +1425,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c7 (rest particle circle)
+        // Collision case c7 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 1) &&
             (node_state_in[2] == 0) &&
@@ -1403,7 +1445,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c8 (rest particle circle)
+        // Collision case c8 (rest particle/circle)
         if ((node_state_in[0] == 1) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 1) &&
@@ -1423,7 +1465,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c9 (rest particle circle)
+        // Collision case c9 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 1) &&
             (node_state_in[2] == 0) &&
@@ -1443,7 +1485,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c10 (rest particle circle)
+        // Collision case c10 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 1) &&
@@ -1463,7 +1505,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c11 (rest particle circle)
+        // Collision case c11 (rest particle/circle)
         if ((node_state_in[0] == 0) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -1483,7 +1525,7 @@ struct ModelDescriptor<Model::FHP_III> {
             return;
         }
 
-        // Collision case c12 (rest particle circle)
+        // Collision case c12 (rest particle/circle)
         if ((node_state_in[0] == 1) &&
             (node_state_in[1] == 0) &&
             (node_state_in[2] == 0) &&
@@ -1511,12 +1553,19 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[4] == 1) &&
             (node_state_in[5] == 0)) {
 
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
+            node_state_out[0] = 0;
+            node_state_out[1] = 1;
             node_state_out[2] = 1;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
+            node_state_out[3] = 0;
+            node_state_out[4] = 1;
             node_state_out[5] = 1;
+
+//            node_state_out[0] = 1;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 1;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }
@@ -1529,18 +1578,19 @@ struct ModelDescriptor<Model::FHP_III> {
             (node_state_in[4] == 1) &&
             (node_state_in[5] == 1)) {
 
-//            node_state_out[0] = 1;
-//            node_state_out[1] = 1;
-//            node_state_out[2] = 0;
-//            node_state_out[3] = 1;
-//            node_state_out[4] = 1;
-//            node_state_out[5] = 0;
             node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
+            node_state_out[1] = 1-p;
+            node_state_out[2] = p;
             node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
+            node_state_out[4] = 1-p;
+            node_state_out[5] = p;
+
+//            node_state_out[0] = 1;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 1;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }

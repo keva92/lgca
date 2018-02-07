@@ -78,11 +78,7 @@ private:
     void setup_ui();
 
     // Simulation parameters
-<<<<<<< HEAD
-    static constexpr Model        MODEL       = Model::HPP;
-=======
     static constexpr Model        MODEL       = Model::FHP_I;
->>>>>>> fa6fde55585d2e7a2f4beb4f2b9b718b9a2f7ba6
     static constexpr unsigned int WRITE_STEPS = 5;
     static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
 
