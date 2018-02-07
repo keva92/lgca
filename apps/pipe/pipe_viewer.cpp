@@ -34,7 +34,8 @@ namespace lgca {
 
 PipeView::PipeView(QWidget *parent) :
     QMainWindow(parent),
-    m_ui(new Ui::PipeView)
+    m_ui(new Ui::PipeView),
+    m_steps(0)
 {
     m_ui->setupUi(this);
 
@@ -127,7 +128,8 @@ void PipeView::run()
         for (int s = 0; s < PP_INTERVAL; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
-            m_lattice->collide_and_propagate();
+            m_lattice->collide_and_propagate(/*p=*/m_steps % 2);
+            m_steps++;
         }
 
         // Print current simulation performance
@@ -136,6 +138,7 @@ void PipeView::run()
         m_mnups = (int)((m_lattice->num_cells() * PP_INTERVAL) / (sim_time * 1.0e06));
         m_ui->mnupsLineEdit  ->setText(QString::number(m_mnups));
         m_ui->simTimeLineEdit->setText(QString::number(sim_time, 'f', /*prec=*/2));
+        m_ui->stepsLineEdit  ->setText(QString::number(m_steps));
 
         // Copy results to a temporary buffer for post-processing and visualization
         m_lattice->copy_data_to_output_buffer();
@@ -157,6 +160,8 @@ void PipeView::run()
         // Update render window
         m_ui->qvtkWidget->GetRenderWindow()->Render();
 
+        // Write image data to file
+        if (m_ui->recordButton->isChecked()) m_vti_io_handler->write(m_steps);
     });
 
     if (!m_ui->pauseButton->isChecked()) QTimer::singleShot(0, this, SLOT(run()));
@@ -290,10 +295,13 @@ void PipeView::setup_ui()
     m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(m_ren);
     m_ui->qvtkWidget->show();
 
-    m_ui-> playButton->setIcon( m_ui->playButton->style()->standardIcon(QStyle::SP_MediaPlay));
+    m_ui->playButton->setIcon(m_ui->playButton->style()->standardIcon(QStyle::SP_MediaPlay));
     m_ui->pauseButton->setIcon(m_ui->pauseButton->style()->standardIcon(QStyle::SP_MediaPause));
+    m_ui->recordButton->setIcon(m_ui->recordButton->style()->standardIcon(QStyle::SP_DialogSaveButton));
     m_ui->pauseButton->setCheckable(true);
+    m_ui->recordButton->setCheckable(true);
 
+    m_ui->stepsLineEdit       ->setReadOnly(true);
     m_ui->mnupsLineEdit       ->setReadOnly(true);
     m_ui->simTimeLineEdit     ->setReadOnly(true);
     m_ui->ppTimeLineEdit      ->setReadOnly(true);
@@ -303,6 +311,7 @@ void PipeView::setup_ui()
     m_ui->numCellsLineEdit    ->setReadOnly(true);
     m_ui->numParticlesLineEdit->setReadOnly(true);
 
+    m_ui->stepsLineEdit       ->setAlignment(Qt::AlignRight);
     m_ui->mnupsLineEdit       ->setAlignment(Qt::AlignRight);
     m_ui->simTimeLineEdit     ->setAlignment(Qt::AlignRight);
     m_ui->ppTimeLineEdit      ->setAlignment(Qt::AlignRight);
@@ -314,6 +323,7 @@ void PipeView::setup_ui()
 
     // Set defaults
     m_mean_velocity = m_lattice->get_mean_velocity();
+    m_ui->stepsLineEdit       ->setText(QString::number(0));
     m_ui->mnupsLineEdit       ->setText(QString::number(0));
     m_ui->simTimeLineEdit     ->setText(QString::number(0.0, 'f', /*prec=*/2));
     m_ui->ppTimeLineEdit      ->setText(QString::number(0.0, 'f', /*prec=*/2));

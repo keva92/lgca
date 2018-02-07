@@ -184,7 +184,7 @@ public:
 
     // Calls the CUDA kernel which performs the collision and propagation step on the lattice gas
     // automaton
-    virtual void collide_and_propagate() = 0;
+    virtual void collide_and_propagate(const bool p = false) = 0;
 
     // Computes the mean velocity of the lattice
     virtual std::vector<Real> get_mean_velocity() = 0;

@@ -111,7 +111,7 @@ void IoVti<model_>::update()
 }
 
 template<Model model_>
-void IoVti<model_>::write(const unsigned int step)
+void IoVti<model_>::write(const unsigned int step, const string dir)
 {
     // TODO Set flags which data should be written to file.
     bool write_cell_density  = true;
@@ -123,11 +123,8 @@ void IoVti<model_>::write(const unsigned int step)
 
     // Compose file name
     std::ostringstream cell_filename, mean_filename;
-    cell_filename << "../res/cell_res_" << step << ".vti";
-    mean_filename << "../res/mean_res_" << step << ".vti";
-
-    printf("Writing results to files %s and %s...\n",
-           cell_filename.str().c_str(), mean_filename.str().c_str());
+    cell_filename << dir << "cell_res_" << step << ".vti";
+    mean_filename << dir << "mean_res_" << step << ".vti";
 
     vtkXMLImageDataWriter* cell_data_writer = vtkXMLImageDataWriter::New();
     cell_data_writer->SetFileName(cell_filename.str().c_str());
@@ -144,8 +141,6 @@ void IoVti<model_>::write(const unsigned int step)
     mean_data_writer->SetDataModeToBinary();
     mean_data_writer->Write();
     mean_data_writer->Delete();
-
-    printf("...done.\n");
 }
 
 // Explicit instantiations
