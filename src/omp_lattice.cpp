@@ -249,7 +249,7 @@ void OMP_Lattice<model_>::collide_and_propagate() {
 // specified intensity to the particles. E.g., if the intensity is equal 100,
 // every 100th particle changes it's direction, if feasible.
 template<Model model_>
-void OMP_Lattice<model_>:: OMP_Lattice::apply_body_force(const int forcing) {
+void OMP_Lattice<model_>::apply_body_force(const int forcing) {
 
     // Set a maximum number of iterations to find particles which can be reverted
     const int it_max = 2 * this->m_num_cells;
