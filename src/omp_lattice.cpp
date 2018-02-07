@@ -95,7 +95,7 @@ OMP_Lattice<model_>::~OMP_Lattice() {
 
 // Performs the collision and propagation step on the lattice gas automaton.
 template<Model model_>
-void OMP_Lattice<model_>::collide_and_propagate() {
+void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
 
 #ifndef NDEBUG
             // Check weather the domain dimensions are valid for the FHP model.
@@ -192,8 +192,8 @@ void OMP_Lattice<model_>::collide_and_propagate() {
             // The cell working on is a fluid cell ("normal" collision)
             case CellType::FLUID:
             {
-                ModelDesc::collide(&node_state[0], &node_state_tmp[0]);
-//                ModelDesc::collide(&node_state(0), &node_state_tmp(0));
+                ModelDesc::collide(&node_state[0], &node_state_tmp[0], p);
+//                ModelDesc::collide(&node_state(0), &node_state_tmp(0), p);
                 break;
             }
 

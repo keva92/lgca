@@ -131,7 +131,7 @@ struct ModelDescriptor<Model::HPP> {
         offset_to_southern_boundary_odd [3] = offset_to_southern_boundary_even  [3];
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out)
+    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
     {
 //        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
 
@@ -364,7 +364,7 @@ struct ModelDescriptor<Model::FHP_I> {
         offset_to_southern_boundary_odd [5] = 0;
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out)
+    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
     {
 //        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
 
@@ -377,11 +377,18 @@ struct ModelDescriptor<Model::FHP_I> {
             (node_state_in[5] == 0)) {
 
             node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
+            node_state_out[1] = p;
+            node_state_out[2] = 1-p;
             node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
+            node_state_out[4] = p;
+            node_state_out[5] = 1-p;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }
@@ -394,12 +401,19 @@ struct ModelDescriptor<Model::FHP_I> {
             (node_state_in[4] == 1) &&
             (node_state_in[5] == 0)) {
 
-            node_state_out[0] = 0;
+            node_state_out[0] = 1;
             node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
+            node_state_out[2] = 0;
+            node_state_out[3] = 1;
             node_state_out[4] = 0;
-            node_state_out[5] = 1;
+            node_state_out[5] = 0;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 0;
+//            node_state_out[2] = 1;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 0;
+//            node_state_out[5] = 1;
 
             return;
         }
@@ -412,12 +426,19 @@ struct ModelDescriptor<Model::FHP_I> {
             (node_state_in[4] == 0) &&
             (node_state_in[5] == 1)) {
 
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
+            node_state_out[0] = 1;
+            node_state_out[1] = 0;
             node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
+            node_state_out[3] = 1;
+            node_state_out[4] = 0;
             node_state_out[5] = 0;
+
+//            node_state_out[0] = 0;
+//            node_state_out[1] = 1;
+//            node_state_out[2] = 0;
+//            node_state_out[3] = 0;
+//            node_state_out[4] = 1;
+//            node_state_out[5] = 0;
 
             return;
         }
@@ -636,7 +657,7 @@ struct ModelDescriptor<Model::FHP_II> {
         offset_to_southern_boundary_odd [6] = 0;
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out)
+    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
     {
 //        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
 
@@ -1148,7 +1169,7 @@ struct ModelDescriptor<Model::FHP_III> {
         offset_to_southern_boundary_odd [6] = 0;
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out)
+    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
     {
 //        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
 

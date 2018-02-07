@@ -80,11 +80,12 @@ private:
     void setup_ui();
 
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP_III;
+    static constexpr Model        MODEL       = Model::FHP_I;
     static constexpr unsigned int PP_INTERVAL = 5;
     static constexpr int          CG_RADIUS   = 10;             // Coarse graining radius
 
     // Simulation variables
+    size_t            m_steps;
     int               m_mnups;
     int               m_num_particles;
     std::vector<Real> m_mean_velocity;

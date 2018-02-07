@@ -47,7 +47,7 @@ public:
     void update();
 
     // Write current image data to file
-    void write(const unsigned int step);
+    void write(const unsigned int step, const std::string dir = "./");
 
           LatticeType* lattice()       { assert(m_lattice); return m_lattice; }
     const LatticeType* lattice() const { assert(m_lattice); return m_lattice; }

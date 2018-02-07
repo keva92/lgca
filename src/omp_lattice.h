@@ -63,7 +63,7 @@ public:
     void setup_parallel();
 
     // Performs the collision and propagation step on the lattice gas automaton.
-    void collide_and_propagate();
+    void collide_and_propagate(const bool p);
 
     // Computes the mean velocity of the lattice.
     std::vector<Real> get_mean_velocity();
