@@ -32,6 +32,8 @@
 #include <vtkTextProperty.h>
 #include <vtkLookupTable.h>
 #include <vtkRenderWindow.h>
+#include <vtkWindowToImageFilter.h>
+#include <vtkPNGWriter.h>
 
 #include <QMainWindow>
 
@@ -79,8 +81,10 @@ private:
 
     // Simulation parameters
     static constexpr Model        MODEL       = Model::FHP_III;
-    static constexpr unsigned int WRITE_STEPS = 5;
-    static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
+    static constexpr unsigned int PP_INTERVAL = 5;
+    static constexpr int          CG_RADIUS   = 20;
+           const     string       OUTPUT_DIR    = "./";
+           const     string       OUTPUT_FORMAT = "png";
 
     // Simulation variables
     size_t            m_steps;
@@ -104,6 +108,8 @@ private:
     vtkTextProperty*            m_scalar_bar_txt;
     vtkLookupTable*             m_lut;
     vtkRenderWindow*            m_ren_win;
+    vtkWindowToImageFilter*     m_png_filter;
+    vtkPNGWriter*               m_png_writer;
 };
 
 } // namespace lgca

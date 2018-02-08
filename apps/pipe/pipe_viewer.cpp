@@ -89,6 +89,8 @@ PipeView::~PipeView()
     m_scalar_bar_txt->Delete();
     m_lut           ->Delete();
     m_ren_win       ->Delete();
+    m_png_filter    ->Delete();
+    m_png_writer    ->Delete();
 
     delete m_vti_io_handler;
     delete m_lattice;
@@ -161,7 +163,21 @@ void PipeView::run()
         m_ui->qvtkWidget->GetRenderWindow()->Render();
 
         // Write image data to file
-        if (m_ui->recordButton->isChecked()) m_vti_io_handler->write(m_steps);
+        if (m_ui->recordButton->isChecked()) {
+
+            if (OUTPUT_FORMAT == "vti") {
+
+                m_vti_io_handler->write(m_steps, OUTPUT_DIR);
+
+            } else if (OUTPUT_FORMAT == "png") {
+
+                std::ostringstream filename;
+                filename << OUTPUT_DIR << "res_" << m_steps << ".png";
+                m_png_writer->SetFileName(filename.str().c_str());
+                m_png_filter->Modified();
+                m_png_writer->Write();
+            }
+        }
     });
 
     if (!m_ui->pauseButton->isChecked()) QTimer::singleShot(0, this, SLOT(run()));
@@ -248,6 +264,7 @@ void PipeView::setup_visual()
 {
     m_vti_io_handler = new IoVti<MODEL>(m_lattice, "Mean momentum");
 
+    // Instantiations
     m_geom_filter    = vtkImageDataGeometryFilter::New();
     m_mapper         = vtkPolyDataMapper::New();
     m_actor          = vtkActor::New();
@@ -256,7 +273,10 @@ void PipeView::setup_visual()
     m_scalar_bar_txt = vtkTextProperty::New();
     m_lut            = vtkLookupTable::New();
     m_ren_win        = vtkRenderWindow::New();
+    m_png_filter     = vtkWindowToImageFilter::New();
+    m_png_writer     = vtkPNGWriter::New();
 
+    // Basic pipeline
     m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
     m_geom_filter->Update();
     m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
@@ -269,6 +289,10 @@ void PipeView::setup_visual()
     m_ren->SetBackground (0.0, 0.0, 0.2);
     m_ren->SetBackground2(0.0, 0.0, 0.0);
     m_ren->GradientBackgroundOn();
+    m_ren_win->AddRenderer(m_ren);
+    m_ren_win->SetAlphaBitPlanes(1); // Enable usage of alpha channel
+
+    // Scalar bar
     m_scalar_bar_txt->SetFontFamilyToArial();
     m_scalar_bar_txt->SetFontSize(16);
     m_scalar_bar_txt->BoldOff();
@@ -282,6 +306,8 @@ void PipeView::setup_visual()
     m_scalar_bar->UnconstrainedFontSizeOn();
     m_scalar_bar->SetBarRatio(0.2);
     m_ren->AddActor2D(m_scalar_bar);
+
+    // Lookup table
     m_lut->SetTableRange(m_mapper->GetScalarRange());
     m_lut->SetHueRange       (2.0/3.0, 0.0); // Blue to red rainbow
     m_lut->SetSaturationRange(1.0, 1.0);
@@ -289,13 +315,20 @@ void PipeView::setup_visual()
     m_lut->Build();
     m_mapper    ->SetLookupTable(m_lut);
     m_scalar_bar->SetLookupTable(m_lut);
+
+    // Screenshot
+    m_png_filter->SetInput(m_ren_win);
+    m_png_filter->SetInputBufferTypeToRGBA();   // Also record the alpha (transparency) channel
+    m_png_filter->ReadFrontBufferOff();         // Read from the back buffer
+
     m_ren->ResetCamera();
 }
 
 void PipeView::setup_ui()
 {
     m_ui->qvtkWidget->SetRenderWindow(m_ren_win);
-    m_ui->qvtkWidget->GetRenderWindow()->AddRenderer(m_ren);
+    m_png_filter->Update();
+    m_png_writer->SetInputConnection(m_png_filter->GetOutputPort());
     m_ui->qvtkWidget->show();
 
     m_ui  ->playButton->setIcon(m_ui->  playButton->style()->standardIcon(QStyle::SP_MediaPlay));
