@@ -41,16 +41,16 @@ protected:
 
     unsigned int m_dim_x;           // Number of cells in x direction
     unsigned int m_dim_y;           // Number of cells in y direction
-    unsigned int m_num_cells;       // Total number of cells
-    unsigned long m_num_nodes;      // Total number of nodes in the lattice
-    unsigned long m_num_particles;  // Number of particles in the lattice
+    size_t       m_num_cells;       // Total number of cells
+    size_t       m_num_nodes;      // Total number of nodes in the lattice
+    size_t       m_num_particles;  // Number of particles in the lattice
 
     // Coarse graining radius, i.e. the number of neighbor cells in one direction taken into account
     // for averaging purposes
     unsigned int m_coarse_graining_radius; // TODO Make static constexpr
     unsigned int m_coarse_dim_x;
     unsigned int m_coarse_dim_y;
-    unsigned int m_num_coarse_cells;
+    size_t       m_num_coarse_cells;
 
     // Test case (pipe flow, box, Karman vortex street, single collision)
     string m_test_case;
@@ -107,6 +107,10 @@ protected:
     // Coarse grained momentum vectors (averaged over neighbor cells)
     Real* m_mean_momentum_cpu;
 
+    // Random bits
+    Bitset m_rnd_cpu;
+
+
 public:
 
     // Creates a lattice gas cellular automaton object of the specified properties.
@@ -153,7 +157,7 @@ public:
     void init_random();
 
     // Initializes the lattice gas automaton with single particles at defined nodes
-    void init_single(const std::vector<int> occupied_nodes);
+    void init_single(const std::vector<size_t> occupied_nodes);
 
     // Initializes the lattice gas automaton with two colliding particles
     void init_single_collision();
@@ -173,11 +177,11 @@ public:
 
     // Computes the number of particles to revert in the context of body force in order to
     // compensate boundary layer shear force
-    int get_equilibrium_forcing();
+    size_t get_equilibrium_forcing();
 
     // Computes the number of particles to revert in the context of body force in order to
     // accelerate the flow
-    int get_initial_forcing();
+    size_t get_initial_forcing();
 
     // Sets (proper) parallelization parameters
     virtual void setup_parallel() = 0;
@@ -212,10 +216,10 @@ public:
     Real         u()                const { return m_u;                 }
     unsigned int dim_x()            const { return m_dim_x;             }
     unsigned int dim_y()            const { return m_dim_y;             }
-    unsigned int num_cells()        const { return m_num_cells;         }
+    size_t       num_cells()        const { return m_num_cells;         }
     unsigned int coarse_dim_x()     const { return m_coarse_dim_x;      }
     unsigned int coarse_dim_y()     const { return m_coarse_dim_y;      }
-    unsigned int num_coarse_cells() const { return m_num_coarse_cells;  }
+    size_t       num_coarse_cells() const { return m_num_coarse_cells;  }
 
           Real*  cell_density()       { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }
     const Real*  cell_density() const { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }

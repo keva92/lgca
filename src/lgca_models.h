@@ -366,124 +366,36 @@ struct ModelDescriptor<Model::FHP_I> {
 
     static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
     {
-//        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
+        unsigned char a = node_state_in[1];
+        unsigned char b = node_state_in[2];
+        unsigned char c = node_state_in[3];
+        unsigned char d = node_state_in[4];
+        unsigned char e = node_state_in[5];
+        unsigned char f = node_state_in[0];
 
-        // Collision case a1 (two-body)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0)) {
+        unsigned char db1 = (a&d&~(b|c|e|f));
+        unsigned char db2 = (b&e&~(a|c|d|f));
+        unsigned char db3 = (c&f&~(a|b|d|e));
 
-            node_state_out[0] = 0;
-            node_state_out[1] = p;
-            node_state_out[2] = 1-p;
-            node_state_out[3] = 0;
-            node_state_out[4] = p;
-            node_state_out[5] = 1-p;
+        unsigned char triple = (a^b)&(b^c)&(c^d)&(d^e)&(e^f);
 
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
+        unsigned char cha = ((triple|db1|(p&db2)|((~p)&db3))&(~0));
+        unsigned char chd = ((triple|db1|(p&db2)|((~p)&db3))&(~0));
+        unsigned char chb = ((triple|db2|(p&db3)|((~p)&db1))&(~0));
+        unsigned char che = ((triple|db2|(p&db3)|((~p)&db1))&(~0));
+        unsigned char chc = ((triple|db3|(p&db1)|((~p)&db2))&(~0));
+        unsigned char chf = ((triple|db3|(p&db1)|((~p)&db2))&(~0));
 
-            return;
-        }
-
-        // Collision case a2 (two-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case a3 (two-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 1;
-//            node_state_out[2] = 0;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 1;
-//            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case b1
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case b2
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-
-            return;
-        }
+        node_state_out[1] = node_state_in[1]^cha;
+        node_state_out[2] = node_state_in[2]^chb;
+        node_state_out[3] = node_state_in[3]^chc;
+        node_state_out[4] = node_state_in[4]^chd;
+        node_state_out[5] = node_state_in[5]^che;
+        node_state_out[0] = node_state_in[0]^chf;
     }
 
     static inline void bounce_back(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BB_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -494,8 +406,6 @@ struct ModelDescriptor<Model::FHP_I> {
 
     static inline void bounce_forward_x(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_X_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -507,8 +417,6 @@ struct ModelDescriptor<Model::FHP_I> {
 
     static inline void bounce_forward_y(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_Y_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -659,364 +567,53 @@ struct ModelDescriptor<Model::FHP_II> {
 
     static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
     {
-//        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
+        unsigned char a = node_state_in[1];
+        unsigned char b = node_state_in[2];
+        unsigned char c = node_state_in[3];
+        unsigned char d = node_state_in[4];
+        unsigned char e = node_state_in[5];
+        unsigned char f = node_state_in[0];
+        unsigned char r = node_state_in[6];
 
-        // Collision case a1 (two-body)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0)) {
+        unsigned char db1 = (a&d&~(b|c|e|f));
+        unsigned char db2 = (b&e&~(a|c|d|f));
+        unsigned char db3 = (c&f&~(a|b|d|e));
 
-            node_state_out[0] = 0;
-            node_state_out[1] = p;
-            node_state_out[2] = 1-p;
-            node_state_out[3] = 0;
-            node_state_out[4] = p;
-            node_state_out[5] = 1-p;
+        unsigned char triple = (a^b)&(b^c)&(c^d)&(d^e)&(e^f);
 
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
+        unsigned char ra = (r&a&~(b|c|d|e|f));
+        unsigned char rb = (r&b&~(a|c|d|e|f));
+        unsigned char rc = (r&c&~(a|b|d|e|f));
+        unsigned char rd = (r&d&~(a|b|c|e|f));
+        unsigned char re = (r&e&~(a|b|c|d|f));
+        unsigned char rf = (r&f&~(a|b|c|d|e));
 
-            return;
-        }
+        unsigned char ra2 = (f&b&~(r|a|c|d|e));
+        unsigned char rb2 = (a&c&~(r|b|d|e|f));
+        unsigned char rc2 = (b&d&~(r|a|c|e|f));
+        unsigned char rd2 = (c&e&~(r|a|b|d|f));
+        unsigned char re2 = (d&f&~(r|a|b|c|e));
+        unsigned char rf2 = (e&a&~(r|b|c|d|f));
 
-        // Collision case a2 (two-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
+        unsigned char cha = ((triple|db1|(p&db2)|((~p)&db3)|ra|rb|rf|ra2|rb2|rf2)&(~0));
+        unsigned char chd = ((triple|db1|(p&db2)|((~p)&db3)|rd|rc|re|rd2|rc2|re2)&(~0));
+        unsigned char chb = ((triple|db2|(p&db3)|((~p)&db1)|rb|ra|rc|rb2|ra2|rc2)&(~0));
+        unsigned char che = ((triple|db2|(p&db3)|((~p)&db1)|re|rd|rf|re2|rd2|rf2)&(~0));
+        unsigned char chc = ((triple|db3|(p&db1)|((~p)&db2)|rc|rb|rd|rc2|rb2|rd2)&(~0));
+        unsigned char chf = ((triple|db3|(p&db1)|((~p)&db2)|rf|ra|re|rf2|ra2|re2)&(~0));
+        unsigned char chr = ((ra|rb|rc|rd|re|rf|ra2|rb2|rc2|rd2|re2|rf2)&(~0));
 
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case a3 (two-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 1;
-//            node_state_out[2] = 0;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 1;
-//            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case b1 (three-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case b2 (three-body)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case c1 (rest particle/circle)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c2 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c3 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c4 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c5 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c6 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c7 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c8 (rest particle/circle)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c9 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c10 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c11 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c12 (rest particle/circle)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-            node_state_out[6] = 1;
-
-            return;
-        }
+        node_state_out[1] = node_state_in[1]^cha;
+        node_state_out[2] = node_state_in[2]^chb;
+        node_state_out[3] = node_state_in[3]^chc;
+        node_state_out[4] = node_state_in[4]^chd;
+        node_state_out[5] = node_state_in[5]^che;
+        node_state_out[0] = node_state_in[0]^chf;
+        node_state_out[6] = node_state_in[6]^chr;
     }
 
     static inline void bounce_back(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BB_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -1027,8 +624,6 @@ struct ModelDescriptor<Model::FHP_II> {
 
     static inline void bounce_forward_x(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_X_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -1040,8 +635,6 @@ struct ModelDescriptor<Model::FHP_II> {
 
     static inline void bounce_forward_y(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_Y_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -1192,648 +785,78 @@ struct ModelDescriptor<Model::FHP_III> {
 
     static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
     {
-//        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
-
-        // Collision case a1 (two-body)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = p;
-            node_state_out[2] = 1-p;
-            node_state_out[3] = 0;
-            node_state_out[4] = p;
-            node_state_out[5] = 1-p;
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case a2 (two-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case a3 (two-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 1;
-//            node_state_out[2] = 0;
-//            node_state_out[3] = 0;
-//            node_state_out[4] = 1;
-//            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case b1 (three-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case b2 (three-body)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case c1 (rest particle/circle)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c2 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c3 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c4 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c5 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c6 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1) &&
-            (node_state_in[6] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-            node_state_out[6] = 0;
-
-            return;
-        }
-
-        // Collision case c7 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c8 (rest particle/circle)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c9 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c10 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c11 (rest particle/circle)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case c12 (rest particle/circle)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0) &&
-            (node_state_in[6] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-            node_state_out[6] = 1;
-
-            return;
-        }
-
-        // Collision case d1 (four-body)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 1;
-
-//            node_state_out[0] = 1;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 1;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case d2 (four-body)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 1-p;
-            node_state_out[2] = p;
-            node_state_out[3] = 1;
-            node_state_out[4] = 1-p;
-            node_state_out[5] = p;
-
-//            node_state_out[0] = 1;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 1;
-//            node_state_out[4] = 0;
-//            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case d3 (four-body)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case e1 (two-body with spectator)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case e2 (two-body with spectator)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case e3 (two-body with spectator)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case e4 (two-body with spectator)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case e5 (two-body with spectator)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 0;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case e6 (two-body with spectator)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case e7 (two-body with spectator)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 0)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 0;
-            node_state_out[2] = 1;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case e8 (two-body with spectator)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 0) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 1;
-
-            return;
-        }
-
-        // Collision case e9 (two-body with spectator)
-        if ((node_state_in[0] == 1) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 0;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case e10 (two-body with spectator)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 1) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 0;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case e11 (two-body with spectator)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 1) &&
-            (node_state_in[4] == 0) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 0;
-            node_state_out[1] = 1;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-
-            return;
-        }
-
-        // Collision case e12 (two-body with spectator)
-        if ((node_state_in[0] == 0) &&
-            (node_state_in[1] == 0) &&
-            (node_state_in[2] == 1) &&
-            (node_state_in[3] == 0) &&
-            (node_state_in[4] == 1) &&
-            (node_state_in[5] == 1)) {
-
-            node_state_out[0] = 1;
-            node_state_out[1] = 0;
-            node_state_out[2] = 0;
-            node_state_out[3] = 1;
-            node_state_out[4] = 1;
-            node_state_out[5] = 0;
-
-            return;
-        }
+        unsigned char a = node_state_in[1];
+        unsigned char b = node_state_in[2];
+        unsigned char c = node_state_in[3];
+        unsigned char d = node_state_in[4];
+        unsigned char e = node_state_in[5];
+        unsigned char f = node_state_in[0];
+        unsigned char r = node_state_in[6];
+
+        unsigned char db1 = (a&d&~(b|c|e|f));
+        unsigned char db2 = (b&e&~(a|c|d|f));
+        unsigned char db3 = (c&f&~(a|b|d|e));
+
+        unsigned char triple = (a^b)&(b^c)&(c^d)&(d^e)&(e^f);
+
+        unsigned char ra = (r&a&~(b|c|d|e|f));
+        unsigned char rb = (r&b&~(a|c|d|e|f));
+        unsigned char rc = (r&c&~(a|b|d|e|f));
+        unsigned char rd = (r&d&~(a|b|c|e|f));
+        unsigned char re = (r&e&~(a|b|c|d|f));
+        unsigned char rf = (r&f&~(a|b|c|d|e));
+
+        unsigned char ra2 = (f&b&~(r|a|c|d|e));
+        unsigned char rb2 = (a&c&~(r|b|d|e|f));
+        unsigned char rc2 = (b&d&~(r|a|c|e|f));
+        unsigned char rd2 = (c&e&~(r|a|b|d|f));
+        unsigned char re2 = (d&f&~(r|a|b|c|e));
+        unsigned char rf2 = (e&a&~(r|b|c|d|f));
+
+        unsigned char adbe = ad&be&(~(c|f));
+        unsigned char adcf = ad&cf&(~(b|e));
+        unsigned char becf = be&cf&(~(a|d));
+
+        unsigned char chad = (p&adbe)|((~p)&adcf)|becf;
+        unsigned char chbe = (p&becf)|((~p)&adbe)|adcf;
+        unsigned char chcf = (p&adcf)|((~p)&becf)|adbe;
+
+        unsigned char adb = ad&b&(~(c|e|f));
+        unsigned char adc = ad&c&(~(b|e|f));
+        unsigned char ade = ad&e&(~(b|c|f));
+        unsigned char adf = ad&f&(~(b|c|e));
+        unsigned char bea = be&a&(~(c|d|f));
+        unsigned char bec = be&c&(~(a|d|f));
+        unsigned char bed = be&d&(~(a|c|f));
+        unsigned char bef = be&f&(~(a|c|d));
+        unsigned char cfa = cf&a&(~(b|d|e));
+        unsigned char cfb = cf&b&(~(a|d|e));
+        unsigned char cfd = cf&d&(~(a|b|e));
+        unsigned char cfe = cf&e&(~(a|b|d));
+
+        unsigned char spchad = (adb|ade|adc|adf)|(bec|bef)|(cfb|cfe);
+        unsigned char spchbe = (bea|bec|bed|bef)|(adc|adf)|(cfa|cfd);
+        unsigned char spchcf = (cfa|cfb|cfd|cfe)|(adb|ade)|(bea|bed);
+
+        unsigned char cha = ((triple|db1|(p&db2)|((~p)&db3)|ra|rb|rf|ra2|rb2|rf2|spchad|chad)&(~0));
+        unsigned char chd = ((triple|db1|(p&db2)|((~p)&db3)|rd|rc|re|rd2|rc2|re2|spchad|chad)&(~0));
+        unsigned char chb = ((triple|db2|(p&db3)|((~p)&db1)|rb|ra|rc|rb2|ra2|rc2|spchbe|chbe)&(~0));
+        unsigned char che = ((triple|db2|(p&db3)|((~p)&db1)|re|rd|rf|re2|rd2|rf2|spchbe|chbe)&(~0));
+        unsigned char chc = ((triple|db3|(p&db1)|((~p)&db2)|rc|rb|rd|rc2|rb2|rd2|spchcf|chcf)&(~0));
+        unsigned char chf = ((triple|db3|(p&db1)|((~p)&db2)|rf|ra|re|rf2|ra2|re2|spchcf|chcf)&(~0));
+        unsigned char chr = ((ra|rb|rc|rd|re|rf|ra2|rb2|rc2|rd2|re2|rf2)&(~0));
+
+        node_state_out[1] = node_state_in[1]^cha;
+        node_state_out[2] = node_state_in[2]^chb;
+        node_state_out[3] = node_state_in[3]^chc;
+        node_state_out[4] = node_state_in[4]^chd;
+        node_state_out[5] = node_state_in[5]^che;
+        node_state_out[0] = node_state_in[0]^chf;
+        node_state_out[6] = node_state_in[6]^chr;
     }
 
     static inline void bounce_back(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BB_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -1844,8 +867,6 @@ struct ModelDescriptor<Model::FHP_III> {
 
     static inline void bounce_forward_x(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_X_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -1857,8 +878,6 @@ struct ModelDescriptor<Model::FHP_III> {
 
     static inline void bounce_forward_y(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_Y_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 

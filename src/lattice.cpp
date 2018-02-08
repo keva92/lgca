@@ -95,8 +95,9 @@ Lattice<model_>::Lattice(const string test_case,
         abort();
     }
 
-    // Correct the number of cells in y direction for use with the FHP mode.
-    if (m_dim_y % 2 != 0) m_dim_y++;
+    // Correct number of cells to fit coarse graining radius
+    // (automatically matches FHP requirement for even number of cells in y direction)
+    m_dim_y += (2 * coarse_graining_radius) - (m_dim_y % (2 * coarse_graining_radius));
 
     // Define the number of cells in x direction.
     if (test_case == "pipe"      ||
@@ -118,7 +119,6 @@ Lattice<model_>::Lattice(const string test_case,
 	}
 
     // Correct the number of cells in x direction for use with collision debug test case.
-    if (m_dim_x % 2 != 0) m_dim_x++;
     if (test_case == "collision") m_dim_x++;
 
     // Set the body force direction according to the test case.
@@ -149,8 +149,8 @@ Lattice<model_>::Lattice(const string test_case,
     assert(coarse_graining_radius > 0);
     this->m_coarse_graining_radius = coarse_graining_radius;
 
-    this->m_coarse_dim_x     = (m_dim_x - 1) / (2 * m_coarse_graining_radius + 1) + 1;
-    this->m_coarse_dim_y     = (m_dim_y - 1) / (2 * m_coarse_graining_radius + 1) + 1;
+    this->m_coarse_dim_x     = m_dim_x / (2 * m_coarse_graining_radius); assert(m_dim_x % (2 * m_coarse_graining_radius) == 0);
+    this->m_coarse_dim_y     = m_dim_y / (2 * m_coarse_graining_radius); assert(m_dim_y % (2 * m_coarse_graining_radius) == 0);
     this->m_num_coarse_cells = m_coarse_dim_x * m_coarse_dim_y;
 
     print_info();
@@ -182,14 +182,12 @@ unsigned long Lattice<model_>::get_n_particles() {
 
     // TODO Implement and use count() function in Bitset class
 
-    unsigned long n_particles = 0;
+    size_t n_particles = 0;
 
     // Loop over all the nodes.
 #pragma omp parallel for reduction(+:n_particles)
-    for (unsigned int n = 0; n < m_num_cells * 8; ++n) {
-
+    for (size_t n = 0; n < m_num_cells * 8; ++n)
         n_particles += bool(m_node_state_cpu[n]);
-    }
 
     this->m_num_particles = n_particles;
 
@@ -202,7 +200,7 @@ void Lattice<model_>::init_random() {
 
     // Loop over all cells
 #pragma omp parallel for
-    for (int cell = 0; cell < m_num_cells; ++cell) {
+    for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Check weather the cell is a fluid cell
         if (m_cell_type_cpu[cell] == CellType::FLUID) {
@@ -265,7 +263,7 @@ void Lattice<model_>::apply_bc_karman_vortex_street() {
 
     // Loop over all cells
 #pragma omp parallel for
-    for (int cell = 0; cell < m_num_cells; ++cell) {
+    for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Get the position of the current cell
         int pos_x = cell % m_dim_x;
@@ -288,7 +286,7 @@ void Lattice<model_>::init_single_collision() {
     // Get the inverse direction of the 0-th one
     int inverse_dir = ModelDesc::INV_DIR[0];
 
-    std::vector<int> occupied_nodes;
+    std::vector<size_t> occupied_nodes;
     occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8);
     occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 5) * 8 + inverse_dir);
 
@@ -297,7 +295,7 @@ void Lattice<model_>::init_single_collision() {
 
 // Initializes the lattice gas automaton with single particles at defined nodes
 template<Model model_>
-void Lattice<model_>::init_single(const std::vector<int> occupied_nodes) {
+void Lattice<model_>::init_single(const std::vector<size_t> occupied_nodes) {
 
     // Initialize the lattice with zeros
     init_zero();
@@ -341,7 +339,7 @@ void Lattice<model_>::apply_cell_type_all(const CellType cell_type) {
 
     // Loop over all cells
 #pragma omp parallel for
-    for (unsigned int cell = 0; cell < m_num_cells; ++cell) {
+    for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
@@ -353,7 +351,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_east(const CellType cell_type) {
 
     // Loop over the cells located at the eastern boundary of the rectangular domain
-    for (int cell = m_dim_x - 1; cell < m_num_cells; cell += m_dim_x) {
+    for (size_t cell = m_dim_x - 1; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
@@ -365,7 +363,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_north(const CellType cell_type) {
 
     // Loop over the cells located at the northern boundary of the rectangular domain
-    for (int cell = m_num_cells - m_dim_x; cell < m_num_cells; ++cell) {
+    for (size_t cell = m_num_cells - m_dim_x; cell < m_num_cells; ++cell) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
@@ -377,7 +375,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_west(const CellType cell_type) {
 
     // Loop over the cells located at the western boundary of the rectangular domain
-    for (int cell = 0; cell < m_num_cells; cell += m_dim_x) {
+    for (size_t cell = 0; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
@@ -389,7 +387,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_south(const CellType cell_type) {
 
     // Loop over the cells located at the southern boundary of the rectangular domain
-    for (int cell = 0; cell < m_dim_x; ++cell) {
+    for (size_t cell = 0; cell < m_dim_x; ++cell) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = cell_type;
@@ -414,6 +412,9 @@ void Lattice<model_>::print_info() {
     printf("\n");
     printf("Number of cells in x direction: %d\n", m_dim_x);
     printf("Number of cells in y direction: %d\n", m_dim_y);
+    printf("\n");
+    printf("Number of coarse cells in x direction: %d\n", m_coarse_dim_x);
+    printf("Number of coarse cells in y direction: %d\n", m_coarse_dim_y);
     printf("\n");
 }
 
@@ -442,17 +443,17 @@ void Lattice<model_>::copy_data_to_output_buffer()
 // Computes the number of particles to revert in the context of body force
 // in order to accelerate the flow.
 template<Model model_>
-int Lattice<model_>::get_initial_forcing()
+size_t Lattice<model_>::get_initial_forcing()
 {
-	// int equilibrium_forcing = get_equilibrium_forcing();
+    // size_t equilibrium_forcing = get_equilibrium_forcing();
 
-    return (int)(0.01 * m_num_cells);
+    return (size_t)(0.01 * m_num_cells);
 }
 
 // Computes the number of particles to revert in the context of body force.
 // in order to compensate boundary layer shear force.
 template<Model model_>
-int Lattice<model_>::get_equilibrium_forcing()
+size_t Lattice<model_>::get_equilibrium_forcing()
 {
     Real forcing = (8.0 * m_nu_s * m_Ma_s * m_c_s) / pow((Real)m_dim_y, 2.0);
 
@@ -471,7 +472,7 @@ void Lattice<model_>::init_diffusion()
 
     // Loop over all cells
 #pragma omp parallel for
-    for (int cell = 0; cell < m_num_cells; ++cell) {
+    for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Get the x and y position of the current cell
         int pos_x = cell % m_dim_x;

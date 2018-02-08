@@ -87,11 +87,11 @@ private:
     // Simulation variables
     size_t            m_steps;
     int               m_mnups;
-    int               m_num_particles;
+    size_t            m_num_particles;
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
     Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.2;  // Mach number
+    Real              m_Ma = 0.3;  // Mach number
 
     Ui::PipeView*   m_ui;
 

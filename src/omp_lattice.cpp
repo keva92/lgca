@@ -80,6 +80,10 @@ OMP_Lattice<model_>::OMP_Lattice(const string test_case,
     // Allocate the memory for the arrays on the host (CPU)
     allocate_memory();
 
+    // Generate random bits
+    this->m_rnd_cpu.fill_random();
+    cout << this->m_rnd_cpu.count() << " bits set out of " << this->m_num_cells << endl;
+
     // Set the model-based values according to the number of lattice directions
     m_model = new ModelDesc(this->m_dim_x, this->m_dim_y);
 }
@@ -108,11 +112,11 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
 #endif
 
     // Loop over bunches of cells
-    const int num_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
-    tbb::parallel_for(tbb::blocked_range<int>(0, num_blocks), [&](const tbb::blocked_range<int>& r) {
-    for (int block = r.begin(); block != r.end(); ++block)
+    const size_t num_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_blocks), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t block = r.begin(); block != r.end(); ++block)
     {
-        for (int cell = block * Bitset::BITS_PER_BLOCK; cell < (block+1) * Bitset::BITS_PER_BLOCK; ++cell) {
+        for (size_t cell = block * Bitset::BITS_PER_BLOCK; cell < (block+1) * Bitset::BITS_PER_BLOCK; ++cell) {
 
             if (cell >= this->m_num_cells) break;
 
@@ -192,8 +196,8 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
             // The cell working on is a fluid cell ("normal" collision)
             case CellType::FLUID:
             {
-                ModelDesc::collide(&node_state[0], &node_state_tmp[0], p);
-//                ModelDesc::collide(&node_state(0), &node_state_tmp(0), p);
+                ModelDesc::collide(&node_state[0], &node_state_tmp[0], bool(this->m_rnd_cpu[cell]));
+//                ModelDesc::collide(&node_state(0), &node_state_tmp(0), bool(this->m_rnd_cpu[cell]));
                 break;
             }
 
@@ -252,18 +256,18 @@ template<Model model_>
 void OMP_Lattice<model_>::apply_body_force(const int forcing) {
 
     // Set a maximum number of iterations to find particles which can be reverted
-    const int it_max = 2 * this->m_num_cells;
+    const size_t it_max = 2 * this->m_num_cells;
 
     // Set the number of iterations to zero
-    int it = 0;
+    size_t it = 0;
 
     // Number of particles which have been reverted
-    int reverted_particles = 0;
+    unsigned int reverted_particles = 0;
 
     // Loop over all cells
     do
     {
-        int cell = rand() % this->m_num_cells;
+        size_t cell = rand() % this->m_num_cells;
 
     	it++;
 
@@ -358,8 +362,8 @@ template<Model model_>
 void OMP_Lattice<model_>::cell_post_process()
 {
     // Loop over lattice cells
-    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_cells), [&](const tbb::blocked_range<int>& r) {
-    for (int cell = r.begin(); cell != r.end(); ++cell)
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, this->m_num_cells), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t cell = r.begin(); cell != r.end(); ++cell)
     {
         // Initialize the cell quantities to be computed
         char cell_density    = 0;
@@ -396,13 +400,12 @@ void OMP_Lattice<model_>::mean_post_process()
 {
     const int r = this->m_coarse_graining_radius;
 
-    tbb::parallel_for(tbb::blocked_range<int>(0, this->m_num_coarse_cells), [&](const tbb::blocked_range<int>& range) {
-    for (int coarse_cell = range.begin(); coarse_cell != range.end(); ++coarse_cell)
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, this->m_num_coarse_cells), [&](const tbb::blocked_range<size_t>& range) {
+    for (size_t coarse_cell = range.begin(); coarse_cell != range.end(); ++coarse_cell)
     {
-        // Get cell in the middle of the coarse cell
-        const int cell = r + r * this->m_dim_x
-                + (coarse_cell % this->m_coarse_dim_x) * (2 * r + 1)
-                + (coarse_cell / this->m_coarse_dim_x) * (2 * r + 1) * this->m_dim_x;
+        // Get cell in the bottom left corner of the coarse cell
+        const size_t cell = (coarse_cell % this->m_coarse_dim_x) * (2 * r)
+                          + (coarse_cell / this->m_coarse_dim_x) * (2 * r) * this->m_dim_x;
 
         // Calculate the position of the cell in x direction
         int pos_x = cell % this->m_dim_x;
@@ -418,12 +421,12 @@ void OMP_Lattice<model_>::mean_post_process()
         // The thread working on the cell has to know the cell quantities of the coarse graining
         // neighbor cells, therefore looping over all neighbor cells and look it up
 #pragma unroll
-        for (int y = -r; y <= r; ++y) {
+        for (int y = 0; y <= 2 * r; ++y) {
 
-            for (int x = -r; x <= r; ++x) {
+            for (int x = 0; x <= 2 * r; ++x) {
 
                 // Get the index of the coarse graining neighbor cell
-                int neighbor_idx = cell + y * this->m_dim_x + x;
+                size_t neighbor_idx = cell + y * this->m_dim_x + x;
 
                 // Get the position of the coarse graining neighbor cell in x direction
                 int pos_x_neighbor = neighbor_idx % this->m_dim_x;
@@ -465,6 +468,7 @@ void OMP_Lattice<model_>::allocate_memory()
     this->m_node_state_cpu.resize    (this->m_num_cells * 8);
           m_node_state_tmp_cpu.resize(this->m_num_cells * 8);
     this->m_node_state_out_cpu.resize(this->m_num_cells * 8);
+    this->m_rnd_cpu.resize           (this->m_num_cells);
 }
 
 // Frees the memory for the arrays on the host (CPU)
@@ -510,11 +514,11 @@ std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {
     Real sum_x_vel = 0.0;
     Real sum_y_vel = 0.0;
 
-    unsigned int counter = 0;
+    size_t counter = 0;
 
     // Sum up all (fluid) cell x and y velocity components.
 #pragma omp parallel for reduction(+: sum_x_vel, sum_y_vel)
-    for (unsigned int n = 0; n < this->m_num_cells; ++n) {
+    for (size_t n = 0; n < this->m_num_cells; ++n) {
 
         if (this->m_cell_type_cpu[n] == CellType::FLUID) {
 

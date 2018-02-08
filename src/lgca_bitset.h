@@ -180,10 +180,14 @@ public:
     }
 
     // TODO Return the number of bits in the bitset that are set (i.e., that have a value of one)
-//    inline size_t count() const
-//    {
+    inline size_t count() const
+    {
+        size_t counter = 0;
+        for (size_t i = 0; i < m_num_bits; ++i)
+            counter += this->operator [](i);
 
-//    }
+        return counter;
+    }
 
     // Return the number of bits in the bitset
     inline size_t size() const
@@ -211,6 +215,12 @@ public:
     {
         // That's pretty dangerous... Let's hope bitset sizes do match...
         m_bits = ptr;
+    }
+
+    inline void fill_random()
+    {
+        for (size_t i = 0; i < m_num_bits; ++i)
+            this->operator [](i) = (rand() % 2);
     }
 
 

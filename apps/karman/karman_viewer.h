@@ -78,17 +78,18 @@ private:
     void setup_ui();
 
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP_I;
+    static constexpr Model        MODEL       = Model::FHP_II;
     static constexpr unsigned int WRITE_STEPS = 5;
     static constexpr int          CG_RADIUS   = 20;             // Coarse graining radius
 
     // Simulation variables
+    size_t            m_steps;
     int               m_mnups;
     int               m_num_particles;
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
-    Real              m_Re = 50.0; // Reynolds number
-    Real              m_Ma = 0.2;  // Mach number
+    Real              m_Re = 80.0; // Reynolds number
+    Real              m_Ma = 0.3;  // Mach number
 
     Ui::KarmanView* m_ui;
 

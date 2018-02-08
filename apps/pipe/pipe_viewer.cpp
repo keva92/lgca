@@ -170,7 +170,7 @@ void PipeView::run()
 void PipeView::stop()
 {
     // Get the number of particles in the lattice
-    unsigned int num_particles_end = m_lattice->get_n_particles();
+    size_t num_particles_end = m_lattice->get_n_particles();
 
     // Check weather the number of particles has changed
     if ((num_particles_end - m_num_particles) == 0) {

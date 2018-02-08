@@ -111,7 +111,7 @@ void IoVti<model_>::update()
 }
 
 template<Model model_>
-void IoVti<model_>::write(const unsigned int step, const string dir)
+void IoVti<model_>::write(const size_t step, const string dir)
 {
     // TODO Set flags which data should be written to file.
     bool write_cell_density  = true;
