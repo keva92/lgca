@@ -159,6 +159,9 @@ void KarmanView::run()
 
         // Update render window
         m_ui->qvtkWidget->GetRenderWindow()->Render();
+
+        // Write image data to file
+        if (m_ui->recordButton->isChecked()) m_vti_io_handler->write(m_steps);
     });
 
     if (!m_ui->pauseButton->isChecked()) QTimer::singleShot(0, this, SLOT(run()));
@@ -176,7 +179,8 @@ void KarmanView::stop()
 
     } else if ((num_particles_end - m_num_particles) != 0) {
 
-        fprintf(stderr, "Error check FAILED: There is a difference in the number of particles of %d.\n", num_particles_end - m_num_particles);
+        fprintf(stderr, "Error check FAILED: There is a difference in the number of particles of %zu.\n",
+                num_particles_end - m_num_particles);
     }
 }
 
@@ -261,18 +265,20 @@ void KarmanView::setup_visual()
     m_mapper->SetScalarRange(scalarRange);
     m_actor->SetMapper(m_mapper);
     m_ren->AddActor(m_actor);
-    m_ren->SetBackground(1.0, 1.0, 1.0);
-    m_ren->SetBackground2(0.2, 0.3, 0.5);
+    m_ren->SetBackground (0.0, 0.0, 0.2);
+    m_ren->SetBackground2(0.0, 0.0, 0.0);
     m_ren->GradientBackgroundOn();
     m_scalar_bar_txt->SetFontFamilyToArial();
-    m_scalar_bar_txt->SetFontSize(10);
+    m_scalar_bar_txt->SetFontSize(16);
     m_scalar_bar_txt->BoldOff();
     m_scalar_bar_txt->ItalicOff();
     m_scalar_bar_txt->ShadowOff();
     m_scalar_bar->SetTitle(m_mapper->GetArrayName());
-    m_scalar_bar->SetNumberOfLabels(4);
-    m_scalar_bar->SetTitleTextProperty(m_scalar_bar_txt);
-    m_scalar_bar->SetLabelTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->SetNumberOfLabels(5);
+    m_scalar_bar->SetTitleTextProperty     (m_scalar_bar_txt);
+    m_scalar_bar->SetLabelTextProperty     (m_scalar_bar_txt);
+    m_scalar_bar->SetAnnotationTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->UnconstrainedFontSizeOn();
     m_scalar_bar->SetBarRatio(0.2);
     m_ren->AddActor2D(m_scalar_bar);
     m_lut->SetTableRange(m_mapper->GetScalarRange());
@@ -293,27 +299,9 @@ void KarmanView::setup_ui()
 
     m_ui-> playButton->setIcon( m_ui->playButton->style()->standardIcon(QStyle::SP_MediaPlay));
     m_ui->pauseButton->setIcon(m_ui->pauseButton->style()->standardIcon(QStyle::SP_MediaPause));
+    m_ui->recordButton->setIcon(m_ui->recordButton->style()->standardIcon(QStyle::SP_DialogSaveButton));
     m_ui->pauseButton->setCheckable(true);
-
-    m_ui->stepsLineEdit       ->setReadOnly(true);
-    m_ui->mnupsLineEdit       ->setReadOnly(true);
-    m_ui->simTimeLineEdit     ->setReadOnly(true);
-    m_ui->ppTimeLineEdit      ->setReadOnly(true);
-    m_ui->velLineEdit         ->setReadOnly(true);
-    m_ui->reLineEdit          ->setReadOnly(true);
-    m_ui->maLineEdit          ->setReadOnly(true);
-    m_ui->numCellsLineEdit    ->setReadOnly(true);
-    m_ui->numParticlesLineEdit->setReadOnly(true);
-
-    m_ui->stepsLineEdit       ->setAlignment(Qt::AlignRight);
-    m_ui->mnupsLineEdit       ->setAlignment(Qt::AlignRight);
-    m_ui->simTimeLineEdit     ->setAlignment(Qt::AlignRight);
-    m_ui->ppTimeLineEdit      ->setAlignment(Qt::AlignRight);
-    m_ui->velLineEdit         ->setAlignment(Qt::AlignRight);
-    m_ui->reLineEdit          ->setAlignment(Qt::AlignRight);
-    m_ui->maLineEdit          ->setAlignment(Qt::AlignRight);
-    m_ui->numCellsLineEdit    ->setAlignment(Qt::AlignRight);
-    m_ui->numParticlesLineEdit->setAlignment(Qt::AlignRight);
+    m_ui->recordButton->setCheckable(true);
 
     // Set defaults
     m_mean_velocity = m_lattice->get_mean_velocity();

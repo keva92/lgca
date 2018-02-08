@@ -80,9 +80,8 @@ OMP_Lattice<model_>::OMP_Lattice(const string test_case,
     // Allocate the memory for the arrays on the host (CPU)
     allocate_memory();
 
-    // Generate random bits
+    // Generate random bits for collision
     this->m_rnd_cpu.fill_random();
-    cout << this->m_rnd_cpu.count() << " bits set out of " << this->m_num_cells << endl;
 
     // Set the model-based values according to the number of lattice directions
     m_model = new ModelDesc(this->m_dim_x, this->m_dim_y);

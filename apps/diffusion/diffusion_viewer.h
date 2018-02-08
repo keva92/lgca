@@ -79,7 +79,7 @@ private:
 
     // Simulation variables
     int               m_mnups;
-    int               m_num_particles;
+    size_t            m_num_particles;
     Real              m_Re = 200.0; // Reynolds number  (interpreted as number of cells in y direction here)
     Real              m_Ma =   0.2; // Mach number      (not interpreted in this case)
 

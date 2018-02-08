@@ -131,7 +131,8 @@ void DiffusionView::stop()
 
     } else if ((num_particles_end - m_num_particles) != 0) {
 
-        printf("Error check FAILED: There is a difference in the number of particles of %d.\n", num_particles_end - m_num_particles);
+        printf("Error check FAILED: There is a difference in the number of particles of %zu.\n",
+               num_particles_end - m_num_particles);
     }
 
     qApp->quit();
@@ -159,18 +160,20 @@ void DiffusionView::setup_visual()
     m_mapper->SetScalarRange(scalarRange);
     m_actor->SetMapper(m_mapper);
     m_ren->AddActor(m_actor);
-    m_ren->SetBackground(1.0, 1.0, 1.0);
-    m_ren->SetBackground2(0.2, 0.3, 0.5);
+    m_ren->SetBackground (0.0, 0.0, 0.2);
+    m_ren->SetBackground2(0.0, 0.0, 0.0);
     m_ren->GradientBackgroundOn();
     m_scalar_bar_txt->SetFontFamilyToArial();
-    m_scalar_bar_txt->SetFontSize(10);
+    m_scalar_bar_txt->SetFontSize(16);
     m_scalar_bar_txt->BoldOff();
     m_scalar_bar_txt->ItalicOff();
     m_scalar_bar_txt->ShadowOff();
     m_scalar_bar->SetTitle(m_mapper->GetArrayName());
-    m_scalar_bar->SetNumberOfLabels(4);
-    m_scalar_bar->SetTitleTextProperty(m_scalar_bar_txt);
-    m_scalar_bar->SetLabelTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->SetNumberOfLabels(5);
+    m_scalar_bar->SetTitleTextProperty     (m_scalar_bar_txt);
+    m_scalar_bar->SetLabelTextProperty     (m_scalar_bar_txt);
+    m_scalar_bar->SetAnnotationTextProperty(m_scalar_bar_txt);
+    m_scalar_bar->UnconstrainedFontSizeOn();
     m_scalar_bar->SetBarRatio(0.2);
     m_ren->AddActor2D(m_scalar_bar);
     m_lut->SetTableRange(m_mapper->GetScalarRange());

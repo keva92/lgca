@@ -39,7 +39,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="physicsTab">
          <attribute name="title">
@@ -63,7 +63,14 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="velLineEdit"/>
+            <widget class="QLineEdit" name="velLineEdit">
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="reLabel">
@@ -73,7 +80,14 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="reLineEdit"/>
+            <widget class="QLineEdit" name="reLineEdit">
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="maLabel">
@@ -83,7 +97,14 @@
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QLineEdit" name="maLineEdit"/>
+            <widget class="QLineEdit" name="maLineEdit">
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -110,7 +131,14 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="numCellsLineEdit"/>
+            <widget class="QLineEdit" name="numCellsLineEdit">
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="numParticlesLabel">
@@ -120,7 +148,14 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="numParticlesLineEdit"/>
+            <widget class="QLineEdit" name="numParticlesLineEdit">
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -129,7 +164,7 @@
       </widget>
      </item>
      <item row="0" column="1" rowspan="3">
-      <widget class="QVTKWidget" name="qvtkWidget" native="true"/>
+      <widget class="QVTKWidget" name="qvtkWidget"/>
      </item>
      <item row="1" column="0">
       <widget class="QGroupBox" name="perfGroupBox">
@@ -154,7 +189,14 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLineEdit" name="mnupsLineEdit"/>
+          <widget class="QLineEdit" name="mnupsLineEdit">
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="simTimeLabel">
@@ -164,7 +206,14 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QLineEdit" name="simTimeLineEdit"/>
+          <widget class="QLineEdit" name="simTimeLineEdit">
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="ppTimeLabel">
@@ -174,7 +223,14 @@
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QLineEdit" name="ppTimeLineEdit"/>
+          <widget class="QLineEdit" name="ppTimeLineEdit">
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -245,7 +301,17 @@
           </widget>
          </item>
          <item row="1" column="1" colspan="2">
-          <widget class="QLineEdit" name="stepsLineEdit"/>
+          <widget class="QLineEdit" name="stepsLineEdit">
+           <property name="frame">
+            <bool>true</bool>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -314,7 +380,7 @@
      <x>0</x>
      <y>0</y>
      <width>1025</width>
-     <height>22</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

@@ -107,7 +107,7 @@ protected:
     // Coarse grained momentum vectors (averaged over neighbor cells)
     Real* m_mean_momentum_cpu;
 
-    // Random bits
+    // Random bits for collision
     Bitset m_rnd_cpu;
 
 
