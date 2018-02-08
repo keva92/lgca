@@ -813,26 +813,26 @@ struct ModelDescriptor<Model::FHP_III> {
         unsigned char re2 = (d&f&~(r|a|b|c|e));
         unsigned char rf2 = (e&a&~(r|b|c|d|f));
 
-        unsigned char adbe = ad&be&(~(c|f));
-        unsigned char adcf = ad&cf&(~(b|e));
-        unsigned char becf = be&cf&(~(a|d));
+        unsigned char adbe = db1&db2&(~(c|f));
+        unsigned char adcf = db1&db3&(~(b|e));
+        unsigned char becf = db2&db3&(~(a|d));
 
         unsigned char chad = (p&adbe)|((~p)&adcf)|becf;
         unsigned char chbe = (p&becf)|((~p)&adbe)|adcf;
         unsigned char chcf = (p&adcf)|((~p)&becf)|adbe;
 
-        unsigned char adb = ad&b&(~(c|e|f));
-        unsigned char adc = ad&c&(~(b|e|f));
-        unsigned char ade = ad&e&(~(b|c|f));
-        unsigned char adf = ad&f&(~(b|c|e));
-        unsigned char bea = be&a&(~(c|d|f));
-        unsigned char bec = be&c&(~(a|d|f));
-        unsigned char bed = be&d&(~(a|c|f));
-        unsigned char bef = be&f&(~(a|c|d));
-        unsigned char cfa = cf&a&(~(b|d|e));
-        unsigned char cfb = cf&b&(~(a|d|e));
-        unsigned char cfd = cf&d&(~(a|b|e));
-        unsigned char cfe = cf&e&(~(a|b|d));
+        unsigned char adb = db1&b&(~(c|e|f));
+        unsigned char adc = db1&c&(~(b|e|f));
+        unsigned char ade = db1&e&(~(b|c|f));
+        unsigned char adf = db1&f&(~(b|c|e));
+        unsigned char bea = db2&a&(~(c|d|f));
+        unsigned char bec = db2&c&(~(a|d|f));
+        unsigned char bed = db2&d&(~(a|c|f));
+        unsigned char bef = db2&f&(~(a|c|d));
+        unsigned char cfa = db3&a&(~(b|d|e));
+        unsigned char cfb = db3&b&(~(a|d|e));
+        unsigned char cfd = db3&d&(~(a|b|e));
+        unsigned char cfe = db3&e&(~(a|b|d));
 
         unsigned char spchad = (adb|ade|adc|adf)|(bec|bef)|(cfb|cfe);
         unsigned char spchbe = (bea|bec|bed|bef)|(adc|adf)|(cfa|cfd);
