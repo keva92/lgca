@@ -93,7 +93,7 @@ void DiffusionView::run()
     task_group.run([&]{
 
 #pragma unroll
-        for (int s = 0; s < WRITE_STEPS; ++s) {
+        for (int s = 0; s < PP_INTERVAL; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
             m_lattice->collide_and_propagate();
