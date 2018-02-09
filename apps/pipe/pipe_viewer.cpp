@@ -130,7 +130,7 @@ void PipeView::run()
         for (int s = 0; s < PP_INTERVAL; ++s) {
 
             // Perform the collision and propagation step on the lattice gas automaton
-            m_lattice->collide_and_propagate(/*p=*/m_steps % 2);
+            m_lattice->collide_and_propagate();
             m_steps++;
         }
 

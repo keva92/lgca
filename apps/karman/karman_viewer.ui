@@ -39,7 +39,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="physicsTab">
          <attribute name="title">
@@ -164,7 +164,7 @@
       </widget>
      </item>
      <item row="0" column="1" rowspan="3">
-      <widget class="QVTKWidget" name="qvtkWidget"/>
+      <widget class="QVTKWidget" name="qvtkWidget" native="true"/>
      </item>
      <item row="1" column="0">
       <widget class="QGroupBox" name="perfGroupBox">
@@ -380,7 +380,7 @@
      <x>0</x>
      <y>0</y>
      <width>1025</width>
-     <height>25</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

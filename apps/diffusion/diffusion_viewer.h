@@ -32,6 +32,8 @@
 #include <vtkTextProperty.h>
 #include <vtkLookupTable.h>
 #include <vtkRenderWindow.h>
+#include <vtkWindowToImageFilter.h>
+#include <vtkPNGWriter.h>
 
 #include <QMainWindow>
 
@@ -64,6 +66,13 @@ public slots:
     void run();
     void stop();
 
+    void rescale();
+
+    void view_cell_density();
+    void view_cell_momentum();
+    void view_mean_density();
+    void view_mean_momentum();
+
 private:
 
     // Setup visualization pipeline
@@ -76,8 +85,11 @@ private:
     static constexpr Model        MODEL       = Model::FHP_III;
     static constexpr unsigned int PP_INTERVAL = 1;
     static constexpr int          CG_RADIUS   = 1;
+           const     string       OUTPUT_DIR    = "./";
+           const     string       OUTPUT_FORMAT = "png";
 
     // Simulation variables
+    size_t            m_steps;
     int               m_mnups;
     size_t            m_num_particles;
     Real              m_Re = 200.0; // Reynolds number  (interpreted as number of cells in y direction here)
@@ -96,6 +108,8 @@ private:
     vtkTextProperty*            m_scalar_bar_txt;
     vtkLookupTable*             m_lut;
     vtkRenderWindow*            m_ren_win;
+    vtkWindowToImageFilter*     m_png_filter;
+    vtkPNGWriter*               m_png_writer;
 };
 
 } // namespace lgca
