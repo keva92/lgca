@@ -131,7 +131,8 @@ struct ModelDescriptor<Model::HPP> {
         offset_to_southern_boundary_odd [3] = offset_to_southern_boundary_even  [3];
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
+    static inline void collide(const unsigned char* __restrict__ node_state_in,
+                                     unsigned char* __restrict__ node_state_out, const bool p)
     {
 //        node_state_out[0] = COLLISION_LUT[node_state_in[0]];
 
@@ -364,7 +365,8 @@ struct ModelDescriptor<Model::FHP_I> {
         offset_to_southern_boundary_odd [5] = 0;
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
+    static inline void collide(const unsigned char* __restrict__ node_state_in,
+                                     unsigned char* __restrict__ node_state_out, const bool p)
     {
         unsigned char a = node_state_in[1];
         unsigned char b = node_state_in[2];
@@ -565,7 +567,8 @@ struct ModelDescriptor<Model::FHP_II> {
         offset_to_southern_boundary_odd [6] = 0;
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
+    static inline void collide(const unsigned char* __restrict__ node_state_in,
+                                     unsigned char* __restrict__ node_state_out, const bool p)
     {
         unsigned char a = node_state_in[1];
         unsigned char b = node_state_in[2];
@@ -783,7 +786,8 @@ struct ModelDescriptor<Model::FHP_III> {
         offset_to_southern_boundary_odd [6] = 0;
     }
 
-    static inline void collide(unsigned char* node_state_in, unsigned char* node_state_out, const bool p)
+    static inline void collide(const unsigned char* __restrict__ node_state_in,
+                                     unsigned char* __restrict__ node_state_out, const bool p)
     {
         unsigned char a = node_state_in[1];
         unsigned char b = node_state_in[2];

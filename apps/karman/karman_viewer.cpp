@@ -285,7 +285,7 @@ void KarmanView::setup_visual()
     m_mapper->SetScalarRange(scalarRange);
     m_actor->SetMapper(m_mapper);
     m_ren->AddActor(m_actor);
-    m_ren->SetBackground (0.0, 0.0, 0.2);
+    m_ren->SetBackground (0.0, 0.0, 0.0);
     m_ren->SetBackground2(0.0, 0.0, 0.0);
     m_ren->GradientBackgroundOn();
     m_ren_win->AddRenderer(m_ren);

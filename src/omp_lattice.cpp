@@ -100,16 +100,6 @@ OMP_Lattice<model_>::~OMP_Lattice() {
 template<Model model_>
 void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
 
-#ifndef NDEBUG
-            // Check weather the domain dimensions are valid for the FHP model.
-            if (this->m_dim_y % 2 != 0 && (model_ == Model::FHP_I || model_ == Model::FHP_II || model_ == Model::FHP_III)) {
-
-                printf("ERROR in OMP_Lattice<Model::FHP>::collide_and_propagate(): "
-                       "Invalid domain dimension in y direction.\n");
-                abort();
-            }
-#endif
-
     // Loop over bunches of cells
     const size_t num_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, num_blocks), [&](const tbb::blocked_range<size_t>& r) {

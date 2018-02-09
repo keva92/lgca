@@ -286,7 +286,7 @@ void PipeView::setup_visual()
     m_mapper->SetScalarRange(scalarRange);
     m_actor->SetMapper(m_mapper);
     m_ren->AddActor(m_actor);
-    m_ren->SetBackground (0.0, 0.0, 0.2);
+    m_ren->SetBackground (0.0, 0.0, 0.0);
     m_ren->SetBackground2(0.0, 0.0, 0.0);
     m_ren->GradientBackgroundOn();
     m_ren_win->AddRenderer(m_ren);
@@ -308,6 +308,15 @@ void PipeView::setup_visual()
     m_ren->AddActor2D(m_scalar_bar);
 
     // Lookup table
+//    m_lut->SetNumberOfTableValues(256);
+//    m_lut->SetNumberOfColors(7);
+//    m_lut->SetTableValue(0, 0.0, 0.0, 0.5625, 1.0);
+//    m_lut->SetTableValue(1, 0.0, 0.0, 1.0000, 1.0);
+//    m_lut->SetTableValue(2, 0.0, 1.0, 1.0000, 1.0);
+//    m_lut->SetTableValue(3, 0.5, 1.0, 0.5000, 1.0);
+//    m_lut->SetTableValue(4, 1.0, 1.0, 0.0000, 1.0);
+//    m_lut->SetTableValue(5, 1.0, 0.0, 0.0000, 1.0);
+//    m_lut->SetTableValue(6, 0.5, 0.0, 0.0000, 1.0);
     m_lut->SetTableRange(m_mapper->GetScalarRange());
     m_lut->SetHueRange       (2.0/3.0, 0.0); // Blue to red rainbow
     m_lut->SetSaturationRange(1.0, 1.0);
