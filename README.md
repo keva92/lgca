@@ -1,7 +1,7 @@
 # LGCA
 LGCA is a C++ implementation of a Lattice Gas Cellular Automaton (LGCA) in 2D. Features comprise
 
-* HPP and FHP-I, FHP-II, and FHP-III lattice gas models
+* HPP, FHP-I, FHP-II, and FHP-III lattice gas models
 * Several apps with dedicated GUIs (including Kármán vortex street, pipe flow, and diffusion)
 * Shared memory parallelization
 * On-line data visualization
