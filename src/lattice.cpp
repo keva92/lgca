@@ -166,7 +166,7 @@ Lattice<model_>::~Lattice() {
 template<Model model_>
 void Lattice<model_>::init_zero() {
 
-    // Bitset is initialized with zeros anyway
+    // TODO
 }
 
 // Prints the lattice to the screen.
@@ -511,18 +511,16 @@ void Lattice<model_>::init_pipe() {
             int pos_y = cell / m_dim_x;
 
             Real y = 1.0 * pos_y / m_dim_y;
-            Real factor = 4.0 * (1.0 - y) * y;
-            Real rho = 1.0;
+            Real factor = 8.0 * (1.0 - y) * y;
             Real u_y = 0.0;
-            Real c_s = 1.0 / sqrt(2.0);
-            Real u_x = factor * m_Ma_s * c_s;
+            Real u_x = factor * m_u;
 
             // Loop over all nodes in the fluid cell.
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
                 // Calculate equilibrium distribution function for direction dir
-                Real N_eq = rho / NUM_DIR + rho * 2.0 / NUM_DIR * (ModelDesc::LATTICE_VEC_X[dir] * u_x
-                                                                 + ModelDesc::LATTICE_VEC_Y[dir] * u_y);
+                Real N_eq = m_rho / NUM_DIR + m_rho * 2.0 / NUM_DIR * (ModelDesc::LATTICE_VEC_X[dir] * u_x
+                                                                     + ModelDesc::LATTICE_VEC_Y[dir] * u_y);
 
                 // Set random states for the nodes in the fluid cell
                 m_node_state_cpu[cell + dir * m_num_cells] = bool(random_uniform() < N_eq);

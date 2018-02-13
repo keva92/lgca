@@ -85,11 +85,9 @@ protected:
     // [DIR_0_CELL_0|DIR_1_CELL_0|DIR_2_CELL_0|...|DIR_0_CELL_1|DIR_1_CELL_1|...]
     //
     // Array on the CPU
-//    Bitset m_node_state_cpu;
     unsigned char* m_node_state_cpu;
 
     // Temporary buffer for post-processing and visualization
-//    Bitset m_node_state_out_cpu;
     unsigned char* m_node_state_out_cpu;
 
     // Density values (0th momentum) related to the single cells (non-averaged).
