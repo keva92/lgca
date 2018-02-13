@@ -100,6 +100,9 @@ OMP_Lattice<model_>::~OMP_Lattice() {
 template<Model model_>
 void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
 
+    const unsigned char* __restrict__ node_state_in = this->m_node_state_cpu;
+          unsigned char* __restrict__ node_state_out = this->m_node_state_tmp_cpu;
+
     // Loop over bunches of cells
     const size_t num_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, num_blocks), [&](const tbb::blocked_range<size_t>& r) {
@@ -125,7 +128,6 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
 
             // Define an array for the states of the nodes in the cell
             unsigned char node_state[this->NUM_DIR];
-//            Bitset node_state(this->NUM_DIR);
 
             // Execute propagation step
 #pragma unroll
@@ -166,19 +168,17 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
                 }
 
                 // Pull the states of the cell from its "neighbor" cells in the different directions
-                node_state[dir] = bool(this->m_node_state_cpu[dir + (cell + offset) * 8]);
+                node_state[dir] = node_state_in[(cell + offset) + dir * this->m_num_cells];
             }
 
             // Execute collision step
             //
             // Create a temporary array to copy the node states
             unsigned char node_state_tmp[this->NUM_DIR];
-//            Bitset node_state_tmp(this->NUM_DIR);
 
             // Copy the actual states of the nodes to the temporary array
 #pragma unroll
             for (int dir = 0; dir < this->NUM_DIR; ++dir) node_state_tmp[dir] = node_state[dir];
-//            node_state_tmp(0) = node_state(0);
 
             switch (cell_type) {
 
@@ -186,7 +186,6 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
             case CellType::FLUID:
             {
                 ModelDesc::collide(&node_state[0], &node_state_tmp[0], bool(this->m_rnd_cpu[cell]));
-//                ModelDesc::collide(&node_state(0), &node_state_tmp(0), bool(this->m_rnd_cpu[cell]));
                 break;
             }
 
@@ -194,7 +193,6 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
             case CellType::SOLID_NO_SLIP:
             {
                 ModelDesc::bounce_back(&node_state[0], &node_state_tmp[0]);
-//                ModelDesc::bounce_back(&node_state(0), &node_state_tmp(0));
                 break;
             }
 
@@ -206,7 +204,6 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
                     // Exchange the states of the nodes with the the states of the mirrored
                     // directions along the x axis
                     ModelDesc::bounce_forward_x(&node_state[0], &node_state_tmp[0]);
-//                    ModelDesc::bounce_forward_x(&node_state(0), &node_state_tmp(0));
                 }
 
                 if (on_eastern_boundary || on_western_boundary) {
@@ -214,7 +211,6 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
                     // Exchange the states of the nodes with the the states of
                     // the mirrored directions along the y axis
                     ModelDesc::bounce_forward_y(&node_state[0], &node_state_tmp[0]);
-//                    ModelDesc::bounce_forward_y(&node_state(0), &node_state_tmp(0));
                 }
                 break;
             }
@@ -224,18 +220,17 @@ void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
 #pragma unroll
             for (int dir = 0; dir < this->NUM_DIR; dir++)
             {
-                this->m_node_state_tmp_cpu[dir + cell * 8] = bool(node_state_tmp[dir]);
+                node_state_out[cell + dir * this->m_num_cells] = node_state_tmp[dir];
             }
-//            this->m_node_state_tmp_cpu(cell) = node_state_tmp(0);
 
         } /* FOR cell */
 
     }}); /* FOR block */
 
     // Update the node states
-    auto node_state_cpu_tmp = this->m_node_state_cpu.ptr();
-    this->m_node_state_cpu  = m_node_state_tmp_cpu.ptr();
-    m_node_state_tmp_cpu    = node_state_cpu_tmp;
+    unsigned char* node_state_cpu_tmp = this->m_node_state_cpu;
+    this->m_node_state_cpu = m_node_state_tmp_cpu;
+    m_node_state_tmp_cpu = node_state_cpu_tmp;
 }
 
 // Applies a body force in the specified direction (x or y) and with the
@@ -268,17 +263,22 @@ void OMP_Lattice<model_>::apply_body_force(const int forcing) {
         if (cell_type == CellType::FLUID) {
 
             // Define an array for the states of the nodes in the cell
-            Bitset node_state(this->NUM_DIR);
+            unsigned char node_state[this->NUM_DIR];
 
             // The thread working on the cell has to know about the states of the nodes within the
             // cell, therefore looping over all directions and look it up
-            node_state(0) = this->m_node_state_cpu(cell);
+#pragma unroll
+            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
+                node_state[dir] = this->m_node_state_cpu[cell + dir * this->m_num_cells];
+            }
 
             // Create a temporary array to copy the node states
-            Bitset node_state_tmp(this->NUM_DIR);
+            unsigned char node_state_tmp[this->NUM_DIR];
 
             // Copy the current states of the nodes to the temporary array
-            node_state_tmp(0) = node_state(0);
+            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
+                node_state_tmp[dir] = node_state[dir];
+            }
 
             if (model_ == Model::HPP) {
 
@@ -328,7 +328,10 @@ void OMP_Lattice<model_>::apply_body_force(const int forcing) {
         	}
 
             // Write the new node states back to the data array
-            this->m_node_state_cpu(cell) = node_state_tmp(0);
+#pragma unroll
+            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
+                this->m_node_state_cpu[cell + dir * this->m_num_cells] = node_state_tmp[dir];
+            }
 
         } /* IF cell_type */
 
@@ -363,7 +366,7 @@ void OMP_Lattice<model_>::cell_post_process()
 #pragma unroll
         for (int dir = 0; dir < this->NUM_DIR; ++dir) {
 
-            char node_state = bool(this->m_node_state_out_cpu[dir + cell * 8]);
+            char node_state = bool(this->m_node_state_out_cpu[cell + dir * this->m_num_cells]);
 
             // Sum up the node states
             cell_density += node_state;
@@ -448,16 +451,16 @@ template<Model model_>
 void OMP_Lattice<model_>::allocate_memory()
 {
     // Allocate host memory
-    this->m_cell_type_cpu     = (CellType*)malloc(                    this->m_num_cells        * sizeof(CellType));
-    this->m_cell_density_cpu  = (    Real*)malloc(                    this->m_num_cells        * sizeof(    Real));
-    this->m_mean_density_cpu  = (    Real*)malloc(                    this->m_num_coarse_cells * sizeof(    Real));
-    this->m_cell_momentum_cpu = (    Real*)malloc(this->SPATIAL_DIM * this->m_num_cells        * sizeof(    Real));
-    this->m_mean_momentum_cpu = (    Real*)malloc(this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(    Real));
+    this->m_node_state_cpu     = (unsigned char*)malloc(                    this->m_num_nodes        * sizeof(unsigned char));
+    this->m_node_state_tmp_cpu = (unsigned char*)malloc(                    this->m_num_nodes        * sizeof(unsigned char));
+    this->m_node_state_out_cpu = (unsigned char*)malloc(                    this->m_num_nodes        * sizeof(unsigned char));
+    this->m_cell_type_cpu      =      (CellType*)malloc(                    this->m_num_cells        * sizeof(CellType));
+    this->m_cell_density_cpu   =          (Real*)malloc(                    this->m_num_cells        * sizeof(    Real));
+    this->m_mean_density_cpu   =          (Real*)malloc(                    this->m_num_coarse_cells * sizeof(    Real));
+    this->m_cell_momentum_cpu  =          (Real*)malloc(this->SPATIAL_DIM * this->m_num_cells        * sizeof(    Real));
+    this->m_mean_momentum_cpu  =          (Real*)malloc(this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(    Real));
 
-    this->m_node_state_cpu.resize    (this->m_num_cells * 8);
-          m_node_state_tmp_cpu.resize(this->m_num_cells * 8);
-    this->m_node_state_out_cpu.resize(this->m_num_cells * 8);
-    this->m_rnd_cpu.resize           (this->m_num_cells);
+    this->m_rnd_cpu.resize       (this->m_num_cells);
 }
 
 // Frees the memory for the arrays on the host (CPU)
@@ -465,12 +468,18 @@ template<Model model_>
 void OMP_Lattice<model_>::free_memory()
 {
     // Free CPU memory
+    free(this->m_node_state_cpu);
+    free(this->m_node_state_tmp_cpu);
+    free(this->m_node_state_out_cpu);
     free(this->m_cell_type_cpu);
     free(this->m_cell_density_cpu);
     free(this->m_mean_density_cpu);
     free(this->m_cell_momentum_cpu);
     free(this->m_mean_momentum_cpu);
 
+    this->m_node_state_cpu      = NULL;
+    this->m_node_state_tmp_cpu  = NULL;
+    this->m_node_state_out_cpu  = NULL;
     this->m_cell_type_cpu       = NULL;
     this->m_cell_density_cpu    = NULL;
     this->m_mean_density_cpu    = NULL;
@@ -482,7 +491,6 @@ void OMP_Lattice<model_>::free_memory()
 template<Model model_>
 void OMP_Lattice<model_>::setup_parallel()
 {
-
 #pragma omp parallel for
 	for (unsigned int i = 0; i < omp_get_num_threads(); ++i)
 	{

@@ -173,7 +173,7 @@ void Lattice<model_>::init_zero() {
 template<Model model_>
 void Lattice<model_>::print() {
 
-    m_node_state_cpu.print();
+//    m_node_state_cpu.print();
 }
 
 // Returns the number of particles in the lattice.
@@ -186,7 +186,7 @@ unsigned long Lattice<model_>::get_n_particles() {
 
     // Loop over all the nodes.
 #pragma omp parallel for reduction(+:n_particles)
-    for (size_t n = 0; n < m_num_cells * 8; ++n)
+    for (size_t n = 0; n < m_num_nodes; ++n)
         n_particles += bool(m_node_state_cpu[n]);
 
     this->m_num_particles = n_particles;
@@ -209,7 +209,7 @@ void Lattice<model_>::init_random() {
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
                 // Set random states for the nodes in the fluid cell
-                m_node_state_cpu[dir + cell * 8] =
+                m_node_state_cpu[cell + dir * m_num_cells] =
                         bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
             }
 	    }
@@ -437,7 +437,8 @@ void Lattice<model_>::copy_data_from_device()
 template<Model model_>
 void Lattice<model_>::copy_data_to_output_buffer()
 {
-    m_node_state_out_cpu.copy(m_node_state_cpu);
+//    m_node_state_out_cpu.copy(m_node_state_cpu);
+    memcpy(/*dest=*/m_node_state_out_cpu, /*src=*/m_node_state_cpu, /*bytes=*/m_num_nodes * sizeof(unsigned char));
 }
 
 // Computes the number of particles to revert in the context of body force
@@ -488,11 +489,46 @@ void Lattice<model_>::init_diffusion()
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
                 // Set random states for the nodes in the fluid cell
-                m_node_state_cpu[dir + cell * 8] =
+                m_node_state_cpu[cell * dir * m_num_cells] =
                         bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
             }
 	    }
 	}
+}
+
+template<Model model_>
+void Lattice<model_>::init_pipe() {
+
+    // Loop over all cells
+#pragma omp parallel for
+    for (size_t cell = 0; cell < m_num_cells; ++cell) {
+
+        // Check weather the cell is a fluid cell
+        if (m_cell_type_cpu[cell] == CellType::FLUID) {
+
+            // Get the position of the current cell
+            int pos_x = cell % m_dim_x;
+            int pos_y = cell / m_dim_x;
+
+            Real y = 1.0 * pos_y / m_dim_y;
+            Real factor = 4.0 * (1.0 - y) * y;
+            Real rho = 1.0;
+            Real u_y = 0.0;
+            Real c_s = 1.0 / sqrt(2.0);
+            Real u_x = factor * m_Ma_s * c_s;
+
+            // Loop over all nodes in the fluid cell.
+            for (int dir = 0; dir < NUM_DIR; ++dir) {
+
+                // Calculate equilibrium distribution function for direction dir
+                Real N_eq = rho / NUM_DIR + rho * 2.0 / NUM_DIR * (ModelDesc::LATTICE_VEC_X[dir] * u_x
+                                                                 + ModelDesc::LATTICE_VEC_Y[dir] * u_y);
+
+                // Set random states for the nodes in the fluid cell
+                m_node_state_cpu[cell + dir * m_num_cells] = bool(random_uniform() < N_eq);
+            }
+        }
+    }
 }
 
 // Explicit instantiations

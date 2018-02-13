@@ -25,6 +25,7 @@
 #include "omp_lattice.h"
 #include "cu_lattice.h"
 #include "lgca_io_vti.h"
+#include "lgca_jet.h"
 
 #include <tbb/task_group.h>
 
@@ -272,10 +273,14 @@ void SingleView::setup_visual()
     m_ren->AddActor2D(m_scalar_bar);
 
     // Lookup table
+    m_lut->SetNumberOfColors(256);
+    for (int i = 0; i < m_lut->GetNumberOfColors(); ++i) {
+        m_lut->SetTableValue(i, COLORMAP_JET[i][0], COLORMAP_JET[i][1], COLORMAP_JET[i][2], /*a=*/1.0);
+    }
     m_lut->SetTableRange(m_mapper->GetScalarRange());
-    m_lut->SetHueRange       (2.0/3.0, 0.0); // Blue to red rainbow
-    m_lut->SetSaturationRange(1.0, 1.0);
-    m_lut->SetValueRange     (1.0, 1.0);
+//    m_lut->SetHueRange       (2.0/3.0, 0.0); // Blue to red rainbow
+//    m_lut->SetSaturationRange(1.0, 1.0);
+//    m_lut->SetValueRange     (1.0, 1.0);
     m_lut->Build();
     m_mapper    ->SetLookupTable(m_lut);
     m_scalar_bar->SetLookupTable(m_lut);

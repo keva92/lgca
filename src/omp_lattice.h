@@ -31,22 +31,22 @@ private:
 
     using ModelDesc = ModelDescriptor<model_>;
 
-    // Auxiliary array on the CPU.
-    Bitset m_node_state_tmp_cpu;
+    // Auxiliary array on the CPU
+    unsigned char* m_node_state_tmp_cpu;
 
     // Model-based values according to the number of lattice directions
     ModelDesc* m_model;
 
-	// Computes cell quantities of interest as a post-processing procedure.
+    // Computes cell quantities of interest as a post-processing procedure
 	void cell_post_process();
 
-	// Computes coarse grained quantities of interest as a post-processing procedure.
+    // Computes coarse grained quantities of interest as a post-processing procedure
 	void mean_post_process();
 
-    // Allocates the memory for the arrays on the host (CPU) and device (GPU).
+    // Allocates the memory for the arrays on the host (CPU) and device (GPU)
     void allocate_memory();
 
-    // Frees the memory for the arrays on the host (CPU) and device (GPU).
+    // Frees the memory for the arrays on the host (CPU) and device (GPU)
     void free_memory();
 
 public:

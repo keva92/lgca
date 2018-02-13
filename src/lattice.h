@@ -85,10 +85,12 @@ protected:
     // [DIR_0_CELL_0|DIR_1_CELL_0|DIR_2_CELL_0|...|DIR_0_CELL_1|DIR_1_CELL_1|...]
     //
     // Array on the CPU
-    Bitset m_node_state_cpu;
+//    Bitset m_node_state_cpu;
+    unsigned char* m_node_state_cpu;
 
     // Temporary buffer for post-processing and visualization
-    Bitset m_node_state_out_cpu;
+//    Bitset m_node_state_out_cpu;
+    unsigned char* m_node_state_out_cpu;
 
     // Density values (0th momentum) related to the single cells (non-averaged).
     Real* m_cell_density_cpu;
@@ -165,6 +167,8 @@ public:
     // Initializes the lattice gas automaton with some random distributed particles in the center
     // area of the domain
     void init_diffusion();
+
+    void init_pipe();
 
     // Returns the number of particles in the lattice
     unsigned long get_n_particles();
