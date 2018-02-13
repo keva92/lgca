@@ -58,11 +58,8 @@ KarmanView::KarmanView(QWidget *parent) :
     m_lattice->post_process();
 
     // Calculate the number of particles to revert in the context of body force in order to
-    // accelerate the flow.
+    // accelerate the flow
     m_forcing = m_lattice->get_initial_forcing();
-
-    // Set (proper) parallelization parameters
-    m_lattice->setup_parallel();
 
     // Setup visualization pipeline
     this->setup_visual();

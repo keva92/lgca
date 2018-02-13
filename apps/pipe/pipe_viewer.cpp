@@ -40,44 +40,23 @@ PipeView::PipeView(QWidget *parent) :
 {
     m_ui->setupUi(this);
 
-    // Print startup message
-    print_startup_message();
-
-    // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"pipe", m_Re, m_Ma, CG_RADIUS);
-
-    // Apply boundary conditions
-    m_lattice->apply_bc_pipe();
-
-    // Initialize the lattice gas automaton with particles
-    m_lattice->init_pipe();
-    m_num_particles = m_lattice->get_n_particles();
-
-    // Necessary to set up on-line visualization
-    m_lattice->copy_data_to_output_buffer();
-    m_lattice->post_process();
-
-    // Calculate the number of particles to revert in the context of body force in order to
-    // accelerate the flow.
-    m_forcing = m_lattice->get_initial_forcing();
-
-    // Set (proper) parallelization parameters
-    m_lattice->setup_parallel();
-
-    // Setup visualization pipeline
-    this->setup_visual();
-
-    // Setup UI
-    this->setup_ui();
-
     // Connect widgets
-    connect(m_ui->playButton,              SIGNAL(clicked()), this, SLOT(run()));
-    connect(m_ui->pauseButton,             SIGNAL(clicked()), this, SLOT(stop()));
-    connect(m_ui->rescaleButton,           SIGNAL(clicked()), this, SLOT(rescale()));
-    connect(m_ui->cellDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_cell_density()));
-    connect(m_ui->cellMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_cell_momentum()));
-    connect(m_ui->meanDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_mean_density()));
-    connect(m_ui->meanMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_mean_momentum()));
+    connect(m_ui->actionSingle,     &QAction::triggered, this, &PipeView::setup_single);
+    connect(m_ui->actionDiffusion,  &QAction::triggered, this, &PipeView::setup_diffusion);
+    connect(m_ui->actionPipe,       &QAction::triggered, this, &PipeView::setup_pipe);
+    connect(m_ui->actionKarman,     &QAction::triggered, this, &PipeView::setup_karman);
+    connect(m_ui->actionExit,       &QAction::triggered, this, &PipeView::quit);
+    connect(m_ui->actionAbout,      &QAction::triggered, this, &PipeView::show_about);
+
+    connect(m_ui->playButton,              SIGNAL(clicked()),   this, SLOT(run()));
+    connect(m_ui->pauseButton,             SIGNAL(clicked()),   this, SLOT(stop()));
+    connect(m_ui->rescaleButton,           SIGNAL(clicked()),   this, SLOT(rescale()));
+    connect(m_ui->cellDensityRadioButton,  SIGNAL(clicked()),   this, SLOT(view_cell_density()));
+    connect(m_ui->cellMomentumRadioButton, SIGNAL(clicked()),   this, SLOT(view_cell_momentum()));
+    connect(m_ui->meanDensityRadioButton,  SIGNAL(clicked()),   this, SLOT(view_mean_density()));
+    connect(m_ui->meanMomentumRadioButton, SIGNAL(clicked()),   this, SLOT(view_mean_momentum()));
+
+    m_ui->centralWidget->hide();
 }
 
 PipeView::~PipeView()
@@ -314,9 +293,6 @@ void PipeView::setup_visual()
         m_lut->SetTableValue(i, COLORMAP_JET[i][0], COLORMAP_JET[i][1], COLORMAP_JET[i][2], /*a=*/1.0);
     }
     m_lut->SetTableRange(m_mapper->GetScalarRange());
-//    m_lut->SetHueRange       (2.0/3.0, 0.0); // Blue to red rainbow
-//    m_lut->SetSaturationRange(1.0, 1.0);
-//    m_lut->SetValueRange     (1.0, 1.0);
     m_lut->Build();
     m_mapper    ->SetLookupTable(m_lut);
     m_scalar_bar->SetLookupTable(m_lut);
@@ -357,6 +333,63 @@ void PipeView::setup_ui()
     m_ui->numParticlesLineEdit->setText(QString::number(m_lattice->get_n_particles()));
 
     m_ui->meanMomentumRadioButton->setChecked(true);
+}
+
+void PipeView::setup_single()
+{
+    // TODO
+    cout << "Setup single particle collision case..." << endl;
+}
+
+void PipeView::setup_diffusion()
+{
+    // TODO
+    cout << "Setup molecular diffusion case..." << endl;
+}
+
+void PipeView::setup_pipe()
+{
+    // Create a lattice gas cellular automaton object
+    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"pipe", m_Re, m_Ma, CG_RADIUS);
+
+    // Apply boundary conditions
+    m_lattice->apply_bc_pipe();
+
+    // Initialize the lattice gas automaton with particles
+    m_lattice->init_pipe();
+    m_num_particles = m_lattice->get_n_particles();
+
+    // Necessary to set up on-line visualization
+    m_lattice->copy_data_to_output_buffer();
+    m_lattice->post_process();
+
+    // Calculate the number of particles to revert in the context of body force in order to
+    // accelerate the flow.
+    m_forcing = m_lattice->get_initial_forcing();
+
+    // Setup visualization pipeline
+    this->setup_visual();
+
+    // Setup UI
+    this->setup_ui();
+
+    m_ui->centralWidget->show();
+}
+
+void PipeView::setup_karman()
+{
+    // TODO
+    cout << "Setup Karman vortex street case..." << endl;
+}
+
+void PipeView::quit()
+{
+    qApp->quit();
+}
+
+void PipeView::show_about()
+{
+   system("firefox https://keva92.github.io/lgca/");
 }
 
 } // namespace lgca

@@ -57,23 +57,20 @@ public:
                 const Real m_Re, const Real m_Ma_s,
                 const int m_coarse_graining_radius);
 
-	virtual ~OMP_Lattice();
+    virtual ~OMP_Lattice();
 
-    // Sets (proper) parallelization parameters.
-    void setup_parallel();
-
-    // Performs the collision and propagation step on the lattice gas automaton.
+    // Performs the collision and propagation step on the lattice gas automaton
     void collide_and_propagate(const bool p);
 
-    // Computes the mean velocity of the lattice.
+    // Computes the mean velocity of the lattice
     std::vector<Real> get_mean_velocity();
 
     // Applies a body force in the specified direction (x or y) and with the
     // specified intensity to the particles. E.g., if the intensity is equal 100,
-    // every 100th particle changes it's direction, if feasible.
+    // every 100th particle changes it's direction, if feasible
     void apply_body_force(const int forcing);
 
-    // Computes quantities of interest as a post-processing procedure.
+    // Computes quantities of interest as a post-processing procedure
     void post_process();
 };
 

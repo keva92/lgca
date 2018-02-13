@@ -487,21 +487,6 @@ void OMP_Lattice<model_>::free_memory()
     this->m_mean_momentum_cpu   = NULL;
 }
 
-// Sets (proper) parallelization parameters
-template<Model model_>
-void OMP_Lattice<model_>::setup_parallel()
-{
-#pragma omp parallel for
-	for (unsigned int i = 0; i < omp_get_num_threads(); ++i)
-	{
-		if (omp_get_thread_num() == 0)
-		{
-			// Only execute in master thread.
-            printf("OMP configuration parameters: Executing calculation with %d threads.\n\n", omp_get_num_threads());
-		}
-	}
-}
-
 // Computes the mean velocity of the lattice.
 template<Model model_>
 std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {

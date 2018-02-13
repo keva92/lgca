@@ -57,9 +57,6 @@ DiffusionView::DiffusionView(QWidget *parent) :
     m_lattice->copy_data_to_output_buffer();
     m_lattice->post_process();
 
-    // Set parallelization parameters
-    m_lattice->setup_parallel();
-
     // Setup visualization pipeline
     this->setup_visual();
 

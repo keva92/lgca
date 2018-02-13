@@ -73,6 +73,18 @@ public slots:
     void view_mean_density();
     void view_mean_momentum();
 
+private slots:
+
+    // Collection of private slots to respond to the user activating any of our menu entries
+    void setup_single();
+    void setup_diffusion();
+    void setup_pipe();
+    void setup_karman();
+
+    void quit();
+
+    void show_about();
+
 private:
 
     // Setup visualization pipeline
@@ -102,6 +114,7 @@ private:
     Lattice<MODEL>* m_lattice;
     IoVti  <MODEL>* m_vti_io_handler;
 
+    // Data visualization pipeline objects
     vtkImageDataGeometryFilter* m_geom_filter;
     vtkPolyDataMapper*          m_mapper;
     vtkActor*                   m_actor;

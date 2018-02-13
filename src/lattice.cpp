@@ -166,14 +166,14 @@ Lattice<model_>::~Lattice() {
 template<Model model_>
 void Lattice<model_>::init_zero() {
 
-    // TODO
+    memset(m_node_state_cpu, 0, m_num_nodes * sizeof(unsigned char));
 }
 
 // Prints the lattice to the screen.
 template<Model model_>
 void Lattice<model_>::print() {
 
-//    m_node_state_cpu.print();
+    // TODO
 }
 
 // Returns the number of particles in the lattice.
@@ -284,11 +284,11 @@ template<Model model_>
 void Lattice<model_>::init_single_collision() {
 
     // Get the inverse direction of the 0-th one
-    int inverse_dir = ModelDesc::INV_DIR[0];
+    const char inverse_dir = ModelDesc::INV_DIR[0];
 
     std::vector<size_t> occupied_nodes;
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1) * 8);
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 5) * 8 + inverse_dir);
+    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1));
+    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 15) + inverse_dir * m_num_cells);
 
     init_single(occupied_nodes);
 }

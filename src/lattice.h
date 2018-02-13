@@ -150,78 +150,77 @@ public:
     // Applies boundary conditions for a Karman vortex street, i.e. a pipe flow with a cylinder
     void apply_bc_karman_vortex_street();
 
-    // Initializes the lattice gas automaton with zero states
+    // Initialize the lattice gas automaton with zero states
     void init_zero();
 
-    // Initializes the lattice gas automaton with some random distributed particles
+    // Initialize the lattice gas automaton with some random distributed particles
     void init_random();
 
-    // Initializes the lattice gas automaton with single particles at defined nodes
+    // Initialize the lattice gas automaton with single particles at defined nodes
     void init_single(const std::vector<size_t> occupied_nodes);
 
-    // Initializes the lattice gas automaton with two colliding particles
+    // Initialize the lattice gas automaton with two colliding particles
     void init_single_collision();
 
-    // Initializes the lattice gas automaton with some random distributed particles in the center
+    // Initialize the lattice gas automaton with some random distributed particles in the center
     // area of the domain
     void init_diffusion();
 
+    // Initialize the lattice gas automaton with a parabolic velocity profile associated with
+    // laminar pipe flows
     void init_pipe();
 
     // Returns the number of particles in the lattice
     unsigned long get_n_particles();
 
-    // Prints the lattice to the screen
+    // Print the lattice to the screen
     void print();
 
-    // Prints information about the lattice object to screen
+    // Print information about the lattice object to screen
     void print_info();
 
-    // Computes the number of particles to revert in the context of body force in order to
+    // Compute the number of particles to revert in the context of body force in order to
     // compensate boundary layer shear force
     size_t get_equilibrium_forcing();
 
-    // Computes the number of particles to revert in the context of body force in order to
+    // Compute the number of particles to revert in the context of body force in order to
     // accelerate the flow
     size_t get_initial_forcing();
 
-    // Sets (proper) parallelization parameters
-    virtual void setup_parallel() = 0;
-
-    // Calls the CUDA kernel which performs the collision and propagation step on the lattice gas
+    // Call the CUDA kernel which performs the collision and propagation step on the lattice gas
     // automaton
     virtual void collide_and_propagate(const bool p = false) = 0;
 
-    // Computes the mean velocity of the lattice
+    // Compute the mean velocity of the lattice
     virtual std::vector<Real> get_mean_velocity() = 0;
 
-    // Calls the CUDA kernel which applies a body force in the specified
-    // direction (x or y) and with the specified intensity to the particles.
-    // E.g., if the intensity is equal 100, every 100th particle
-    // changes it's direction, if feasible.
+    // Call the CUDA kernel which applies a body force in the specified
+    // direction (x or y) and with the specified intensity to the particles,
+    // e.g., if the intensity is equal 100, every 100th particle
+    // changes it's direction, if feasible
     virtual void apply_body_force(const int forcing) = 0;
 
-    // Calls the CUDA kernels which compute quantities of interest as a post-processing procedure
+    // Call the CUDA kernels which compute quantities of interest as a post-processing procedure
     virtual void post_process() = 0;
 
-    // Copies all data arrays from the host (CPU) to the device (GPU)
+    // Copy all data arrays from the host (CPU) to the device (GPU)
     virtual void copy_data_to_device();
 
-    // Copies all data arrays from the device (GPU) back to the host (CPU)
+    // Copy all data arrays from the device (GPU) back to the host (CPU)
     virtual void copy_data_from_device();
 
     virtual void copy_data_to_output_buffer();
 
     // Get functions
-    Real         nu_s()             const { return m_nu_s;              }
-    Real         c_s()              const { return m_c_s;               }
-    Real         u()                const { return m_u;                 }
-    unsigned int dim_x()            const { return m_dim_x;             }
-    unsigned int dim_y()            const { return m_dim_y;             }
-    size_t       num_cells()        const { return m_num_cells;         }
-    unsigned int coarse_dim_x()     const { return m_coarse_dim_x;      }
-    unsigned int coarse_dim_y()     const { return m_coarse_dim_y;      }
-    size_t       num_coarse_cells() const { return m_num_coarse_cells;  }
+    Real         nu_s()             const { return m_nu_s; }
+    Real         c_s()              const { return m_c_s; }
+    Real         u()                const { return m_u; }
+    unsigned int dim_x()            const { return m_dim_x; }
+    unsigned int dim_y()            const { return m_dim_y; }
+    size_t       num_cells()        const { return m_num_cells; }
+    unsigned int coarse_dim_x()     const { return m_coarse_dim_x; }
+    unsigned int coarse_dim_y()     const { return m_coarse_dim_y; }
+    size_t       num_coarse_cells() const { return m_num_coarse_cells; }
 
           Real*  cell_density()       { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }
     const Real*  cell_density() const { assert(m_cell_density_cpu);  return  m_cell_density_cpu; }
