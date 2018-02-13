@@ -511,7 +511,7 @@ void Lattice<model_>::init_pipe() {
             int pos_y = cell / m_dim_x;
 
             Real y = 1.0 * pos_y / m_dim_y;
-            Real factor = 8.0 * (1.0 - y) * y;
+            Real factor = 6.0 * (1.0 - y) * y; // TODO Check
             Real u_y = 0.0;
             Real u_x = factor * m_u;
 
