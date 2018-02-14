@@ -32,7 +32,7 @@ private:
     using ModelDesc = ModelDescriptor<model_>;
 
     // Auxiliary array on the CPU
-    unsigned char* m_node_state_tmp_cpu;
+    Bitset m_node_state_tmp_cpu;
 
     // Model-based values according to the number of lattice directions
     ModelDesc* m_model;
@@ -60,7 +60,7 @@ public:
     virtual ~OMP_Lattice();
 
     // Performs the collision and propagation step on the lattice gas automaton
-    void collide_and_propagate(const bool p);
+    void collide_and_propagate();
 
     // Computes the mean velocity of the lattice
     std::vector<Real> get_mean_velocity();

@@ -85,10 +85,10 @@ protected:
     // [DIR_0_CELL_0|DIR_1_CELL_0|DIR_2_CELL_0|...|DIR_0_CELL_1|DIR_1_CELL_1|...]
     //
     // Array on the CPU
-    unsigned char* m_node_state_cpu;
+    Bitset m_node_state_cpu;
 
     // Temporary buffer for post-processing and visualization
-    unsigned char* m_node_state_out_cpu;
+    Bitset m_node_state_out_cpu;
 
     // Density values (0th momentum) related to the single cells (non-averaged).
     Real* m_cell_density_cpu;
@@ -189,7 +189,7 @@ public:
 
     // Call the CUDA kernel which performs the collision and propagation step on the lattice gas
     // automaton
-    virtual void collide_and_propagate(const bool p = false) = 0;
+    virtual void collide_and_propagate() = 0;
 
     // Compute the mean velocity of the lattice
     virtual std::vector<Real> get_mean_velocity() = 0;

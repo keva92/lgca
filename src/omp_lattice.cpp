@@ -98,138 +98,203 @@ OMP_Lattice<model_>::~OMP_Lattice() {
 
 // Performs the collision and propagation step on the lattice gas automaton.
 template<Model model_>
-void OMP_Lattice<model_>::collide_and_propagate(const bool p) {
+void OMP_Lattice<model_>::collide_and_propagate() {
 
-    const unsigned char* __restrict__ node_state_in = this->m_node_state_cpu;
-          unsigned char* __restrict__ node_state_out = this->m_node_state_tmp_cpu;
+    const Bitset::Block* __restrict__ read  = this->m_node_state_cpu.ptr();
+          Bitset::Block* __restrict__ write = this->m_node_state_tmp_cpu.ptr();
 
     // Loop over bunches of cells
-    const size_t num_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_blocks), [&](const tbb::blocked_range<size_t>& r) {
-    for (size_t block = r.begin(); block != r.end(); ++block)
+    const size_t num_cell_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
+    const size_t cell_block_dim_x = this->m_dim_x / Bitset::BITS_PER_BLOCK;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
     {
-        for (size_t cell = block * Bitset::BITS_PER_BLOCK; cell < (block+1) * Bitset::BITS_PER_BLOCK; ++cell) {
+        // TODO Implement boundary conditions
+        if (cell_block < cell_block_dim_x || cell_block > (num_cell_blocks - cell_block_dim_x - 1)) continue;
 
-            if (cell >= this->m_num_cells) break;
+        const size_t cell_block_pos_x = cell_block % cell_block_dim_x;
+        const size_t cell_block_pos_y = cell_block / cell_block_dim_x;
 
-            // Calculate the position of the cell in y direction (row index)
-            int pos_y = cell / this->m_dim_x;
+        Bitset::Block random_bits = this->m_rnd_cpu(cell_block);
 
-            // Get the type of the cell, i.e. fluid or solid
-            // This has to be taken into account during the collision step, where cells behave
-            // different according to their type
-            CellType cell_type = this->m_cell_type_cpu[cell];
-
-            // Check weather the cell is located on boundaries
-            bool on_eastern_boundary  = (cell + 1) % this->m_dim_x == 0;
-            bool on_northern_boundary = cell >= (this->m_num_cells - this->m_dim_x);
-            bool on_western_boundary  = cell % this->m_dim_x == 0;
-            bool on_southern_boundary = cell < this->m_dim_x;
-
-            // Define an array for the states of the nodes in the cell
-            unsigned char node_state[this->NUM_DIR];
-
-            // Execute propagation step
+        Bitset::Block inputs[this->NUM_DIR];
 #pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; dir++)
-            {
-                int inv_dir = ModelDesc::INV_DIR[dir];
+        for (int dir = 0; dir < this->NUM_DIR; ++dir)
+            inputs[dir] = read[cell_block * this->NUM_DIR + dir];
 
-                // Reset the memory offset
-                int offset = 0;
-
-                // The cell is located in a row with even index value
-                if (pos_y % 2 == 0)
-                {
-                    // Construct the correct memory offset
-                    //
-                    // Apply a default offset value
-                    offset += m_model->offset_to_neighbor_even[inv_dir];
-
-                    // Correct the offset in the current direction if the cell is located on boundaries
-                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_even [inv_dir];
-                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_even[inv_dir];
-                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_even [inv_dir];
-                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_even[inv_dir];
-
-                // The cell is located in a row with odd index value
-                } else if (pos_y % 2 != 0) {
-
-                    // Construct the correct memory offset
-                    //
-                    // Apply a default offset value
-                    offset += m_model->offset_to_neighbor_odd[inv_dir];
-
-                    // Correct the offset in the current direction if the cell is located on boundaries
-                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_odd [inv_dir];
-                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_odd[inv_dir];
-                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_odd [inv_dir];
-                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_odd[inv_dir];
-                }
-
-                // Pull the states of the cell from its "neighbor" cells in the different directions
-                node_state[dir] = node_state_in[(cell + offset) + dir * this->m_num_cells];
-            }
-
-            // Execute collision step
-            //
-            // Create a temporary array to copy the node states
-            unsigned char node_state_tmp[this->NUM_DIR];
-
-            // Copy the actual states of the nodes to the temporary array
+        // By default, transport
+        Bitset::Block outputs[this->NUM_DIR];
 #pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) node_state_tmp[dir] = node_state[dir];
+        for (int dir = 0; dir < this->NUM_DIR; ++dir)
+            outputs[dir] = inputs[dir];
 
-            switch (cell_type) {
+        // Model head on collisions
+        const Bitset::Block collision0 =  inputs[0] & ~inputs[1] & ~inputs[2] &  inputs[3] & ~inputs[4] & ~inputs[5];
+        const Bitset::Block collision1 = ~inputs[0] &  inputs[1] & ~inputs[2] & ~inputs[3] &  inputs[4] & ~inputs[5];
+        const Bitset::Block collision2 = ~inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] & ~inputs[4] &  inputs[5];
 
-            // The cell working on is a fluid cell ("normal" collision)
-            case CellType::FLUID:
-            {
-                ModelDesc::collide(&node_state[0], &node_state_tmp[0], bool(this->m_rnd_cpu[cell]));
-                break;
-            }
+        outputs[0] &= ~collision0; outputs[3] &= ~collision0;
+        outputs[1] |= collision0 & random_bits;  outputs[4] |= collision0 & random_bits;
+        outputs[2] |= collision0 & ~random_bits; outputs[5] |= collision0 & ~random_bits;
 
-            // The cell working on is a solid cell of bounce back type
-            case CellType::SOLID_NO_SLIP:
-            {
-                ModelDesc::bounce_back(&node_state[0], &node_state_tmp[0]);
-                break;
-            }
+        outputs[1] &= ~collision1; outputs[4] &= ~collision1;
+        outputs[2] |= collision1 & random_bits;  outputs[5] |= collision1 & random_bits;
+        outputs[3] |= collision1 & ~random_bits; outputs[0] |= collision1 & ~random_bits;
 
-            // The cell working on is a solid cell of bounce forward type
-            case CellType::SOLID_SLIP:
-            {
-                if (on_northern_boundary || on_southern_boundary) {
+        outputs[2] &= ~collision2; outputs[5] &= ~collision2;
+        outputs[3] |= collision2 & random_bits;  outputs[0] |= collision2 & random_bits;
+        outputs[4] |= collision2 & ~random_bits; outputs[1] |= collision2 & ~random_bits;
 
-                    // Exchange the states of the nodes with the the states of the mirrored
-                    // directions along the x axis
-                    ModelDesc::bounce_forward_x(&node_state[0], &node_state_tmp[0]);
-                }
+        // Model three way collisions
+        const Bitset::Block collision3 =  inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] &  inputs[4] & ~inputs[5];
+        const Bitset::Block collision4 = ~inputs[0] &  inputs[1] & ~inputs[2] &  inputs[3] & ~inputs[4] &  inputs[5];
 
-                if (on_eastern_boundary || on_western_boundary) {
+        outputs[0] &= ~collision3;  outputs[2] &= ~collision3; outputs[4] &= ~collision3;
+        outputs[1] |=  collision3;  outputs[3] |=  collision3; outputs[5] |=  collision3;
 
-                    // Exchange the states of the nodes with the the states of
-                    // the mirrored directions along the y axis
-                    ModelDesc::bounce_forward_y(&node_state[0], &node_state_tmp[0]);
-                }
-                break;
-            }
-            }
+        outputs[1] &= ~collision4;  outputs[3] &= ~collision4; outputs[5] &= ~collision4;
+        outputs[0] |=  collision4;  outputs[2] |=  collision4; outputs[4] |=  collision4;
 
-            // Write new node states back to global array
-#pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; dir++)
-            {
-                node_state_out[cell + dir * this->m_num_cells] = node_state_tmp[dir];
-            }
+        outputs[0] &= ~collision3 |  random_bits; outputs[2] &= ~collision3 |  random_bits; outputs[4] &= ~collision3 |  random_bits;
+        outputs[1] |=  collision3 & ~random_bits; outputs[3] |=  collision3 & ~random_bits; outputs[5] |=  collision3 & ~random_bits;
 
-        } /* FOR cell */
+        outputs[1] &= ~collision4 |  random_bits; outputs[3] &= ~collision4 |  random_bits; outputs[5] &= ~collision4 |  random_bits;
+        outputs[0] |=  collision4 & ~random_bits; outputs[2] |=  collision4 & ~random_bits; outputs[4] |=  collision4 & ~random_bits;
+
+        // Push outputs
+        write[cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x + 0]  = outputs[0];
+        write[cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x + 1]  = outputs[1] << 1;
+        write[cell_block_pos_x-1 + (cell_block_pos_y+1) * cell_block_dim_x + 1] |= outputs[1] >> Bitset::BITS_PER_BLOCK-1;
+        write[cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x + 2] |= outputs[2] << 1;
+        write[cell_block_pos_x-1 +  cell_block_pos_y    * cell_block_dim_x + 2] |= outputs[2] >> Bitset::BITS_PER_BLOCK-1;
+        write[cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x + 3]  = outputs[3];
+        write[cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x + 4] |= outputs[4] >> 1;
+        write[cell_block_pos_x+1 + (cell_block_pos_y-1) * cell_block_dim_x + 4] |= outputs[4] << Bitset::BITS_PER_BLOCK-1;
+        write[cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x + 5] |= outputs[5] >> 1;
+        write[cell_block_pos_x+1 +  cell_block_pos_y    * cell_block_dim_x + 5]  = outputs[5] << Bitset::BITS_PER_BLOCK-1;
+
+//        for (size_t cell = block * Bitset::BITS_PER_BLOCK; cell < (block+1) * Bitset::BITS_PER_BLOCK; ++cell) {
+
+//            if (cell >= this->m_num_cells) break;
+
+//            // Calculate the position of the cell in y direction (row index)
+//            int pos_y = cell / this->m_dim_x;
+
+//            // Get the type of the cell, i.e. fluid or solid
+//            // This has to be taken into account during the collision step, where cells behave
+//            // different according to their type
+//            CellType cell_type = this->m_cell_type_cpu[cell];
+
+//            // Check weather the cell is located on boundaries
+//            bool on_eastern_boundary  = (cell + 1) % this->m_dim_x == 0;
+//            bool on_northern_boundary = cell >= (this->m_num_cells - this->m_dim_x);
+//            bool on_western_boundary  = cell % this->m_dim_x == 0;
+//            bool on_southern_boundary = cell < this->m_dim_x;
+
+//            // Define an array for the states of the nodes in the cell
+//            unsigned char node_state[this->NUM_DIR];
+
+//            // Execute propagation step
+//#pragma unroll
+//            for (int dir = 0; dir < this->NUM_DIR; dir++)
+//            {
+//                int inv_dir = ModelDesc::INV_DIR[dir];
+
+//                // Reset the memory offset
+//                int offset = 0;
+
+//                // The cell is located in a row with even index value
+//                if (pos_y % 2 == 0)
+//                {
+//                    // Construct the correct memory offset
+//                    //
+//                    // Apply a default offset value
+//                    offset += m_model->offset_to_neighbor_even[inv_dir];
+
+//                    // Correct the offset in the current direction if the cell is located on boundaries
+//                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_even [inv_dir];
+//                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_even[inv_dir];
+//                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_even [inv_dir];
+//                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_even[inv_dir];
+
+//                // The cell is located in a row with odd index value
+//                } else if (pos_y % 2 != 0) {
+
+//                    // Construct the correct memory offset
+//                    //
+//                    // Apply a default offset value
+//                    offset += m_model->offset_to_neighbor_odd[inv_dir];
+
+//                    // Correct the offset in the current direction if the cell is located on boundaries
+//                    if (on_eastern_boundary)  offset += m_model->offset_to_western_boundary_odd [inv_dir];
+//                    if (on_northern_boundary) offset += m_model->offset_to_southern_boundary_odd[inv_dir];
+//                    if (on_western_boundary)  offset += m_model->offset_to_eastern_boundary_odd [inv_dir];
+//                    if (on_southern_boundary) offset += m_model->offset_to_northern_boundary_odd[inv_dir];
+//                }
+
+//                // Pull the states of the cell from its "neighbor" cells in the different directions
+//                node_state[dir] = node_state_in[(cell + offset) + dir * this->m_num_cells];
+//            }
+
+//            // Execute collision step
+//            //
+//            // Create a temporary array to copy the node states
+//            unsigned char node_state_tmp[this->NUM_DIR];
+
+//            // Copy the actual states of the nodes to the temporary array
+//#pragma unroll
+//            for (int dir = 0; dir < this->NUM_DIR; ++dir) node_state_tmp[dir] = node_state[dir];
+
+//            switch (cell_type) {
+
+//            // The cell working on is a fluid cell ("normal" collision)
+//            case CellType::FLUID:
+//            {
+//                ModelDesc::collide(&node_state[0], &node_state_tmp[0], bool(this->m_rnd_cpu[cell]));
+//                break;
+//            }
+
+//            // The cell working on is a solid cell of bounce back type
+//            case CellType::SOLID_NO_SLIP:
+//            {
+//                ModelDesc::bounce_back(&node_state[0], &node_state_tmp[0]);
+//                break;
+//            }
+
+//            // The cell working on is a solid cell of bounce forward type
+//            case CellType::SOLID_SLIP:
+//            {
+//                if (on_northern_boundary || on_southern_boundary) {
+
+//                    // Exchange the states of the nodes with the the states of the mirrored
+//                    // directions along the x axis
+//                    ModelDesc::bounce_forward_x(&node_state[0], &node_state_tmp[0]);
+//                }
+
+//                if (on_eastern_boundary || on_western_boundary) {
+
+//                    // Exchange the states of the nodes with the the states of
+//                    // the mirrored directions along the y axis
+//                    ModelDesc::bounce_forward_y(&node_state[0], &node_state_tmp[0]);
+//                }
+//                break;
+//            }
+//            }
+
+//            // Write new node states back to global array
+//#pragma unroll
+//            for (int dir = 0; dir < this->NUM_DIR; dir++)
+//            {
+//                node_state_out[cell + dir * this->m_num_cells] = node_state_tmp[dir];
+//            }
+
+//        } /* FOR cell */
 
     }}); /* FOR block */
 
     // Update the node states
-    unsigned char* node_state_cpu_tmp = this->m_node_state_cpu;
-    this->m_node_state_cpu = m_node_state_tmp_cpu;
+    auto node_state_cpu_tmp = this->m_node_state_cpu.ptr();
+    this->m_node_state_cpu  = m_node_state_tmp_cpu.ptr();
     m_node_state_tmp_cpu = node_state_cpu_tmp;
 }
 
@@ -353,37 +418,51 @@ void OMP_Lattice<model_>::post_process() {
 template<Model model_>
 void OMP_Lattice<model_>::cell_post_process()
 {
-    // Loop over lattice cells
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, this->m_num_cells), [&](const tbb::blocked_range<size_t>& r) {
-    for (size_t cell = r.begin(); cell != r.end(); ++cell)
+    const Bitset::Block* __restrict__ read = this->m_node_state_out_cpu.ptr();
+
+    // Loop over bunches of cells
+    const size_t num_cell_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
     {
-        // Initialize the cell quantities to be computed
-        char cell_density    = 0;
-        Real cell_momentum_x = 0.0;
-        Real cell_momentum_y = 0.0;
-
-        // Loop over nodes within the current cell
+        Bitset inputs(Bitset::BITS_PER_BLOCK * this->NUM_DIR);
 #pragma unroll
-        for (int dir = 0; dir < this->NUM_DIR; ++dir) {
+        for (int dir = 0; dir < this->NUM_DIR; ++dir)
+            inputs(dir) = read[cell_block * this->NUM_DIR + dir];
 
-            char node_state = bool(this->m_node_state_out_cpu[cell + dir * this->m_num_cells]);
+        // Loop over cells in cell block
+#pragma unroll
+        for (int local_cell = 0; local_cell < Bitset::BITS_PER_BLOCK; ++local_cell) {
 
-            // Sum up the node states
-            cell_density += node_state;
+            // Initialize the cell quantities to be computed
+            unsigned  char cell_density    = 0;
+            Real           cell_momentum_x = 0.0;
+            Real           cell_momentum_y = 0.0;
 
-            // Sum up the node states multiplied by the lattice vector component for the current
-            // direction
-            cell_momentum_x += node_state * ModelDesc::LATTICE_VEC_X[dir];
-            cell_momentum_y += node_state * ModelDesc::LATTICE_VEC_Y[dir];
-        }
+            // Loop over nodes within the current cell
+#pragma unroll
+            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
 
-        // Write the computed cell quantities to the related data arrays
-        this->m_cell_density_cpu [cell                        ] = (Real) cell_density;
-        this->m_cell_momentum_cpu[cell * this->SPATIAL_DIM    ] = cell_momentum_x;
-        this->m_cell_momentum_cpu[cell * this->SPATIAL_DIM + 1] = cell_momentum_y;
+                unsigned char node_state = bool(inputs[local_cell + dir * Bitset::BITS_PER_BLOCK]);
 
-    } // for cell
-    });
+                // Sum up the node states
+                cell_density += node_state;
+
+                // Sum up the node states multiplied by the lattice vector component for the current
+                // direction
+                cell_momentum_x += node_state * ModelDesc::LATTICE_VEC_X[dir];
+                cell_momentum_y += node_state * ModelDesc::LATTICE_VEC_Y[dir];
+            }
+
+            // Write the computed cell quantities to the related data arrays
+            const size_t global_cell = cell_block * Bitset::BITS_PER_BLOCK + local_cell;
+            this->m_cell_density_cpu [global_cell                        ] = (Real) cell_density;
+            this->m_cell_momentum_cpu[global_cell * this->SPATIAL_DIM    ] = cell_momentum_x;
+            this->m_cell_momentum_cpu[global_cell * this->SPATIAL_DIM + 1] = cell_momentum_y;
+
+        } // for local cell
+
+    }}); // for cell block
 }
 
 // Computes coarse grained quantities of interest as a post-processing procedure
@@ -451,16 +530,16 @@ template<Model model_>
 void OMP_Lattice<model_>::allocate_memory()
 {
     // Allocate host memory
-    this->m_node_state_cpu     = (unsigned char*)malloc(                    this->m_num_nodes        * sizeof(unsigned char));
-    this->m_node_state_tmp_cpu = (unsigned char*)malloc(                    this->m_num_nodes        * sizeof(unsigned char));
-    this->m_node_state_out_cpu = (unsigned char*)malloc(                    this->m_num_nodes        * sizeof(unsigned char));
     this->m_cell_type_cpu      =      (CellType*)malloc(                    this->m_num_cells        * sizeof(CellType));
     this->m_cell_density_cpu   =          (Real*)malloc(                    this->m_num_cells        * sizeof(    Real));
     this->m_mean_density_cpu   =          (Real*)malloc(                    this->m_num_coarse_cells * sizeof(    Real));
     this->m_cell_momentum_cpu  =          (Real*)malloc(this->SPATIAL_DIM * this->m_num_cells        * sizeof(    Real));
     this->m_mean_momentum_cpu  =          (Real*)malloc(this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(    Real));
 
-    this->m_rnd_cpu.resize       (this->m_num_cells);
+    this->m_node_state_cpu.resize    (this->m_num_nodes);
+    this->m_node_state_tmp_cpu.resize(this->m_num_nodes);
+    this->m_node_state_out_cpu.resize(this->m_num_nodes);
+    this->m_rnd_cpu.resize           (this->m_num_cells);
 }
 
 // Frees the memory for the arrays on the host (CPU)
@@ -468,18 +547,12 @@ template<Model model_>
 void OMP_Lattice<model_>::free_memory()
 {
     // Free CPU memory
-    free(this->m_node_state_cpu);
-    free(this->m_node_state_tmp_cpu);
-    free(this->m_node_state_out_cpu);
     free(this->m_cell_type_cpu);
     free(this->m_cell_density_cpu);
     free(this->m_mean_density_cpu);
     free(this->m_cell_momentum_cpu);
     free(this->m_mean_momentum_cpu);
 
-    this->m_node_state_cpu      = NULL;
-    this->m_node_state_tmp_cpu  = NULL;
-    this->m_node_state_out_cpu  = NULL;
     this->m_cell_type_cpu       = NULL;
     this->m_cell_density_cpu    = NULL;
     this->m_mean_density_cpu    = NULL;

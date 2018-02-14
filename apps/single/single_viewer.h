@@ -82,9 +82,9 @@ private:
     void setup_ui();
 
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP_III;
+    static constexpr Model        MODEL       = Model::FHP_I;
     static constexpr unsigned int PP_INTERVAL = 1;
-    static constexpr int          CG_RADIUS   = 1;
+    static constexpr int          CG_RADIUS   = 32;
            const     string       OUTPUT_DIR    = "./";
            const     string       OUTPUT_FORMAT = "png";
 

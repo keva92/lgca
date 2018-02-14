@@ -121,9 +121,6 @@ void PipeView::run()
         m_ui->mnupsLineEdit  ->setText(QString::number(m_mnups));
         m_ui->simTimeLineEdit->setText(QString::number(sim_time, 'f', /*prec=*/2));
         m_ui->stepsLineEdit  ->setText(QString::number(m_steps));
-
-        // Copy results to a temporary buffer for post-processing and visualization
-        m_lattice->copy_data_to_output_buffer();
     });
 
     // Visualization
@@ -159,6 +156,9 @@ void PipeView::run()
             }
         }
     });
+
+    // Copy results to a temporary buffer for post-processing and visualization
+    m_lattice->copy_data_to_output_buffer();
 
     if (!m_ui->pauseButton->isChecked()) QTimer::singleShot(0, this, SLOT(run()));
 }

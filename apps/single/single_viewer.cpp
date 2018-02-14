@@ -50,7 +50,7 @@ SingleView::SingleView(QWidget *parent) :
     m_lattice->apply_bc_pipe();
 
     // Initialize the lattice gas automaton with particles
-    m_lattice->init_single_collision();
+    m_lattice->init_pipe();
     m_num_particles = m_lattice->get_n_particles();
 
     // Necessary to set up on-line visualization
@@ -106,9 +106,6 @@ void SingleView::run()
 
         // Print current simulation performance
         m_ui->stepsLineEdit ->setText(QString::number(m_steps));
-
-        // Copy results to a temporary buffer for post-processing and visualization
-        m_lattice->copy_data_to_output_buffer();
     });
 
     // Visualization
@@ -141,6 +138,11 @@ void SingleView::run()
             }
         }
     });
+
+    // Copy results to a temporary buffer for post-processing and visualization
+    m_lattice->copy_data_to_output_buffer();
+
+    m_lattice->print();
 
     if (!m_ui->pauseButton->isChecked()) QTimer::singleShot(0, this, SLOT(run()));
 }

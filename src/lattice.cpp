@@ -20,8 +20,8 @@
 #include "lattice.h"
 
 #include <omp.h>
-
-#include <cstring> // std::memcpy
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 
 namespace lgca {
 
@@ -95,9 +95,9 @@ Lattice<model_>::Lattice(const string test_case,
         abort();
     }
 
-    // Correct number of cells to fit coarse graining radius
+    // Correct number of cells to fit the bitset container type
     // (automatically matches FHP requirement for even number of cells in y direction)
-    m_dim_y += (2 * coarse_graining_radius) - (m_dim_y % (2 * coarse_graining_radius));
+    m_dim_y += Bitset::BITS_PER_BLOCK - (m_dim_y % Bitset::BITS_PER_BLOCK);
 
     // Define the number of cells in x direction.
     if (test_case == "pipe"      ||
@@ -117,9 +117,6 @@ Lattice<model_>::Lattice(const string test_case,
 		printf("ERROR in Lattice::Lattice(): Invalid test case %s.\n", test_case.c_str());
 		abort();
 	}
-
-    // Correct the number of cells in x direction for use with collision debug test case.
-    if (test_case == "collision") m_dim_x++;
 
     // Set the body force direction according to the test case.
     if (test_case == "pipe"   ||
@@ -166,14 +163,14 @@ Lattice<model_>::~Lattice() {
 template<Model model_>
 void Lattice<model_>::init_zero() {
 
-    memset(m_node_state_cpu, 0, m_num_nodes * sizeof(unsigned char));
+//    memset(m_node_state_cpu, 0, m_num_nodes * sizeof(unsigned char));
 }
 
 // Prints the lattice to the screen.
 template<Model model_>
 void Lattice<model_>::print() {
 
-    // TODO
+    m_node_state_cpu.print();
 }
 
 // Returns the number of particles in the lattice.
@@ -437,8 +434,7 @@ void Lattice<model_>::copy_data_from_device()
 template<Model model_>
 void Lattice<model_>::copy_data_to_output_buffer()
 {
-//    m_node_state_out_cpu.copy(m_node_state_cpu);
-    memcpy(/*dest=*/m_node_state_out_cpu, /*src=*/m_node_state_cpu, /*bytes=*/m_num_nodes * sizeof(unsigned char));
+    m_node_state_out_cpu.copy(m_node_state_cpu);
 }
 
 // Computes the number of particles to revert in the context of body force
@@ -489,7 +485,7 @@ void Lattice<model_>::init_diffusion()
             for (int dir = 0; dir < NUM_DIR; ++dir) {
 
                 // Set random states for the nodes in the fluid cell
-                m_node_state_cpu[cell * dir * m_num_cells] =
+                m_node_state_cpu[cell + dir * m_num_cells] =
                         bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
             }
 	    }
@@ -499,34 +495,53 @@ void Lattice<model_>::init_diffusion()
 template<Model model_>
 void Lattice<model_>::init_pipe() {
 
-    // Loop over all cells
-#pragma omp parallel for
-    for (size_t cell = 0; cell < m_num_cells; ++cell) {
+    Bitset::Block* __restrict__ write = m_node_state_cpu.ptr();
 
-        // Check weather the cell is a fluid cell
-        if (m_cell_type_cpu[cell] == CellType::FLUID) {
+    // Loop over bunches of cells
+    const size_t num_cell_blocks = ((m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
+    const size_t cell_block_dim_x = m_dim_x / Bitset::BITS_PER_BLOCK;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
+    {
+        // Get the y position of the current cell
+        const size_t cell_block_pos_y = cell_block / cell_block_dim_x;
 
-            // Get the position of the current cell
-            int pos_x = cell % m_dim_x;
-            int pos_y = cell / m_dim_x;
+        const Real y = 1.0 * cell_block_pos_y / m_dim_y;
+        const Real factor = 6.0 * (1.0 - y) * y; // TODO Check
+        const Real u_y = 0.0;
+        const Real u_x = factor * m_u;
 
-            Real y = 1.0 * pos_y / m_dim_y;
-            Real factor = 6.0 * (1.0 - y) * y; // TODO Check
-            Real u_y = 0.0;
-            Real u_x = factor * m_u;
+        Bitset outputs(Bitset::BITS_PER_BLOCK * NUM_DIR);
 
-            // Loop over all nodes in the fluid cell.
-            for (int dir = 0; dir < NUM_DIR; ++dir) {
+        // Loop over cells in cell block
+#pragma unroll
+        for (int local_cell = 0; local_cell < Bitset::BITS_PER_BLOCK; ++local_cell) {
 
-                // Calculate equilibrium distribution function for direction dir
-                Real N_eq = m_rho / NUM_DIR + m_rho * 2.0 / NUM_DIR * (ModelDesc::LATTICE_VEC_X[dir] * u_x
-                                                                     + ModelDesc::LATTICE_VEC_Y[dir] * u_y);
+            const size_t global_cell = cell_block * Bitset::BITS_PER_BLOCK + local_cell;
 
-                // Set random states for the nodes in the fluid cell
-                m_node_state_cpu[cell + dir * m_num_cells] = bool(random_uniform() < N_eq);
+            // Check weather the cell is a fluid cell
+            if (m_cell_type_cpu[global_cell] == CellType::FLUID) {
+
+                // Loop over all nodes in the fluid cell
+#pragma unroll
+                for (int dir = 0; dir < NUM_DIR; ++dir) {
+
+                    // Calculate equilibrium distribution function for direction dir
+                    Real N_eq = m_rho / NUM_DIR + m_rho * 2.0 / NUM_DIR * (ModelDesc::LATTICE_VEC_X[dir] * u_x
+                                                                         + ModelDesc::LATTICE_VEC_Y[dir] * u_y);
+
+                    // Set random states for the nodes in the fluid cell
+                   outputs[local_cell + dir * Bitset::BITS_PER_BLOCK] = bool(random_uniform() < N_eq);
+                }
             }
-        }
-    }
+
+        } // for local cell
+
+#pragma unroll
+        for (int dir = 0; dir < NUM_DIR; ++dir)
+            write[cell_block * NUM_DIR + dir] = outputs(dir);
+
+    }}); // for cell block
 }
 
 // Explicit instantiations
