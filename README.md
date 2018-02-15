@@ -43,4 +43,4 @@ Hopefully, some basic theory on lattice gas cellular automatons will follow soon
 
 ## Background
 
-The initial code has been developed at Hamburg University of Technology (TUHH) in 2015 in the framework of the postgrad course "Application of Innovative CFD Methods in Research and Development" by the then students Niklas Kühl and Kerstin Vater. The project has been initiated and supervised by Christian F. Janßen, postdoc at the Institute of Fluid Dynamics and Ship Theory at that time. 
+The initial code has been developed at Hamburg University of Technology (TUHH) in 2015 in the framework of the postgrad course "Application of Innovative CFD Methods in Research and Development" by the then students [Niklas Kühl](https://www.researchgate.net/profile/Niklas_Kuehl2) and [Kerstin Vater](https://www.researchgate.net/profile/Kerstin_Vater-TUHH). The project has been initiated and supervised by [Christian F. Janßen](http://www.christian-janssen.de/), postdoc at the Institute of Fluid Dynamics and Ship Theory at that time. 
