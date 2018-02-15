@@ -38,7 +38,7 @@ A Docker image will shortly be available.
 
 ## Theory
 
-Hopefully, some basic theory on lattice gas cellular automatons will follow soon. Until then, feel free to have a look at Dieter Wolf-Gladrow's "Lattice-Gas Cellular Automata and Lattice Boltzmann Models".
+Hopefully, some basic theory on lattice gas cellular automatons will follow soon. Until then, feel free to have a look at Dieter Wolf-Gladrow's ["Lattice-Gas Cellular Automata and Lattice Boltzmann Models"](http://www.springer.com/de/book/9783540669739).
 
 
 ## Background
