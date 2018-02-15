@@ -74,10 +74,9 @@ protected:
 
     // Map which defines the type of the cells
     //
-    // 0 - fluid cell
-    // 1 - solid cell, reflecting, bounce back
-    // 2 - solid cell, reflecting, bounce forward
-    CellType* m_cell_type_cpu;
+    // 0 - solid cell
+    // 1 - fluid cell
+    Bitset m_cell_type_cpu;
 
     // One-dimensional arrays of integers which contains the states of the nodes, i.e. the
     // occupation numbers of the cellular automaton in the following sense:

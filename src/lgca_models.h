@@ -151,41 +151,10 @@ struct ModelDescriptor<Model::HPP> {
         node_state_out[3] = node_state_in[3]
                 - (node_state_in[1] * node_state_in[3] * (1 - node_state_in[0]) * (1 - node_state_in[2]))
                 + (node_state_in[0] * node_state_in[2] * (1 - node_state_in[1]) * (1 - node_state_in[3]));
-
-//        // Collision case 1.
-//        if ((node_state_in[0] == 0) &&
-//            (node_state_in[1] == 1) &&
-//            (node_state_in[2] == 0) &&
-//            (node_state_in[3] == 1)) {
-
-//            node_state_out[0] = 1;
-//            node_state_out[1] = 0;
-//            node_state_out[2] = 1;
-//            node_state_out[3] = 0;
-
-//            return;
-//        }
-
-//        // Collision case 2.
-//        if ((node_state_in[0] == 1) &&
-//            (node_state_in[1] == 0) &&
-//            (node_state_in[2] == 1) &&
-
-//            (node_state_in[3] == 0)) {
-
-//            node_state_out[0] = 0;
-//            node_state_out[1] = 1;
-//            node_state_out[2] = 0;
-//            node_state_out[3] = 1;
-
-//            return;
-//        }
     }
 
     static inline void bounce_back(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BB_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -196,8 +165,6 @@ struct ModelDescriptor<Model::HPP> {
 
     static inline void bounce_forward_x(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_X_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -209,8 +176,6 @@ struct ModelDescriptor<Model::HPP> {
 
     static inline void bounce_forward_y(unsigned char* node_state_in, unsigned char* node_state_out)
     {
-//        node_state_out[0] = BF_Y_LUT[node_state_in[0]];
-
 #pragma unroll
         for (int dir = 0; dir < NUM_DIR; ++dir) {
 
@@ -246,32 +211,6 @@ struct ModelDescriptor<Model::FHP_I> {
     // Lattice vector components in the different directions
     static constexpr Real LATTICE_VEC_X [NUM_DIR] = { 1.0,  0.5, -0.5, -1.0, -0.5,  0.5}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
     static constexpr Real LATTICE_VEC_Y [NUM_DIR] = { 0.0,  SIN,  SIN,  0.0, -SIN, -SIN}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
-
-    // Collision table
-    static constexpr unsigned char COLLISION_LUT[1 << NUM_DIR] = {
-            0,  1,  2,  3,  4,  5,  6,  7,
-            8, 18, 10, 11, 12, 13, 14, 15,
-           16, 17, 36, 19, 20, 42, 22, 23,
-           24, 25, 26, 27, 28, 29, 30, 31,
-           32, 33, 34, 35,  9, 37, 38, 39,
-           40, 41, 21, 43, 44, 45, 46, 47,
-           48, 49, 50, 51, 52, 53, 54, 55,
-           56, 57, 58, 59, 60, 61, 61, 63};
-
-    // Bounce back table
-    static constexpr unsigned char BB_LUT[1 << NUM_DIR] = {
-            0,  8, 16, 24, 32, 40, 48, 56,
-            1,  9, 17, 25, 33, 41, 49, 57,
-            2, 10, 18, 26, 34, 42, 50, 58,
-            3, 11, 19, 27, 35, 43, 51, 59,
-            4, 12, 20, 28, 36, 44, 52, 60,
-            5, 13, 21, 29, 37, 45, 53, 61,
-            6, 14, 22, 30, 38, 46, 54, 62,
-            7, 15, 23, 31, 39, 47, 55, 63};
-
-    // TODO Bounce forward tables
-    static constexpr unsigned char BF_X_LUT[1 << NUM_DIR] = { };
-    static constexpr unsigned char BF_Y_LUT[1 << NUM_DIR] = { };
 
     // Memory offset to neighbor cells in the different directions for the propagation step
     // Note that for the FHP model there is a difference in the offsets depending on weather the
@@ -454,16 +393,6 @@ struct ModelDescriptor<Model::FHP_II> {
     // Lattice vector components in the different directions
     static constexpr Real LATTICE_VEC_X [NUM_DIR] = { 1.0,  0.5, -0.5, -1.0, -0.5,  0.5,  0.0}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
     static constexpr Real LATTICE_VEC_Y [NUM_DIR] = { 0.0,  SIN,  SIN,  0.0, -SIN, -SIN,  0.0}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
-
-    // TODO Collision table
-    static constexpr unsigned char COLLISION_LUT[1 << NUM_DIR] = { };
-
-    // TODO Bounce back table
-    static constexpr unsigned char BB_LUT[1 << NUM_DIR] = { };
-
-    // TODO Bounce forward tables
-    static constexpr unsigned char BF_X_LUT[1 << NUM_DIR] = { };
-    static constexpr unsigned char BF_Y_LUT[1 << NUM_DIR] = { };
 
     // Memory offset to neighbor cells in the different directions for the propagation step
     // Note that for the FHP model there is a difference in the offsets depending on weather the
@@ -673,16 +602,6 @@ struct ModelDescriptor<Model::FHP_III> {
     // Lattice vector components in the different directions
     static constexpr Real LATTICE_VEC_X [NUM_DIR] = { 1.0,  0.5, -0.5, -1.0, -0.5,  0.5,  0.0}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
     static constexpr Real LATTICE_VEC_Y [NUM_DIR] = { 0.0,  SIN,  SIN,  0.0, -SIN, -SIN,  0.0}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
-
-    // TODO Collision table
-    static constexpr unsigned char COLLISION_LUT[1 << NUM_DIR] = { };
-
-    // TODO Bounce back table
-    static constexpr unsigned char BB_LUT[1 << NUM_DIR] = { };
-
-    // TODO Bounce forward tables
-    static constexpr unsigned char BF_X_LUT[1 << NUM_DIR] = { };
-    static constexpr unsigned char BF_Y_LUT[1 << NUM_DIR] = { };
 
     // Memory offset to neighbor cells in the different directions for the propagation step
     // Note that for the FHP model there is a difference in the offsets depending on weather the

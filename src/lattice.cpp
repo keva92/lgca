@@ -203,7 +203,7 @@ void Lattice<model_>::init_random() {
     for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Check weather the cell is a fluid cell
-        if (m_cell_type_cpu[cell] == CellType::FLUID) {
+        if (m_cell_type_cpu[cell] == bool(CellType::FLUID)) {
 
             // Loop over all nodes in the fluid cell.
             for (int dir = 0; dir < NUM_DIR; ++dir) {
@@ -274,7 +274,7 @@ void Lattice<model_>::apply_bc_karman_vortex_street() {
         if (dist < (diameter / 2.0)) {
 
             // Set the cell type to solid cells of bounce back type
-            m_cell_type_cpu[cell] = CellType::SOLID_NO_SLIP;
+            m_cell_type_cpu[cell] = bool(CellType::SOLID_NO_SLIP);
         }
     }
 }
@@ -284,8 +284,8 @@ template<Model model_>
 void Lattice<model_>::init_single_collision() {
 
     std::vector<size_t> occupied_nodes;
-    occupied_nodes.push_back(10 * m_dim_x + m_dim_x / 2 +                    0  * m_num_cells);
-    occupied_nodes.push_back(20 * m_dim_x + m_dim_x / 2 + ModelDesc::INV_DIR[0] * m_num_cells);
+    occupied_nodes.push_back((1 * m_dim_x + m_dim_x / 2) * NUM_DIR +                    0);
+    occupied_nodes.push_back((3 * m_dim_x + m_dim_x / 2) * NUM_DIR + ModelDesc::INV_DIR[0]);
 
     init_single(occupied_nodes);
 }
@@ -315,8 +315,7 @@ void Lattice<model_>::apply_bc_reflecting(const string bounce_type) {
     apply_cell_type_all(cell_type);
 
     // Get the type of the boundary cells according to the bounce type
-    if      (bounce_type ==    "back") cell_type = CellType::SOLID_NO_SLIP;
-    else if (bounce_type == "forward") cell_type = CellType::SOLID_SLIP;
+    if (bounce_type == "back") cell_type = CellType::SOLID_NO_SLIP;
     else {
 
         printf("ERROR in apply_bc_reflecting(): Invalid bounce type %s.\n", bounce_type.c_str());
@@ -339,7 +338,7 @@ void Lattice<model_>::apply_cell_type_all(const CellType cell_type) {
     for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Set the cell type to the specified type
-        m_cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = bool(cell_type);
     }
 }
 
@@ -351,7 +350,7 @@ void Lattice<model_>::apply_boundary_cell_type_east(const CellType cell_type) {
     for (size_t cell = m_dim_x - 1; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type
-        m_cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = bool(cell_type);
     }
 }
 
@@ -363,7 +362,7 @@ void Lattice<model_>::apply_boundary_cell_type_north(const CellType cell_type) {
     for (size_t cell = m_num_cells - m_dim_x; cell < m_num_cells; ++cell) {
 
         // Set the cell type to the specified type
-        m_cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = bool(cell_type);
     }
 }
 
@@ -375,7 +374,7 @@ void Lattice<model_>::apply_boundary_cell_type_west(const CellType cell_type) {
     for (size_t cell = 0; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type
-        m_cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = bool(cell_type);
     }
 }
 
@@ -387,7 +386,7 @@ void Lattice<model_>::apply_boundary_cell_type_south(const CellType cell_type) {
     for (size_t cell = 0; cell < m_dim_x; ++cell) {
 
         // Set the cell type to the specified type
-        m_cell_type_cpu[cell] = cell_type;
+        m_cell_type_cpu[cell] = bool(cell_type);
     }
 }
 
@@ -463,33 +462,54 @@ template<Model model_>
 void Lattice<model_>::init_diffusion()
 {
     // Define the position and size of the center area
-    int  center_x = m_dim_x / 2;
-    int  center_y = m_dim_y / 2;
-    Real diameter = m_dim_y / 4;
+    const int  center_x = m_dim_x / 2;
+    const int  center_y = m_dim_y / 2;
+    const Real diameter = m_dim_y / 4;
 
-    // Loop over all cells
-#pragma omp parallel for
-    for (size_t cell = 0; cell < m_num_cells; ++cell) {
+    Bitset::Block* __restrict__ write = m_node_state_cpu.ptr();
 
-        // Get the x and y position of the current cell
-        int pos_x = cell % m_dim_x;
-        int pos_y = cell / m_dim_x;
+    // Loop over bunches of cells
+    const size_t num_cell_blocks = ((m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
+    const size_t cell_block_dim_x = m_dim_x / Bitset::BITS_PER_BLOCK;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
+    {
+        // Get the y position of the current cell block
+        const size_t cell_block_pos_y = cell_block / cell_block_dim_x;
 
-        Real dist = sqrt(pow((pos_x - center_x), 2.0) + pow((pos_y - center_y), 2.0));
+        Bitset outputs(Bitset::BITS_PER_BLOCK * NUM_DIR);
 
-        // Check weather the cell is a fluid cell in the center area of the domain
-        if (m_cell_type_cpu[cell] == CellType::FLUID &&
-	    	dist                < (diameter / 2.0))
-	    {
-            // Loop over all nodes in the fluid cell
-            for (int dir = 0; dir < NUM_DIR; ++dir) {
+        // Loop over cells in cell block
+#pragma unroll
+        for (int local_cell = 0; local_cell < Bitset::BITS_PER_BLOCK; ++local_cell) {
 
-                // Set random states for the nodes in the fluid cell
-                m_node_state_cpu[cell + dir * m_num_cells] =
-                        bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
+            const size_t global_cell = cell_block * Bitset::BITS_PER_BLOCK + local_cell;
+
+            // Get the x and y position of the current cell
+            const int cell_pos_x = global_cell % m_dim_x;
+            const int cell_pos_y = cell_block_pos_y;
+
+            Real dist = sqrt(pow((cell_pos_x - center_x), 2.0) + pow((cell_pos_y - center_y), 2.0));
+
+            // Check weather the cell is a fluid cell in the center area of the domain
+            if (m_cell_type_cpu[global_cell] == bool(CellType::FLUID) && dist < (diameter / 2.0))
+            {
+                // Loop over all nodes in the fluid cell
+                for (int dir = 0; dir < NUM_DIR; ++dir) {
+
+                    // Set random states for the nodes in the fluid cell
+                    outputs[local_cell + dir * Bitset::BITS_PER_BLOCK] =
+                            bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
+                }
             }
-	    }
-	}
+
+        } // for local cell
+
+#pragma unroll
+        for (int dir = 0; dir < NUM_DIR; ++dir)
+            write[cell_block * NUM_DIR + dir] = outputs(dir);
+
+    }}); // for cell block
 }
 
 template<Model model_>
@@ -503,7 +523,7 @@ void Lattice<model_>::init_pipe() {
     tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
     for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
     {
-        // Get the y position of the current cell
+        // Get the y position of the current cell block
         const size_t cell_block_pos_y = cell_block / cell_block_dim_x;
 
         const Real y = 1.0 * cell_block_pos_y / m_dim_y;
@@ -520,7 +540,7 @@ void Lattice<model_>::init_pipe() {
             const size_t global_cell = cell_block * Bitset::BITS_PER_BLOCK + local_cell;
 
             // Check weather the cell is a fluid cell
-            if (m_cell_type_cpu[global_cell] == CellType::FLUID) {
+            if (m_cell_type_cpu[global_cell] == bool(CellType::FLUID)) {
 
                 // Loop over all nodes in the fluid cell
 #pragma unroll
@@ -531,7 +551,8 @@ void Lattice<model_>::init_pipe() {
                                                                          + ModelDesc::LATTICE_VEC_Y[dir] * u_y);
 
                     // Set random states for the nodes in the fluid cell
-                   outputs[local_cell + dir * Bitset::BITS_PER_BLOCK] = bool(random_uniform() < N_eq);
+                    outputs[local_cell + dir * Bitset::BITS_PER_BLOCK] =
+                            bool(random_uniform() < N_eq);
                 }
             }
 

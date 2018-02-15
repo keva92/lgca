@@ -54,9 +54,8 @@ enum class Model {
 };
 
 enum class CellType {
-    FLUID         = 0,
-    SOLID_NO_SLIP = 1,
-    SOLID_SLIP    = 2
+    SOLID_NO_SLIP = 0,
+    FLUID         = 1
 };
 
 } // namespace lgca

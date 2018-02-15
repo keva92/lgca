@@ -33,40 +33,24 @@ constexpr char          ModelDescriptor<Model::HPP>::MIR_DIR_X[];
 constexpr char          ModelDescriptor<Model::HPP>::MIR_DIR_Y[];
 constexpr Real          ModelDescriptor<Model::HPP>::LATTICE_VEC_X[];
 constexpr Real          ModelDescriptor<Model::HPP>::LATTICE_VEC_Y[];
-constexpr unsigned char ModelDescriptor<Model::HPP>::COLLISION_LUT[];
-constexpr unsigned char ModelDescriptor<Model::HPP>::BB_LUT[];
-constexpr unsigned char ModelDescriptor<Model::HPP>::BF_X_LUT[];
-constexpr unsigned char ModelDescriptor<Model::HPP>::BF_Y_LUT[];
 
 constexpr char          ModelDescriptor<Model::FHP_I>::INV_DIR[];
 constexpr char          ModelDescriptor<Model::FHP_I>::MIR_DIR_X[];
 constexpr char          ModelDescriptor<Model::FHP_I>::MIR_DIR_Y[];
 constexpr Real          ModelDescriptor<Model::FHP_I>::LATTICE_VEC_X[];
 constexpr Real          ModelDescriptor<Model::FHP_I>::LATTICE_VEC_Y[];
-constexpr unsigned char ModelDescriptor<Model::FHP_I>::COLLISION_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_I>::BB_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_I>::BF_X_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_I>::BF_Y_LUT[];
 
 constexpr char          ModelDescriptor<Model::FHP_II>::INV_DIR[];
 constexpr char          ModelDescriptor<Model::FHP_II>::MIR_DIR_X[];
 constexpr char          ModelDescriptor<Model::FHP_II>::MIR_DIR_Y[];
 constexpr Real          ModelDescriptor<Model::FHP_II>::LATTICE_VEC_X[];
 constexpr Real          ModelDescriptor<Model::FHP_II>::LATTICE_VEC_Y[];
-constexpr unsigned char ModelDescriptor<Model::FHP_II>::COLLISION_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_II>::BB_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_II>::BF_X_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_II>::BF_Y_LUT[];
 
 constexpr char          ModelDescriptor<Model::FHP_III>::INV_DIR[];
 constexpr char          ModelDescriptor<Model::FHP_III>::MIR_DIR_X[];
 constexpr char          ModelDescriptor<Model::FHP_III>::MIR_DIR_Y[];
 constexpr Real          ModelDescriptor<Model::FHP_III>::LATTICE_VEC_X[];
 constexpr Real          ModelDescriptor<Model::FHP_III>::LATTICE_VEC_Y[];
-constexpr unsigned char ModelDescriptor<Model::FHP_III>::COLLISION_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_III>::BB_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_III>::BF_X_LUT[];
-constexpr unsigned char ModelDescriptor<Model::FHP_III>::BF_Y_LUT[];
 
 
 // Creates a CUDA parallelized lattice gas cellular automaton object
@@ -112,15 +96,17 @@ void OMP_Lattice<model_>::collide_and_propagate() {
         const size_t cell_block_pos_x = cell_block % cell_block_dim_x;
         const size_t cell_block_pos_y = cell_block / cell_block_dim_x;
 
+        // TODO Implement boundary conditions
         if (cell_block_pos_x == 0 || cell_block_pos_x == cell_block_dim_x-1 ||
             cell_block_pos_y == 0 || cell_block_pos_y == this->m_dim_y-1) continue;
 
+        Bitset::Block is_fluid    = this->m_cell_type_cpu(cell_block);
         Bitset::Block random_bits = this->m_rnd_cpu(cell_block);
 
         Bitset::Block inputs[this->NUM_DIR];
 #pragma unroll
         for (int dir = 0; dir < this->NUM_DIR; ++dir)
-            inputs[dir] = read[cell_block + dir * num_cell_blocks];
+            inputs[dir] = read[cell_block * this->NUM_DIR + dir];
 
         // By default, transport
         Bitset::Block outputs[this->NUM_DIR];
@@ -134,62 +120,48 @@ void OMP_Lattice<model_>::collide_and_propagate() {
         const Bitset::Block collision2 = ~inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] & ~inputs[4] &  inputs[5];
 
         outputs[0] &= ~collision0; outputs[3] &= ~collision0;
-        outputs[1] |= collision0 & random_bits;  outputs[4] |= collision0 & random_bits;
-        outputs[2] |= collision0 & ~random_bits; outputs[5] |= collision0 & ~random_bits;
+        outputs[1] |=  collision0 &  random_bits; outputs[4] |= collision0 &  random_bits;
+        outputs[2] |=  collision0 & ~random_bits; outputs[5] |= collision0 & ~random_bits;
 
         outputs[1] &= ~collision1; outputs[4] &= ~collision1;
-        outputs[2] |= collision1 & random_bits;  outputs[5] |= collision1 & random_bits;
+        outputs[2] |= collision1 &  random_bits; outputs[5] |= collision1 &  random_bits;
         outputs[3] |= collision1 & ~random_bits; outputs[0] |= collision1 & ~random_bits;
 
         outputs[2] &= ~collision2; outputs[5] &= ~collision2;
-        outputs[3] |= collision2 & random_bits;  outputs[0] |= collision2 & random_bits;
+        outputs[3] |= collision2 &  random_bits; outputs[0] |= collision2 &  random_bits;
         outputs[4] |= collision2 & ~random_bits; outputs[1] |= collision2 & ~random_bits;
 
         // Model three way collisions
         const Bitset::Block collision3 =  inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] &  inputs[4] & ~inputs[5];
         const Bitset::Block collision4 = ~inputs[0] &  inputs[1] & ~inputs[2] &  inputs[3] & ~inputs[4] &  inputs[5];
 
-        outputs[0] &= ~collision3 |  random_bits; outputs[2] &= ~collision3 |  random_bits; outputs[4] &= ~collision3 |  random_bits;
-        outputs[1] |=  collision3 & ~random_bits; outputs[3] |=  collision3 & ~random_bits; outputs[5] |=  collision3 & ~random_bits;
+        outputs[0] &= ~collision3; outputs[2] &= ~collision3; outputs[4] &= ~collision3;
+        outputs[1] |=  collision3; outputs[3] |=  collision3; outputs[5] |=  collision3;
 
-        outputs[1] &= ~collision4 |  random_bits; outputs[3] &= ~collision4 |  random_bits; outputs[5] &= ~collision4 |  random_bits;
-        outputs[0] |=  collision4 & ~random_bits; outputs[2] |=  collision4 & ~random_bits; outputs[4] |=  collision4 & ~random_bits;
+        outputs[1] &= ~collision4; outputs[3] &= ~collision4; outputs[5] &= ~collision4;
+        outputs[0] |=  collision4; outputs[2] |=  collision4; outputs[4] |=  collision4;
+
+        // TODO Model no slip boundary conditions (bounce back)
+//        outputs[0] = inputs[3] & ~is_fluid;
+//        outputs[1] = inputs[4] & ~is_fluid;
+//        outputs[2] = inputs[5] & ~is_fluid;
+//        outputs[3] = inputs[0] & ~is_fluid;
+//        outputs[4] = inputs[1] & ~is_fluid;
+//        outputs[5] = inputs[2] & ~is_fluid;
 
         // Push outputs
-        write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) + num_cell_blocks * 0]  = outputs[0];
-        write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) + num_cell_blocks * 1]  = outputs[1] << 1;
-        write[(cell_block_pos_x-1 + (cell_block_pos_y+1) * cell_block_dim_x) + num_cell_blocks * 1] |= outputs[1] >> 63;
-        write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) + num_cell_blocks * 2] |= outputs[2] << 1;
-        write[(cell_block_pos_x-1 +  cell_block_pos_y    * cell_block_dim_x) + num_cell_blocks * 2] |= outputs[2] >> 63;
-        write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) + num_cell_blocks * 3]  = outputs[3];
-        write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) + num_cell_blocks * 4] |= outputs[4] >> 1;
-        write[(cell_block_pos_x+1 + (cell_block_pos_y-1) * cell_block_dim_x) + num_cell_blocks * 4] |= outputs[4] << 63;
-        write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) + num_cell_blocks * 5] |= outputs[5] >> 1;
-        write[(cell_block_pos_x+1 +  cell_block_pos_y    * cell_block_dim_x) + num_cell_blocks * 5]  = outputs[5] << 63;
+        write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 0]  = outputs[0];
+        write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 1]  = outputs[1] >> 1;
+        write[(cell_block_pos_x-1 + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 1] |= outputs[1] << Bitset::BITS_PER_BLOCK-1;
+        write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 2] |= outputs[2] >> 1;
+        write[(cell_block_pos_x-1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 2] |= outputs[2] << Bitset::BITS_PER_BLOCK-1;
+        write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 3]  = outputs[3];
+        write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 4] |= outputs[4] << 1;
+        write[(cell_block_pos_x+1 + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 4] |= outputs[4] >> Bitset::BITS_PER_BLOCK-1;
+        write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 5] |= outputs[5] << 1;
+        write[(cell_block_pos_x+1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 5]  = outputs[5] >> Bitset::BITS_PER_BLOCK-1;
 
     }}); // for cell block
-
-    // Enforce periodic boundary conditions
-    //
-    // Top and bottom rows
-    for (int xx = 0; xx < cell_block_dim_x; xx++) {
-        for (int ii = 0; ii < this->NUM_DIR; ii++) {
-            write[xx + (this->m_dim_y-2) * cell_block_dim_x + ii * num_cell_blocks] ^= write[xx + ii * num_cell_blocks];
-        }
-        for (int ii = 0; ii < this->NUM_DIR; ii++) {
-            write[xx + cell_block_dim_x + ii * num_cell_blocks] ^= write[xx + (this->m_dim_y-1) * cell_block_dim_x + ii * num_cell_blocks];
-        }
-    }
-
-    // Left and right sides
-    for (int yy = 0; yy < this->m_dim_y; yy++) {
-        for (int ii = 0; ii < this->NUM_DIR; ii++) {
-            write[cell_block_dim_x-2 + yy * cell_block_dim_x + ii * num_cell_blocks] ^= write[yy * cell_block_dim_x + ii * num_cell_blocks];
-        }
-        for (int ii = 0; ii < this->NUM_DIR; ii++) {
-            write[1 + yy * cell_block_dim_x + ii * num_cell_blocks] ^= write[cell_block_dim_x-1 + yy * cell_block_dim_x + ii * num_cell_blocks];
-        }
-    }
 
     this->m_node_state_cpu.reset();
 
@@ -223,10 +195,10 @@ void OMP_Lattice<model_>::apply_body_force(const int forcing) {
 
         // Get the type of the cell, i.e. fluid or solid.
         // Note that body forces are applied to fluid cells only.
-        CellType cell_type = this->m_cell_type_cpu[cell];
+        bool cell_type = this->m_cell_type_cpu[cell];
 
         // Check weather the cell working on is a fluid cell
-        if (cell_type == CellType::FLUID) {
+        if (cell_type == bool(CellType::FLUID)) {
 
             // Define an array for the states of the nodes in the cell
             unsigned char node_state[this->NUM_DIR];
@@ -329,16 +301,16 @@ void OMP_Lattice<model_>::cell_post_process()
         Bitset inputs(Bitset::BITS_PER_BLOCK * this->NUM_DIR);
 #pragma unroll
         for (int dir = 0; dir < this->NUM_DIR; ++dir)
-            inputs(dir) = read[cell_block + dir * num_cell_blocks];
+            inputs(dir) = read[cell_block * this->NUM_DIR + dir];
 
         // Loop over cells in cell block
 #pragma unroll
         for (int local_cell = 0; local_cell < Bitset::BITS_PER_BLOCK; ++local_cell) {
 
             // Initialize the cell quantities to be computed
-            unsigned  char cell_density    = 0;
-            Real           cell_momentum_x = 0.0;
-            Real           cell_momentum_y = 0.0;
+            unsigned char cell_density    = 0;
+            Real          cell_momentum_x = 0.0;
+            Real          cell_momentum_y = 0.0;
 
             // Loop over nodes within the current cell
 #pragma unroll
@@ -431,7 +403,6 @@ template<Model model_>
 void OMP_Lattice<model_>::allocate_memory()
 {
     // Allocate host memory
-    this->m_cell_type_cpu      =      (CellType*)malloc(                    this->m_num_cells        * sizeof(CellType));
     this->m_cell_density_cpu   =          (Real*)malloc(                    this->m_num_cells        * sizeof(    Real));
     this->m_mean_density_cpu   =          (Real*)malloc(                    this->m_num_coarse_cells * sizeof(    Real));
     this->m_cell_momentum_cpu  =          (Real*)malloc(this->SPATIAL_DIM * this->m_num_cells        * sizeof(    Real));
@@ -441,6 +412,7 @@ void OMP_Lattice<model_>::allocate_memory()
     this->m_node_state_tmp_cpu.resize(this->m_num_nodes);
     this->m_node_state_out_cpu.resize(this->m_num_nodes);
     this->m_rnd_cpu.resize           (this->m_num_cells);
+    this->m_cell_type_cpu.resize     (this->m_num_cells);
 }
 
 // Frees the memory for the arrays on the host (CPU)
@@ -448,13 +420,11 @@ template<Model model_>
 void OMP_Lattice<model_>::free_memory()
 {
     // Free CPU memory
-    free(this->m_cell_type_cpu);
     free(this->m_cell_density_cpu);
     free(this->m_mean_density_cpu);
     free(this->m_cell_momentum_cpu);
     free(this->m_mean_momentum_cpu);
 
-    this->m_cell_type_cpu       = NULL;
     this->m_cell_density_cpu    = NULL;
     this->m_mean_density_cpu    = NULL;
     this->m_cell_momentum_cpu   = NULL;
@@ -476,7 +446,7 @@ std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {
 #pragma omp parallel for reduction(+: sum_x_vel, sum_y_vel)
     for (size_t n = 0; n < this->m_num_cells; ++n) {
 
-        if (this->m_cell_type_cpu[n] == CellType::FLUID) {
+        if (this->m_cell_type_cpu[n] == bool(CellType::FLUID)) {
 
         	counter++;
 
