@@ -1,11 +1,12 @@
 # LGCA
 LGCA is a C++ implementation of a Lattice Gas Cellular Automaton (LGCA) in 2D. Features comprise
 
-* HPP and FHP-I lattice gas models
-* Several apps with dedicated GUIs (including Kármán vortex street, pipe flow, and diffusion)
+* HPP, FHP-I, FHP-II, and FHP-III lattice gas models
+* Several configurable applications (including Kármán vortex street, pipe flow, and molecular diffusion)
 * Shared memory parallelization
+* Easy-to-use graphical user interface
 * On-line data visualization
-* File I/O using vtkImageData (.vti) (supported by ParaView)
+* File I/O using vtkImageData (.vti) (supported by ParaView) as well as PNG images
 
 
 ## Build from Source
@@ -30,11 +31,16 @@ cd ../bin/
 ./lgca-pipe
 ```
 
+## Deploy using Docker
+
+A Docker image will shortly be available.
+
+
 ## Theory
 
-Hopefully, some basic theory on lattice gas cellular automatons will follow soon. Until then, feel free to have a look at Dieter Wolf-Gladrow's "Lattice-Gas Cellular Automata and Lattice Boltzmann Models".
+Hopefully, some basic theory on lattice gas cellular automatons will follow soon. Until then, feel free to have a look at Dieter Wolf-Gladrow's profound introduction to [*Lattice-Gas Cellular Automata and Lattice Boltzmann Models*](http://www.springer.com/de/book/9783540669739).
 
 
 ## Background
 
-The initial code has been developed at Hamburg University of Technology (TUHH) in 2015 in the framework of the postgrad course "Application of Innovative CFD Methods in Research and Development" by the then students Niklas Kühl and Kerstin Vater. The project has been initiated and supervised by Christian F. Janßen, postdoc at the Institute of Fluid Dynamics and Ship Theory at that time. 
+The initial code has been developed at Hamburg University of Technology (TUHH) in 2015 in the framework of the postgrad course "Application of Innovative CFD Methods in Research and Development" by the then students [Niklas Kühl](https://www.researchgate.net/profile/Niklas_Kuehl2) and [Kerstin Vater](https://www.researchgate.net/profile/Kerstin_Vater-TUHH). The project has been initiated and supervised by [Christian F. Janßen](http://www.christian-janssen.de/), postdoc at the Institute of Fluid Dynamics and Ship Theory at that time. 
