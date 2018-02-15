@@ -95,18 +95,14 @@ Lattice<model_>::Lattice(const string test_case,
         abort();
     }
 
-    // Correct number of cells to fit the bitset container type
-    // (automatically matches FHP requirement for even number of cells in y direction)
-    m_dim_y += Bitset::BITS_PER_BLOCK - (m_dim_y % Bitset::BITS_PER_BLOCK);
-
     // Define the number of cells in x direction.
     if (test_case == "pipe"      ||
-        test_case == "karman"    ||
-        test_case == "collision") {
+        test_case == "karman") {
 
         m_dim_x = 2 * m_dim_y;
 
-    } else if (test_case == "box"       ||
+    } else if (test_case == "collision" ||
+               test_case == "box"       ||
     	       test_case == "diffusion" ||
     	       test_case == "periodic") {
 
@@ -117,6 +113,13 @@ Lattice<model_>::Lattice(const string test_case,
 		printf("ERROR in Lattice::Lattice(): Invalid test case %s.\n", test_case.c_str());
 		abort();
 	}
+
+    // Correct number of cells to fit the bitset container type
+    // (automatically matches FHP requirement for even number of cells in y direction)
+    const size_t cell_blocks_wide = (m_dim_x + Bitset::BITS_PER_BLOCK-1) / Bitset::BITS_PER_BLOCK + 2;
+    const size_t cell_blocks_high = (m_dim_y +                        1) / Bitset::BITS_PER_BLOCK + 1;
+    m_dim_x = cell_blocks_wide * Bitset::BITS_PER_BLOCK;
+    m_dim_y = cell_blocks_high * Bitset::BITS_PER_BLOCK;
 
     // Set the body force direction according to the test case.
     if (test_case == "pipe"   ||
@@ -280,12 +283,9 @@ void Lattice<model_>::apply_bc_karman_vortex_street() {
 template<Model model_>
 void Lattice<model_>::init_single_collision() {
 
-    // Get the inverse direction of the 0-th one
-    const char inverse_dir = ModelDesc::INV_DIR[0];
-
     std::vector<size_t> occupied_nodes;
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 1));
-    occupied_nodes.push_back((m_dim_x * m_dim_y / 2 + 15) + inverse_dir * m_num_cells);
+    occupied_nodes.push_back(10 * m_dim_x + m_dim_x / 2 +                    0  * m_num_cells);
+    occupied_nodes.push_back(20 * m_dim_x + m_dim_x / 2 + ModelDesc::INV_DIR[0] * m_num_cells);
 
     init_single(occupied_nodes);
 }

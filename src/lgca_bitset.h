@@ -32,7 +32,7 @@ class Bitset
 {
 public:
 
-    using Block = uint8_t;
+    using Block = uint64_t;
 
     static constexpr Block BITS_PER_BLOCK = std::numeric_limits<Block>::digits;
 
