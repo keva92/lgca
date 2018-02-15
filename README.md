@@ -2,8 +2,9 @@
 LGCA is a C++ implementation of a Lattice Gas Cellular Automaton (LGCA) in 2D. Features comprise
 
 * HPP, FHP-I, FHP-II, and FHP-III lattice gas models
-* Several apps with dedicated GUIs (including Kármán vortex street, pipe flow, and diffusion)
+* Several configurable applications (including Kármán vortex street, pipe flow, and molecular diffusion)
 * Shared memory parallelization
+* Easy-to-use graphical user interface
 * On-line data visualization
 * File I/O using vtkImageData (.vti) (supported by ParaView) as well as PNG images
 
@@ -29,6 +30,11 @@ make
 cd ../bin/
 ./lgca-pipe
 ```
+
+## Deploy using Docker
+
+A Docker image will shortly be available.
+
 
 ## Theory
 
