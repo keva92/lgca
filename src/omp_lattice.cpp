@@ -337,6 +337,7 @@ void OMP_Lattice<model_>::cell_post_process()
             unsigned char cell_density    = 0;
             Real          cell_momentum_x = 0.0;
             Real          cell_momentum_y = 0.0;
+            Real          cell_momentum_z = 0.0;
 
             // Loop over nodes within the current cell
 #pragma unroll
@@ -356,8 +357,9 @@ void OMP_Lattice<model_>::cell_post_process()
             // Write the computed cell quantities to the related data arrays
             const size_t global_cell = cell_block * Bitset::BITS_PER_BLOCK + local_cell;
             this->m_cell_density_cpu [global_cell                        ] = (Real) cell_density;
-            this->m_cell_momentum_cpu[global_cell * this->SPATIAL_DIM    ] = cell_momentum_x;
-            this->m_cell_momentum_cpu[global_cell * this->SPATIAL_DIM + 1] = cell_momentum_y;
+            this->m_cell_momentum_cpu[global_cell * 3 + 0] = cell_momentum_x;
+            this->m_cell_momentum_cpu[global_cell * 3 + 1] = cell_momentum_y;
+            this->m_cell_momentum_cpu[global_cell * 3 + 2] = cell_momentum_z;
 
         } // for local cell
 
@@ -384,6 +386,7 @@ void OMP_Lattice<model_>::mean_post_process()
         Real mean_density    = 0.0;
         Real mean_momentum_x = 0.0;
         Real mean_momentum_y = 0.0;
+        Real mean_momentum_z = 0.0;
 
         // Initialize the number of actual existing coarse graining neighbor cells
         int n_exist_neighbors = 0;
@@ -409,17 +412,18 @@ void OMP_Lattice<model_>::mean_post_process()
                     // Increase the number of existing coarse graining neighbor cells
                     n_exist_neighbors++;
 
-                    mean_density    += this->m_cell_density_cpu [neighbor_idx                        ];
-                    mean_momentum_x += this->m_cell_momentum_cpu[neighbor_idx * this->SPATIAL_DIM    ];
-                    mean_momentum_y += this->m_cell_momentum_cpu[neighbor_idx * this->SPATIAL_DIM + 1];
+                    mean_density    += this->m_cell_density_cpu [neighbor_idx        ];
+                    mean_momentum_x += this->m_cell_momentum_cpu[neighbor_idx * 3 + 0];
+                    mean_momentum_y += this->m_cell_momentum_cpu[neighbor_idx * 3 + 1];
                 }
             }
         }
 
         // Write the computed coarse grained quantities to the related data arrays
-        this->m_mean_density_cpu [coarse_cell                        ] = mean_density    / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[coarse_cell * this->SPATIAL_DIM    ] = mean_momentum_x / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[coarse_cell * this->SPATIAL_DIM + 1] = mean_momentum_y / ((Real) n_exist_neighbors);
+        this->m_mean_density_cpu [coarse_cell        ] = mean_density    / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[coarse_cell * 3 + 0] = mean_momentum_x / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[coarse_cell * 3 + 1] = mean_momentum_y / ((Real) n_exist_neighbors);
+        this->m_mean_momentum_cpu[coarse_cell * 3 + 2] = mean_momentum_z / ((Real) n_exist_neighbors);
 
     }}); // for coarse_cell
 }
@@ -429,10 +433,10 @@ template<Model model_>
 void OMP_Lattice<model_>::allocate_memory()
 {
     // Allocate host memory
-    this->m_cell_density_cpu   =          (Real*)malloc(                    this->m_num_cells        * sizeof(    Real));
-    this->m_mean_density_cpu   =          (Real*)malloc(                    this->m_num_coarse_cells * sizeof(    Real));
-    this->m_cell_momentum_cpu  =          (Real*)malloc(this->SPATIAL_DIM * this->m_num_cells        * sizeof(    Real));
-    this->m_mean_momentum_cpu  =          (Real*)malloc(this->SPATIAL_DIM * this->m_num_coarse_cells * sizeof(    Real));
+    this->m_cell_density_cpu   = (Real*)malloc(    this->m_num_cells        * sizeof(Real));
+    this->m_mean_density_cpu   = (Real*)malloc(    this->m_num_coarse_cells * sizeof(Real));
+    this->m_cell_momentum_cpu  = (Real*)malloc(3 * this->m_num_cells        * sizeof(Real));
+    this->m_mean_momentum_cpu  = (Real*)malloc(3 * this->m_num_coarse_cells * sizeof(Real));
 
     this->m_node_state_cpu.resize    (this->m_num_nodes);
     this->m_node_state_tmp_cpu.resize(this->m_num_nodes);

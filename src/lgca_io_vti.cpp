@@ -69,22 +69,25 @@ IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattic
     // Pass pointer to cell momentum array of the lattice to the image data object
     vtkAOSDataArrayTemplate<float>* cell_momentum = vtkAOSDataArrayTemplate<float>::New();
     cell_momentum->SetName("Cell momentum");
-    cell_momentum->SetNumberOfComponents(2);
-    cell_momentum->SetArray((float*)(m_lattice->cell_momentum()), /*size=*/2 * m_lattice->num_cells(), /*save=*/1);
+    cell_momentum->SetNumberOfComponents(3);
+    cell_momentum->SetArray((float*)(m_lattice->cell_momentum()), /*size=*/3 * m_lattice->num_cells(), /*save=*/1);
     m_cell_image_data->GetCellData()->AddArray(cell_momentum);
     cell_momentum->Delete();
 
     // Pass pointer to mean momentum array of the lattice to the image data object
     vtkAOSDataArrayTemplate<float>* mean_momentum = vtkAOSDataArrayTemplate<float>::New();
     mean_momentum->SetName("Mean momentum");
-    mean_momentum->SetNumberOfComponents(2);
-    mean_momentum->SetArray((float*)(m_lattice->mean_momentum()), /*size=*/2 * m_lattice->num_coarse_cells(), /*save=*/1);
+    mean_momentum->SetNumberOfComponents(3);
+    mean_momentum->SetArray((float*)(m_lattice->mean_momentum()), /*size=*/3 * m_lattice->num_coarse_cells(), /*save=*/1);
     m_mean_image_data->GetPointData()->AddArray(mean_momentum);
     mean_momentum->Delete();
 
     // Set active array for on-line visualization
     m_cell_image_data->GetCellData() ->SetActiveScalars(scalars.c_str());
     m_mean_image_data->GetPointData()->SetActiveScalars(scalars.c_str());
+
+    m_cell_image_data->GetCellData() ->SetActiveVectors(scalars.c_str());
+    m_mean_image_data->GetPointData()->SetActiveVectors(scalars.c_str());
 
     // Mark image data object as modified
     this->update();
@@ -96,6 +99,16 @@ void IoVti<model_>::set_scalars(const std::string scalars)
     // Set active array for on-line visualization
     m_cell_image_data->GetCellData() ->SetActiveScalars(scalars.c_str());
     m_mean_image_data->GetPointData()->SetActiveScalars(scalars.c_str());
+
+    this->update();
+}
+
+template<Model model_>
+void IoVti<model_>::set_vectors(const std::string vectors)
+{
+    // Set active array for on-line visualization
+    m_cell_image_data->GetCellData() ->SetActiveVectors(vectors.c_str());
+    m_mean_image_data->GetPointData()->SetActiveVectors(vectors.c_str());
 
     this->update();
 }

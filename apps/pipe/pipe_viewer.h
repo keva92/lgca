@@ -37,6 +37,7 @@
 #include <vtkStreamTracer.h>
 #include <vtkStreaklineFilter.h>
 #include <vtkParticlePathFilter.h>
+#include <vtkLineSource.h>
 
 #include <QMainWindow>
 
@@ -75,6 +76,7 @@ public slots:
     void view_cell_momentum();
     void view_mean_density();
     void view_mean_momentum();
+    void view_streamlines();
 
 private slots:
 
@@ -101,7 +103,7 @@ private:
     static constexpr unsigned int PP_INTERVAL   = 1;
     static constexpr int          CG_RADIUS     = 32;
            const     string       OUTPUT_DIR    = "./";
-           const     string       OUTPUT_FORMAT = "png";
+           const     string       OUTPUT_FORMAT = "vti";
 
     // Simulation variables
     size_t            m_steps;
@@ -128,6 +130,7 @@ private:
     vtkRenderWindow*            m_ren_win;
     vtkWindowToImageFilter*     m_png_filter;
     vtkPNGWriter*               m_png_writer;
+    vtkStreamTracer*            m_stream_filter;
     vtkStreaklineFilter*        m_streak_filter;
     vtkParticlePathFilter*      m_path_filter;
 

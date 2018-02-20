@@ -42,6 +42,7 @@ public:
 
     // Set active array for on-line visualization
     void set_scalars(const std::string scalars);
+    void set_vectors(const std::string vectors);
 
     // Update image data object
     void update();

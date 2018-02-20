@@ -55,6 +55,7 @@ PipeView::PipeView(QWidget *parent) :
     connect(m_ui->cellMomentumRadioButton, SIGNAL(clicked()),   this, SLOT(view_cell_momentum()));
     connect(m_ui->meanDensityRadioButton,  SIGNAL(clicked()),   this, SLOT(view_mean_density()));
     connect(m_ui->meanMomentumRadioButton, SIGNAL(clicked()),   this, SLOT(view_mean_momentum()));
+    connect(m_ui->streamlinesRadioButton,  SIGNAL(clicked()),   this, SLOT(view_streamlines()));
 
     m_ui->centralWidget->hide();
 }
@@ -71,6 +72,7 @@ PipeView::~PipeView()
     m_ren_win       ->Delete();
     m_png_filter    ->Delete();
     m_png_writer    ->Delete();
+    m_stream_filter ->Delete();
     m_streak_filter ->Delete();
     m_path_filter   ->Delete();
 
@@ -185,7 +187,7 @@ void PipeView::stop()
 void PipeView::rescale()
 {
     double scalarRange[2];
-    m_geom_filter->GetOutput()->GetScalarRange(scalarRange);
+    m_geom_filter->GetOutput()->GetScalarRange(scalarRange); // TODO
     m_mapper->SetScalarRange(scalarRange);
     m_ui->qvtkWidget->GetRenderWindow()->Render();
 }
@@ -196,6 +198,7 @@ void PipeView::view_cell_density()
 
     m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
     m_geom_filter->Update();
+    m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
     m_mapper->SetArrayName("Cell density");
     m_scalar_bar->SetTitle(m_mapper->GetArrayName());
 
@@ -210,6 +213,7 @@ void PipeView::view_cell_momentum()
 
     m_geom_filter->SetInputData(m_vti_io_handler->cell_image());
     m_geom_filter->Update();
+    m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
     m_mapper->SetArrayName("Cell momentum");
     m_scalar_bar->SetTitle(m_mapper->GetArrayName());
 
@@ -224,6 +228,7 @@ void PipeView::view_mean_density()
 
     m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
     m_geom_filter->Update();
+    m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
     m_mapper->SetArrayName("Mean density");
     m_scalar_bar->SetTitle(m_mapper->GetArrayName());
 
@@ -238,6 +243,22 @@ void PipeView::view_mean_momentum()
 
     m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
     m_geom_filter->Update();
+    m_mapper->SetInputConnection(m_geom_filter->GetOutputPort());
+    m_mapper->SetArrayName("Mean momentum");
+    m_scalar_bar->SetTitle(m_mapper->GetArrayName());
+
+    this->rescale();
+    m_ren->ResetCamera();
+    m_ui->qvtkWidget->GetRenderWindow()->Render();
+}
+
+void PipeView::view_streamlines()
+{
+    m_vti_io_handler->set_vectors("Mean momentum");
+
+    m_stream_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_stream_filter->Update();
+    m_mapper->SetInputConnection(m_stream_filter->GetOutputPort());
     m_mapper->SetArrayName("Mean momentum");
     m_scalar_bar->SetTitle(m_mapper->GetArrayName());
 
@@ -261,8 +282,22 @@ void PipeView::setup_visual()
     m_ren_win        = vtkRenderWindow::New();
     m_png_filter     = vtkWindowToImageFilter::New();
     m_png_writer     = vtkPNGWriter::New();
+    m_stream_filter  = vtkStreamTracer::New();
     m_streak_filter  = vtkStreaklineFilter::New();
     m_path_filter    = vtkParticlePathFilter::New();
+
+    // Streamlines
+    vtkLineSource* line = vtkLineSource::New();
+    line->SetPoint1(0.0, 0.0, 0.0);
+    line->SetPoint2(0.0, 10.0, 0.0);
+    line->SetResolution(40);
+    line->Update();
+    m_stream_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_stream_filter->SetSourceData(line->GetOutput());
+    m_stream_filter->SetMaximumPropagation(100.0);
+    m_stream_filter->SetComputeVorticity(true);
+    m_stream_filter->Update();
+    line->Delete();
 
     // Basic pipeline
     m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
@@ -279,10 +314,6 @@ void PipeView::setup_visual()
     m_ren->GradientBackgroundOn();
     m_ren_win->AddRenderer(m_ren);
     m_ren_win->SetAlphaBitPlanes(1); // Enable usage of alpha channel
-
-    // Pathlines
-    m_path_filter->SetInputData(m_vti_io_handler->mean_image());
-    m_path_filter->Update();
 
     // Scalar bar
     m_scalar_bar_txt->SetFontFamilyToArial();
