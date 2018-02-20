@@ -34,6 +34,9 @@
 #include <vtkRenderWindow.h>
 #include <vtkWindowToImageFilter.h>
 #include <vtkPNGWriter.h>
+#include <vtkStreamTracer.h>
+#include <vtkStreaklineFilter.h>
+#include <vtkParticlePathFilter.h>
 
 #include <QMainWindow>
 
@@ -125,6 +128,8 @@ private:
     vtkRenderWindow*            m_ren_win;
     vtkWindowToImageFilter*     m_png_filter;
     vtkPNGWriter*               m_png_writer;
+    vtkStreaklineFilter*        m_streak_filter;
+    vtkParticlePathFilter*      m_path_filter;
 
 }; // class PipeView
 

@@ -71,6 +71,8 @@ PipeView::~PipeView()
     m_ren_win       ->Delete();
     m_png_filter    ->Delete();
     m_png_writer    ->Delete();
+    m_streak_filter ->Delete();
+    m_path_filter   ->Delete();
 
     delete m_vti_io_handler;
     delete m_lattice;
@@ -199,6 +201,7 @@ void PipeView::view_cell_density()
 
     this->rescale();
     m_ren->ResetCamera();
+    m_ui->qvtkWidget->GetRenderWindow()->Render();
 }
 
 void PipeView::view_cell_momentum()
@@ -212,6 +215,7 @@ void PipeView::view_cell_momentum()
 
     this->rescale();
     m_ren->ResetCamera();
+    m_ui->qvtkWidget->GetRenderWindow()->Render();
 }
 
 void PipeView::view_mean_density()
@@ -225,6 +229,7 @@ void PipeView::view_mean_density()
 
     this->rescale();
     m_ren->ResetCamera();
+    m_ui->qvtkWidget->GetRenderWindow()->Render();
 }
 
 void PipeView::view_mean_momentum()
@@ -238,6 +243,7 @@ void PipeView::view_mean_momentum()
 
     this->rescale();
     m_ren->ResetCamera();
+    m_ui->qvtkWidget->GetRenderWindow()->Render();
 }
 
 void PipeView::setup_visual()
@@ -255,6 +261,8 @@ void PipeView::setup_visual()
     m_ren_win        = vtkRenderWindow::New();
     m_png_filter     = vtkWindowToImageFilter::New();
     m_png_writer     = vtkPNGWriter::New();
+    m_streak_filter  = vtkStreaklineFilter::New();
+    m_path_filter    = vtkParticlePathFilter::New();
 
     // Basic pipeline
     m_geom_filter->SetInputData(m_vti_io_handler->mean_image());
@@ -271,6 +279,10 @@ void PipeView::setup_visual()
     m_ren->GradientBackgroundOn();
     m_ren_win->AddRenderer(m_ren);
     m_ren_win->SetAlphaBitPlanes(1); // Enable usage of alpha channel
+
+    // Pathlines
+    m_path_filter->SetInputData(m_vti_io_handler->mean_image());
+    m_path_filter->Update();
 
     // Scalar bar
     m_scalar_bar_txt->SetFontFamilyToArial();
