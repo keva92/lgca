@@ -168,8 +168,8 @@ void DiffusionView::stop()
 
     } else if ((num_particles_end - m_num_particles) != 0) {
 
-        fprintf(stderr, "Error check FAILED: There is a difference in the number of particles of %zu.\n",
-                num_particles_end - m_num_particles);
+        fprintf(stderr, "Error check FAILED: There is a difference in the number of particles of %zd.\n",
+                ssize_t(num_particles_end) - ssize_t(m_num_particles));
     }
 }
 

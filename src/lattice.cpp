@@ -283,9 +283,11 @@ void Lattice<model_>::apply_bc_karman_vortex_street() {
 template<Model model_>
 void Lattice<model_>::init_single_collision() {
 
+    const size_t cell_block_dim_x = m_dim_x / Bitset::BITS_PER_BLOCK;
+
     std::vector<size_t> occupied_nodes;
-    occupied_nodes.push_back((1 * m_dim_x + m_dim_x / 2) * NUM_DIR +                    0);
-    occupied_nodes.push_back((3 * m_dim_x + m_dim_x / 2) * NUM_DIR + ModelDesc::INV_DIR[0]);
+    occupied_nodes.push_back(((2 * cell_block_dim_x + 1) * Bitset::BITS_PER_BLOCK) * NUM_DIR +                    0  * Bitset::BITS_PER_BLOCK + 3);
+    occupied_nodes.push_back(((6 * cell_block_dim_x + 1) * Bitset::BITS_PER_BLOCK) * NUM_DIR + ModelDesc::INV_DIR[0] * Bitset::BITS_PER_BLOCK + 3);
 
     init_single(occupied_nodes);
 }
@@ -347,7 +349,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_east(const CellType cell_type) {
 
     // Loop over the cells located at the eastern boundary of the rectangular domain
-    for (size_t cell = m_dim_x - 1; cell < m_num_cells; cell += m_dim_x) {
+    for (size_t cell = m_dim_x - 2; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = bool(cell_type);
@@ -359,7 +361,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_north(const CellType cell_type) {
 
     // Loop over the cells located at the northern boundary of the rectangular domain
-    for (size_t cell = m_num_cells - m_dim_x; cell < m_num_cells; ++cell) {
+    for (size_t cell = m_num_cells - 2 * m_dim_x; cell < m_num_cells - m_dim_x; ++cell) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = bool(cell_type);
@@ -371,7 +373,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_west(const CellType cell_type) {
 
     // Loop over the cells located at the western boundary of the rectangular domain
-    for (size_t cell = 0; cell < m_num_cells; cell += m_dim_x) {
+    for (size_t cell = 1; cell < m_num_cells; cell += m_dim_x) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = bool(cell_type);
@@ -383,7 +385,7 @@ template<Model model_>
 void Lattice<model_>::apply_boundary_cell_type_south(const CellType cell_type) {
 
     // Loop over the cells located at the southern boundary of the rectangular domain
-    for (size_t cell = 0; cell < m_dim_x; ++cell) {
+    for (size_t cell = m_dim_x; cell < (2 * m_dim_x); ++cell) {
 
         // Set the cell type to the specified type
         m_cell_type_cpu[cell] = bool(cell_type);

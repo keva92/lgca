@@ -115,9 +115,9 @@ void OMP_Lattice<model_>::collide_and_propagate() {
             outputs[dir] = inputs[dir];
 
         // Model head on collisions
-        const Bitset::Block collision0 =  inputs[0] & ~inputs[1] & ~inputs[2] &  inputs[3] & ~inputs[4] & ~inputs[5];
-        const Bitset::Block collision1 = ~inputs[0] &  inputs[1] & ~inputs[2] & ~inputs[3] &  inputs[4] & ~inputs[5];
-        const Bitset::Block collision2 = ~inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] & ~inputs[4] &  inputs[5];
+        const Bitset::Block collision0 =  inputs[0] & ~inputs[1] & ~inputs[2] &  inputs[3] & ~inputs[4] & ~inputs[5] & is_fluid;
+        const Bitset::Block collision1 = ~inputs[0] &  inputs[1] & ~inputs[2] & ~inputs[3] &  inputs[4] & ~inputs[5] & is_fluid;
+        const Bitset::Block collision2 = ~inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] & ~inputs[4] &  inputs[5] & is_fluid;
 
         outputs[0] &= ~collision0; outputs[3] &= ~collision0;
         outputs[1] |=  collision0 &  random_bits; outputs[4] |= collision0 &  random_bits;
@@ -132,8 +132,8 @@ void OMP_Lattice<model_>::collide_and_propagate() {
         outputs[4] |= collision2 & ~random_bits; outputs[1] |= collision2 & ~random_bits;
 
         // Model three way collisions
-        const Bitset::Block collision3 =  inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] &  inputs[4] & ~inputs[5];
-        const Bitset::Block collision4 = ~inputs[0] &  inputs[1] & ~inputs[2] &  inputs[3] & ~inputs[4] &  inputs[5];
+        const Bitset::Block collision3 =  inputs[0] & ~inputs[1] &  inputs[2] & ~inputs[3] &  inputs[4] & ~inputs[5] & is_fluid;
+        const Bitset::Block collision4 = ~inputs[0] &  inputs[1] & ~inputs[2] &  inputs[3] & ~inputs[4] &  inputs[5] & is_fluid;
 
         outputs[0] &= ~collision3; outputs[2] &= ~collision3; outputs[4] &= ~collision3;
         outputs[1] |=  collision3; outputs[3] |=  collision3; outputs[5] |=  collision3;
@@ -141,13 +141,13 @@ void OMP_Lattice<model_>::collide_and_propagate() {
         outputs[1] &= ~collision4; outputs[3] &= ~collision4; outputs[5] &= ~collision4;
         outputs[0] |=  collision4; outputs[2] |=  collision4; outputs[4] |=  collision4;
 
-        // TODO Model no slip boundary conditions (bounce back)
-//        outputs[0] = inputs[3] & ~is_fluid;
-//        outputs[1] = inputs[4] & ~is_fluid;
-//        outputs[2] = inputs[5] & ~is_fluid;
-//        outputs[3] = inputs[0] & ~is_fluid;
-//        outputs[4] = inputs[1] & ~is_fluid;
-//        outputs[5] = inputs[2] & ~is_fluid;
+        // Model no slip boundary conditions (bounce back)
+        outputs[0] ^= (outputs[0] ^ inputs[3]) & ~is_fluid;
+        outputs[1] ^= (outputs[1] ^ inputs[4]) & ~is_fluid;
+        outputs[2] ^= (outputs[2] ^ inputs[5]) & ~is_fluid;
+        outputs[3] ^= (outputs[3] ^ inputs[0]) & ~is_fluid;
+        outputs[4] ^= (outputs[4] ^ inputs[1]) & ~is_fluid;
+        outputs[5] ^= (outputs[5] ^ inputs[2]) & ~is_fluid;
 
         // Push outputs
         write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 0]  = outputs[0];
@@ -162,6 +162,32 @@ void OMP_Lattice<model_>::collide_and_propagate() {
         write[(cell_block_pos_x+1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 5]  = outputs[5] >> Bitset::BITS_PER_BLOCK-1;
 
     }}); // for cell block
+
+    // Enforce periodic boundary conditions
+    //
+    // Top and bottom rows
+    for (size_t xx = 0; xx < cell_block_dim_x; xx++) {
+        for (int dir = 0; dir < this->NUM_DIR; dir++) {
+            write[(xx + (this->m_dim_y-2) * cell_block_dim_x) * this->NUM_DIR + dir] ^=
+            write[ xx                                         * this->NUM_DIR + dir];
+        }
+        for (int dir = 0; dir < this->NUM_DIR; dir++) {
+            write[(xx + cell_block_dim_x)                     * this->NUM_DIR + dir] ^=
+            write[(xx + (this->m_dim_y-1) * cell_block_dim_x) * this->NUM_DIR + dir];
+        }
+    }
+
+    // Left and right sides
+    for (size_t yy = 0; yy < this->m_dim_y; yy++) {
+        for (int dir = 0; dir < this->NUM_DIR; dir++) {
+            write[(cell_block_dim_x-2 + yy * cell_block_dim_x) * this->NUM_DIR + dir] ^=
+            write[(yy * cell_block_dim_x)                      * this->NUM_DIR + dir];
+        }
+        for (int dir = 0; dir < this->NUM_DIR; dir++) {
+            write[(1 + yy * cell_block_dim_x)                  * this->NUM_DIR + dir] ^=
+            write[(cell_block_dim_x-1 + yy * cell_block_dim_x) * this->NUM_DIR + dir];
+        }
+    }
 
     this->m_node_state_cpu.reset();
 
