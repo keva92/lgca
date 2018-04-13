@@ -100,7 +100,7 @@ private:
 
     // Simulation parameters
     static constexpr Model        MODEL         = Model::FHP_I;
-    static constexpr unsigned int PP_INTERVAL   = 1;
+    static constexpr unsigned int PP_INTERVAL   = 10;
     static constexpr int          CG_RADIUS     = 32;
            const     string       OUTPUT_DIR    = "./";
            const     string       OUTPUT_FORMAT = "vti";
@@ -112,7 +112,7 @@ private:
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
     Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.3;  // Mach number
+    Real              m_Ma = 0.1;  // Mach number
 
     Ui::PipeView*   m_ui;
 

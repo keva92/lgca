@@ -209,8 +209,8 @@ struct ModelDescriptor<Model::FHP_I> {
     static constexpr char MIR_DIR_Y     [NUM_DIR] = {   3,    2,    1,    0,    5,    4};
 
     // Lattice vector components in the different directions
-    static constexpr Real LATTICE_VEC_X [NUM_DIR] = { 1.0,  0.5, -0.5, -1.0, -0.5,  0.5}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
-    static constexpr Real LATTICE_VEC_Y [NUM_DIR] = { 0.0,  SIN,  SIN,  0.0, -SIN, -SIN}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
+    static constexpr Real LATTICE_VEC_Y [NUM_DIR] = { 1.0,  0.5, -0.5, -1.0, -0.5,  0.5}; // = cos(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
+    static constexpr Real LATTICE_VEC_X [NUM_DIR] = { 0.0, -SIN, -SIN,  0.0,  SIN,  SIN}; // = sin(2.0 * M_PI / ((Real) num_dir_) * ((Real) dir))
 
     // Memory offset to neighbor cells in the different directions for the propagation step
     // Note that for the FHP model there is a difference in the offsets depending on weather the

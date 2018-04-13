@@ -80,9 +80,9 @@ private:
     void setup_ui();
 
     // Simulation parameters
-    static constexpr Model        MODEL       = Model::FHP_III;
-    static constexpr unsigned int PP_INTERVAL = 5;
-    static constexpr int          CG_RADIUS   = 20;
+    static constexpr Model        MODEL       = Model::FHP_I;
+    static constexpr unsigned int PP_INTERVAL = 10;
+    static constexpr int          CG_RADIUS   = 32;
            const     string       OUTPUT_DIR    = "./";
            const     string       OUTPUT_FORMAT = "png";
 
@@ -92,8 +92,8 @@ private:
     size_t            m_num_particles;
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
-    Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.3;  // Mach number
+    Real              m_Re = 100.0; // Reynolds number
+    Real              m_Ma = 0.2;  // Mach number
 
     Ui::KarmanView* m_ui;
 

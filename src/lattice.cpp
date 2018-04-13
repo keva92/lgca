@@ -96,10 +96,13 @@ Lattice<model_>::Lattice(const string test_case,
     }
 
     // Define the number of cells in x direction.
-    if (test_case == "pipe"      ||
-        test_case == "karman") {
+    if (test_case == "pipe") {
 
         m_dim_x = 2 * m_dim_y;
+
+    } else if (test_case == "karman") {
+
+        m_dim_x = 3 * m_dim_y;
 
     } else if (test_case == "collision" ||
                test_case == "box"       ||
@@ -178,16 +181,23 @@ void Lattice<model_>::print() {
 
 // Returns the number of particles in the lattice.
 template<Model model_>
-unsigned long Lattice<model_>::get_n_particles() {
+size_t Lattice<model_>::get_n_particles() {
 
     // TODO Implement and use count() function in Bitset class
 
     size_t n_particles = 0;
 
-    // Loop over all the nodes.
+    // Loop over all the nodes
+    const size_t node_dim_x = m_dim_x * NUM_DIR;
 #pragma omp parallel for reduction(+:n_particles)
-    for (size_t n = 0; n < m_num_nodes; ++n)
+    for (size_t n = node_dim_x; n < m_num_nodes - node_dim_x; ++n) // Exclude bottom and top boundary layers
+    {
+        // Exclude left and right boundary layers
+        if (n % node_dim_x < Bitset::BITS_PER_BLOCK ||
+            n % node_dim_x > node_dim_x - Bitset::BITS_PER_BLOCK - 1) continue;
+
         n_particles += bool(m_node_state_cpu[n]);
+    }
 
     this->m_num_particles = n_particles;
 
@@ -257,8 +267,8 @@ void Lattice<model_>::apply_bc_karman_vortex_street() {
     apply_bc_pipe();
 
     // Define the position and size of the barrier
-    int  center_x = m_dim_x / 6;
-    int  center_y = m_dim_y / 2 + 1 / 10 * m_dim_y;
+    int  center_x = m_dim_x / 4;
+    int  center_y = m_dim_y / 2; // + 1 / 10 * m_dim_y;
     Real diameter = m_dim_y / 3;
 
     // Loop over all cells

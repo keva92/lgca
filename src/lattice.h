@@ -170,7 +170,7 @@ public:
     void init_pipe();
 
     // Returns the number of particles in the lattice
-    unsigned long get_n_particles();
+    size_t get_n_particles();
 
     // Print the lattice to the screen
     void print();

@@ -90,13 +90,14 @@ void OMP_Lattice<model_>::collide_and_propagate() {
     // Loop over bunches of cells
     const size_t num_cell_blocks = ((this->m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
     const size_t cell_block_dim_x = this->m_dim_x / Bitset::BITS_PER_BLOCK;
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
-    for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
+    // TODO Parallelization leads to incorrect results!
+//    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
+//    for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
+    for (size_t cell_block = 0; cell_block < num_cell_blocks; ++cell_block)
     {
         const size_t cell_block_pos_x = cell_block % cell_block_dim_x;
         const size_t cell_block_pos_y = cell_block / cell_block_dim_x;
 
-        // TODO Implement boundary conditions
         if (cell_block_pos_x == 0 || cell_block_pos_x == cell_block_dim_x-1 ||
             cell_block_pos_y == 0 || cell_block_pos_y == this->m_dim_y-1) continue;
 
@@ -149,19 +150,52 @@ void OMP_Lattice<model_>::collide_and_propagate() {
         outputs[4] ^= (outputs[4] ^ inputs[1]) & ~is_fluid;
         outputs[5] ^= (outputs[5] ^ inputs[2]) & ~is_fluid;
 
-        // Push outputs
-        write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 0]  = outputs[0];
-        write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 1]  = outputs[1] >> 1;
-        write[(cell_block_pos_x-1 + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 1] |= outputs[1] << Bitset::BITS_PER_BLOCK-1;
-        write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 2] |= outputs[2] >> 1;
-        write[(cell_block_pos_x-1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 2] |= outputs[2] << Bitset::BITS_PER_BLOCK-1;
-        write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 3]  = outputs[3];
-        write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 4] |= outputs[4] << 1;
-        write[(cell_block_pos_x+1 + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 4] |= outputs[4] >> Bitset::BITS_PER_BLOCK-1;
-        write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 5] |= outputs[5] << 1;
-        write[(cell_block_pos_x+1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 5]  = outputs[5] >> Bitset::BITS_PER_BLOCK-1;
+        // TODO Adaptive w.r.t. bitset data type
+        Bitset::Block odd_col = 6148914691236517205; // binary 1010101010101010...10
 
-    }}); // for cell block
+        // Push outputs (all columns)
+        write[(cell_block_pos_x + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 0]  = outputs[0];
+        write[(cell_block_pos_x + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 3]  = outputs[3];
+
+        // Push outputs (even columns)
+        Bitset::Block* x0y01 = &write[(cell_block_pos_x   + (cell_block_pos_y  ) * cell_block_dim_x) * this->NUM_DIR + 1];
+        Bitset::Block* xmy01 = &write[(cell_block_pos_x-1 + (cell_block_pos_y  ) * cell_block_dim_x) * this->NUM_DIR + 1];
+        Bitset::Block* x0ym2 = &write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 2];
+        Bitset::Block* xmym2 = &write[(cell_block_pos_x-1 + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 2];
+        Bitset::Block* x0ym4 = &write[(cell_block_pos_x   + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 4];
+        Bitset::Block* xpym4 = &write[(cell_block_pos_x+1 + (cell_block_pos_y-1) * cell_block_dim_x) * this->NUM_DIR + 4];
+        Bitset::Block* x0y05 = &write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 5];
+        Bitset::Block* xpy05 = &write[(cell_block_pos_x+1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 5];
+
+        *x0y01 ^= ((*x0y01) ^ (outputs[1] >> 1))                                     & ~odd_col;
+        *xmy01 ^= ((*xmy01) ^ ((*xmy01) | (outputs[1] << Bitset::BITS_PER_BLOCK-1))) & ~odd_col;
+        *x0ym2 ^= ((*x0ym2) ^ ((*x0ym2) | (outputs[2] >> 1)))                        & ~odd_col;
+        *xmym2 ^= ((*xmym2) ^ ((*xmym2) | (outputs[2] << Bitset::BITS_PER_BLOCK-1))) & ~odd_col;
+        *x0ym4 ^= ((*x0ym4) ^ ((*x0ym4) | (outputs[4] << 1)))                        & ~odd_col;
+        *xpym4 ^= ((*xpym4) ^ ((*xpym4) | (outputs[4] >> Bitset::BITS_PER_BLOCK-1))) & ~odd_col;
+        *x0y05 ^= ((*x0y05) ^ ((*x0y05) | (outputs[5] << 1)))                        & ~odd_col;
+        *xpy05 ^= ((*xpy05) ^ (outputs[5] >> Bitset::BITS_PER_BLOCK-1))              & ~odd_col;
+
+        // Push outputs (odd columns)
+        Bitset::Block* x0yp1 = &write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 1];
+        Bitset::Block* xmyp1 = &write[(cell_block_pos_x-1 + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 1];
+        Bitset::Block* x0y02 = &write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 2];
+        Bitset::Block* xmy02 = &write[(cell_block_pos_x-1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 2];
+        Bitset::Block* x0y04 = &write[(cell_block_pos_x   +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 4];
+        Bitset::Block* xpy04 = &write[(cell_block_pos_x+1 +  cell_block_pos_y    * cell_block_dim_x) * this->NUM_DIR + 4];
+        Bitset::Block* x0yp5 = &write[(cell_block_pos_x   + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 5];
+        Bitset::Block* xpyp5 = &write[(cell_block_pos_x+1 + (cell_block_pos_y+1) * cell_block_dim_x) * this->NUM_DIR + 5];
+
+        *x0yp1 ^= ((*x0yp1) ^ (outputs[1] >> 1))                                     & odd_col;
+        *xmyp1 ^= ((*xmyp1) ^ ((*xmyp1) | (outputs[1] << Bitset::BITS_PER_BLOCK-1))) & odd_col;
+        *x0y02 ^= ((*x0y02) ^ ((*x0y02) |(outputs[2] >> 1)))                         & odd_col;
+        *xmy02 ^= ((*xmy02) ^ ((*xmy02) | (outputs[2] << Bitset::BITS_PER_BLOCK-1))) & odd_col;
+        *x0y04 ^= ((*x0y04) ^ ((*x0y04) | (outputs[4] << 1)))                        & odd_col;
+        *xpy04 ^= ((*xpy04) ^ ((*xpy04) | (outputs[4] >> Bitset::BITS_PER_BLOCK-1))) & odd_col;
+        *x0yp5 ^= ((*x0yp5) ^ ((*x0yp5) | (outputs[5] << 1)))                        & odd_col;
+        *xpyp5 ^= ((*xpyp5) ^ (outputs[5] >> Bitset::BITS_PER_BLOCK-1))              & odd_col;
+
+    }//}); // for cell block
 
     // Enforce periodic boundary conditions
     //
@@ -172,7 +206,7 @@ void OMP_Lattice<model_>::collide_and_propagate() {
             write[ xx                                         * this->NUM_DIR + dir];
         }
         for (int dir = 0; dir < this->NUM_DIR; dir++) {
-            write[(xx + cell_block_dim_x)                     * this->NUM_DIR + dir] ^=
+            write[(xx +                     cell_block_dim_x) * this->NUM_DIR + dir] ^=
             write[(xx + (this->m_dim_y-1) * cell_block_dim_x) * this->NUM_DIR + dir];
         }
     }
@@ -181,10 +215,10 @@ void OMP_Lattice<model_>::collide_and_propagate() {
     for (size_t yy = 0; yy < this->m_dim_y; yy++) {
         for (int dir = 0; dir < this->NUM_DIR; dir++) {
             write[(cell_block_dim_x-2 + yy * cell_block_dim_x) * this->NUM_DIR + dir] ^=
-            write[(yy * cell_block_dim_x)                      * this->NUM_DIR + dir];
+            write[(                     yy * cell_block_dim_x) * this->NUM_DIR + dir];
         }
         for (int dir = 0; dir < this->NUM_DIR; dir++) {
-            write[(1 + yy * cell_block_dim_x)                  * this->NUM_DIR + dir] ^=
+            write[(                 1 + yy * cell_block_dim_x) * this->NUM_DIR + dir] ^=
             write[(cell_block_dim_x-1 + yy * cell_block_dim_x) * this->NUM_DIR + dir];
         }
     }
@@ -204,10 +238,7 @@ template<Model model_>
 void OMP_Lattice<model_>::apply_body_force(const int forcing) {
 
     // Set a maximum number of iterations to find particles which can be reverted
-    const size_t it_max = 2 * this->m_num_cells;
-
-    // Set the number of iterations to zero
-    size_t it = 0;
+    const size_t it_max = 2 * this->m_num_cells; size_t it = 0;
 
     // Number of particles which have been reverted
     unsigned int reverted_particles = 0;
@@ -215,87 +246,78 @@ void OMP_Lattice<model_>::apply_body_force(const int forcing) {
     // Loop over all cells
     do
     {
-        size_t cell = rand() % this->m_num_cells;
+        it++;
 
-    	it++;
+        // Choose a random cell
+        size_t global_cell = rand() % this->m_num_cells;
 
         // Get the type of the cell, i.e. fluid or solid.
         // Note that body forces are applied to fluid cells only.
-        bool cell_type = this->m_cell_type_cpu[cell];
+        bool cell_type = bool(this->m_cell_type_cpu[global_cell]);
 
         // Check weather the cell working on is a fluid cell
         if (cell_type == bool(CellType::FLUID)) {
 
-            // Define an array for the states of the nodes in the cell
-            unsigned char node_state[this->NUM_DIR];
-
-            // The thread working on the cell has to know about the states of the nodes within the
-            // cell, therefore looping over all directions and look it up
+            // Get the whole cell block containing the cell under consideration
+            Bitset node_state(Bitset::BITS_PER_BLOCK * this->NUM_DIR);
+            const size_t cell_block = global_cell / Bitset::BITS_PER_BLOCK;
+            const size_t local_cell = global_cell % Bitset::BITS_PER_BLOCK;
 #pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-                node_state[dir] = this->m_node_state_cpu[cell + dir * this->m_num_cells];
-            }
-
-            // Create a temporary array to copy the node states
-            unsigned char node_state_tmp[this->NUM_DIR];
-
-            // Copy the current states of the nodes to the temporary array
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-                node_state_tmp[dir] = node_state[dir];
-            }
+            for (int dir = 0; dir < this->NUM_DIR; ++dir)
+                node_state(dir) = this->m_node_state_cpu(cell_block * this->NUM_DIR + dir);
 
             if (model_ == Model::HPP) {
 
-                if (this->m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[2] == 1)) {
+//                if (this->m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[2] == 1)) {
 
-					node_state_tmp[0] = 1;
-					node_state_tmp[2] = 0;
+//					node_state_tmp[0] = 1;
+//					node_state_tmp[2] = 0;
 
-					reverted_particles++;
+//					reverted_particles++;
 
-                } else if (this->m_bf_dir == 'y' && (node_state[1] == 1) && (node_state[3] == 0)) {
+//                } else if (this->m_bf_dir == 'y' && (node_state[1] == 1) && (node_state[3] == 0)) {
 
-					node_state_tmp[1] = 0;
-					node_state_tmp[3] = 1;
+//					node_state_tmp[1] = 0;
+//					node_state_tmp[3] = 1;
 
-					reverted_particles++;
-				}
+//					reverted_particles++;
+//				}
         	}
 
             else if (model_ == Model::FHP_I || model_ == Model::FHP_II || model_ == Model::FHP_III) {
 
-                if (this->m_bf_dir == 'x' && (node_state[0] == 0) && (node_state[3] == 1)) {
+                if (this->m_bf_dir == 'x' && (node_state[5 * Bitset::BITS_PER_BLOCK + local_cell] == bool(0))
+                                          && (node_state[1 * Bitset::BITS_PER_BLOCK + local_cell] == bool(1))) {
 
-					node_state_tmp[0] = 1;
-					node_state_tmp[3] = 0;
+                    node_state[5 * Bitset::BITS_PER_BLOCK + local_cell] = bool(1);
+                    node_state[1 * Bitset::BITS_PER_BLOCK + local_cell] = bool(0);
 
 					reverted_particles++;
 
                 } else if (this->m_bf_dir == 'y') {
 
-					if ((node_state[1] == 1) && (node_state[5] == 0)) {
+//                    if ((node_state[1] == 1) && (node_state[5] == 0)) {
 
-						node_state_tmp[1] = 0;
-						node_state_tmp[5] = 1;
+//                        node_state_tmp[1] = 0;
+//                        node_state_tmp[5] = 1;
 
-						reverted_particles++;
-					}
+//                        reverted_particles++;
+//                    }
 
-					if ((node_state[2] == 1) && (node_state[4] == 0)) {
+//                    if ((node_state[2] == 1) && (node_state[4] == 0)) {
 
-						node_state_tmp[2] = 0;
-						node_state_tmp[4] = 1;
+//                        node_state_tmp[2] = 0;
+//                        node_state_tmp[4] = 1;
 
-						reverted_particles++;
-					}
-				}
+//                        reverted_particles++;
+//                    }
+                }
         	}
 
             // Write the new node states back to the data array
 #pragma unroll
-            for (int dir = 0; dir < this->NUM_DIR; ++dir) {
-                this->m_node_state_cpu[cell + dir * this->m_num_cells] = node_state_tmp[dir];
-            }
+            for (int dir = 0; dir < this->NUM_DIR; ++dir)
+                this->m_node_state_cpu(cell_block * this->NUM_DIR + dir) = node_state(dir);
 
         } /* IF cell_type */
 
@@ -484,8 +506,8 @@ std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {
 
 			if (cell_density > 1.0e-06) {
 
-                sum_x_vel += this->m_cell_momentum_cpu[n * this->SPATIAL_DIM    ] / cell_density;
-                sum_y_vel += this->m_cell_momentum_cpu[n * this->SPATIAL_DIM + 1] / cell_density;
+                sum_x_vel += this->m_cell_momentum_cpu[n * 3 + 0] / cell_density;
+                sum_y_vel += this->m_cell_momentum_cpu[n * 3 + 1] / cell_density;
 			}
 
 #ifdef DEBUG
