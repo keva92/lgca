@@ -98,6 +98,9 @@ private:
     // Setup UI
     void setup_ui();
 
+    // Write x-dimension averaged data profiles
+    void write_pipe_x_avgd_profiles();
+
     // Simulation parameters
     static constexpr Model        MODEL         = Model::FHP_I;
     static constexpr unsigned int PP_INTERVAL   = 10;
@@ -112,7 +115,7 @@ private:
     std::vector<Real> m_mean_velocity;
     int               m_forcing;
     Real              m_Re = 80.0; // Reynolds number
-    Real              m_Ma = 0.1;  // Mach number
+    Real              m_Ma = 0.2;  // Mach number
 
     Ui::PipeView*   m_ui;
 

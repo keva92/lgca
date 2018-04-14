@@ -31,6 +31,8 @@
 
 #include <QVTKOpenGLWidget.h>
 
+#include <sstream>
+
 namespace lgca {
 
 PipeView::PipeView(QWidget *parent) :
@@ -158,6 +160,8 @@ void PipeView::run()
                 m_png_filter->Modified();
                 m_png_writer->Write();
             }
+
+            this->write_pipe_x_avgd_profiles();
         }
     });
 
@@ -433,6 +437,34 @@ void PipeView::quit()
 void PipeView::show_about()
 {
    system("firefox https://keva92.github.io/lgca/");
+}
+
+void PipeView::write_pipe_x_avgd_profiles()
+{
+    static constexpr size_t ghosts = Bitset::BITS_PER_BLOCK;
+
+    std::ostringstream filename1, filename2;
+    filename1 << "avg_x_momentum_profile_" << m_steps << ".dat";
+    filename2 << "avg_density_profile_"    << m_steps << ".dat";
+    ofstream file1; file1.open(filename1.str().c_str(), ios::out | ios::trunc);
+    ofstream file2; file2.open(filename2.str().c_str(), ios::out | ios::trunc);
+
+    for (int yy = 1; yy < m_lattice->dim_y()-1; ++yy) {
+
+        Real avg_x_momentum = 0.0;
+        Real avg_density    = 0.0;
+        for (int xx = ghosts; xx < m_lattice->dim_x()-ghosts; ++xx) {
+            size_t global_cell_idx = m_lattice->dim_x() * yy + xx;
+            avg_x_momentum += m_lattice->cell_momentum()[global_cell_idx * 3 + 0]; // x momentum
+            avg_density    += m_lattice->cell_density() [global_cell_idx];
+        }
+        avg_x_momentum /= m_lattice->dim_x()-2*ghosts;
+        avg_density    /= m_lattice->dim_x()-2*ghosts;
+        file1 << avg_x_momentum << endl;
+        file2 << avg_density    << endl;
+    }
+
+    file1.close(); file2.close();
 }
 
 } // namespace lgca
