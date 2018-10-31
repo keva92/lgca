@@ -30,24 +30,6 @@
 // Main function (CPU/host code)
 int main(int argc, char **argv) {
 
-    lgca::Bitset a(64);
-    lgca::Bitset b(64);
-    lgca::Bitset mask(64);
-
-    a.set();
-    b.reset();
-    mask.set(0);
-    mask.set(5);
-    mask.set(6);
-    mask.set(63);
-
-    a.print();
-    b.print();
-    mask.print();
-
-    a(0) ^= (a(0) ^ b(0)) & mask(0);
-    a.print();
-
     // Needed to ensure appropriate OpenGL context is created for VTK rendering
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLWidget::defaultFormat());
 

@@ -156,7 +156,7 @@ Lattice<model_>::Lattice(const string test_case,
     this->m_coarse_dim_y     = m_dim_y / (2 * m_coarse_graining_radius); assert(m_dim_y % (2 * m_coarse_graining_radius) == 0);
     this->m_num_coarse_cells = m_coarse_dim_x * m_coarse_dim_y;
 
-    print_info();
+    this->print_info();
 }
 
 // Deletes the lattice gas cellular automaton object.
@@ -193,8 +193,9 @@ size_t Lattice<model_>::get_n_particles() {
     for (size_t n = node_dim_x; n < m_num_nodes - node_dim_x; ++n) // Exclude bottom and top boundary layers
     {
         // Exclude left and right boundary layers
-        if (n % node_dim_x < Bitset::BITS_PER_BLOCK ||
-            n % node_dim_x > node_dim_x - Bitset::BITS_PER_BLOCK - 1) continue;
+        if (n % node_dim_x <              (Bitset::BITS_PER_BLOCK * NUM_DIR)      ||
+            n % node_dim_x > node_dim_x - (Bitset::BITS_PER_BLOCK * NUM_DIR) - 1)
+            continue;
 
         n_particles += bool(m_node_state_cpu[n]);
     }
@@ -296,8 +297,8 @@ void Lattice<model_>::init_single_collision() {
     const size_t cell_block_dim_x = m_dim_x / Bitset::BITS_PER_BLOCK;
 
     std::vector<size_t> occupied_nodes;
-    occupied_nodes.push_back(((2 * cell_block_dim_x + 1) * Bitset::BITS_PER_BLOCK) * NUM_DIR +                    0  * Bitset::BITS_PER_BLOCK + 3);
-    occupied_nodes.push_back(((6 * cell_block_dim_x + 1) * Bitset::BITS_PER_BLOCK) * NUM_DIR + ModelDesc::INV_DIR[0] * Bitset::BITS_PER_BLOCK + 3);
+    occupied_nodes.push_back(((20 * cell_block_dim_x + 1) * Bitset::BITS_PER_BLOCK) * NUM_DIR +                    0  * Bitset::BITS_PER_BLOCK + 3);
+    occupied_nodes.push_back(((26 * cell_block_dim_x + 1) * Bitset::BITS_PER_BLOCK) * NUM_DIR + ModelDesc::INV_DIR[0] * Bitset::BITS_PER_BLOCK + 3);
 
     init_single(occupied_nodes);
 }
@@ -346,7 +347,7 @@ template<Model model_>
 void Lattice<model_>::apply_cell_type_all(const CellType cell_type) {
 
     // Loop over all cells
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Set the cell type to the specified type

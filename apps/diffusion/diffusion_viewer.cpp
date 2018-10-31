@@ -44,7 +44,7 @@ DiffusionView::DiffusionView(QWidget *parent) :
     print_startup_message();
 
     // Create a lattice gas cellular automaton object
-    m_lattice = new OMP_Lattice<MODEL>(/*case=*/"diffusion", m_Re, m_Ma, CG_RADIUS);
+    m_lattice = new OMP_Lattice<MODEL>("diffusion", m_Re, m_Ma, CG_RADIUS);
 
     // Apply boundary conditions
     m_lattice->apply_bc_reflecting("back");

@@ -188,7 +188,7 @@ void OMP_Lattice<model_>::collide_and_propagate() {
 
         *x0yp1 ^= ((*x0yp1) ^ (outputs[1] >> 1))                                     & odd_col;
         *xmyp1 ^= ((*xmyp1) ^ ((*xmyp1) | (outputs[1] << Bitset::BITS_PER_BLOCK-1))) & odd_col;
-        *x0y02 ^= ((*x0y02) ^ ((*x0y02) |(outputs[2] >> 1)))                         & odd_col;
+        *x0y02 ^= ((*x0y02) ^ ((*x0y02) | (outputs[2] >> 1)))                        & odd_col;
         *xmy02 ^= ((*xmy02) ^ ((*xmy02) | (outputs[2] << Bitset::BITS_PER_BLOCK-1))) & odd_col;
         *x0y04 ^= ((*x0y04) ^ ((*x0y04) | (outputs[4] << 1)))                        & odd_col;
         *xpy04 ^= ((*xpy04) ^ ((*xpy04) | (outputs[4] >> Bitset::BITS_PER_BLOCK-1))) & odd_col;

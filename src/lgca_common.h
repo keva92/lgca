@@ -46,16 +46,25 @@ using std::chrono::duration;
 typedef float Real;
 
 // Lattice gas models
-enum class Model {
-    HPP,
-    FHP_I,
-    FHP_II,
-    FHP_III
+enum class Model : char {
+    HPP     = 0,
+    FHP_I   = 1,
+    FHP_II  = 2,
+    FHP_III = 3
 };
 
-enum class CellType {
+// Cell types
+enum class CellType : char {
     SOLID_NO_SLIP = 0,
     FLUID         = 1
+};
+
+// Test cases
+enum class TestCase : char {
+    SINGLE      = 0, // Collision and propagation of only two particles
+    DIFFUSION   = 1, // Diffusion of particles from a spherical domain in the middle of a square box
+    PIPE        = 2, // Pipe flow
+    KARMAN      = 3  // Kármán vortex street
 };
 
 } // namespace lgca

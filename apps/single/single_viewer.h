@@ -92,7 +92,7 @@ private:
     size_t            m_steps;
     int               m_mnups;
     size_t            m_num_particles;
-    Real              m_Re = 80.0; // Reynolds number
+    Real              m_Re = 40.0; // Reynolds number
     Real              m_Ma = 0.2;  // Mach number
 
     Ui::SingleView* m_ui;

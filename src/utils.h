@@ -112,7 +112,7 @@ static inline void print_startup_message() {
     printf("                  .::       .::    .:  .::   .:: .::       .::   \n");
     printf("                  .::::::::  .:::::      .::::  .::         .::  \n");
     printf("\n");
-    printf("This is a 2D Lattice Gas Cellular Automaton based on the HPP and FHP model.\nHave fun!\n\n");
+    printf("This is a 2D Lattice Gas Cellular Automaton based on the HPP and FHP model. Enjoy!\n\n");
 }
 
 // Returns a random real number within [0.0 and 1.0].

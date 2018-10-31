@@ -47,7 +47,7 @@ SingleView::SingleView(QWidget *parent) :
     m_lattice = new OMP_Lattice<MODEL>(/*case=*/"collision", m_Re, m_Ma, CG_RADIUS);
 
     // Apply boundary conditions
-    m_lattice->apply_bc_pipe();
+    m_lattice->apply_bc_periodic();
 
     // Initialize the lattice gas automaton with particles
     m_lattice->init_single_collision();
