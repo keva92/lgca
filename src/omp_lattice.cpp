@@ -378,10 +378,15 @@ void OMP_Lattice<model_>::cell_post_process()
 
             // Write the computed cell quantities to the related data arrays
             const size_t global_cell = cell_block * Bitset::BITS_PER_BLOCK + local_cell;
-            this->m_cell_density_cpu [global_cell                        ] = (Real) cell_density;
-            this->m_cell_momentum_cpu[global_cell * 3 + 0] = cell_momentum_x;
-            this->m_cell_momentum_cpu[global_cell * 3 + 1] = cell_momentum_y;
-            this->m_cell_momentum_cpu[global_cell * 3 + 2] = cell_momentum_z;
+            this->m_cell_density_cpu [global_cell] = (Real) cell_density;
+
+            Real cell_vel_x = cell_momentum_x / Real(cell_density > 0 ? cell_density : 1);
+            Real cell_vel_y = cell_momentum_y / Real(cell_density > 0 ? cell_density : 1);
+            Real cell_vel_z = cell_momentum_z / Real(cell_density > 0 ? cell_density : 1);
+
+            this->m_cell_momentum_cpu[global_cell * 3 + 0] = cell_vel_x;
+            this->m_cell_momentum_cpu[global_cell * 3 + 1] = cell_vel_y;
+            this->m_cell_momentum_cpu[global_cell * 3 + 2] = cell_vel_z;
 
         } // for local cell
 

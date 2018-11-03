@@ -76,7 +76,8 @@ Lattice<model_>::Lattice(const string test_case,
 
         // Get the cylinder diameter in case of a Karman vortex street.
         Real diameter = (Re * m_nu_s) / m_u;
-        m_dim_y = (int)(3.0 * diameter + 0.5);
+        int L_c = int(ceil(diameter)); if (L_c % 2 != 0) L_c++;
+        m_dim_y = 3.0 * L_c;
 
     } else if (test_case == "collision") {
 
@@ -102,7 +103,7 @@ Lattice<model_>::Lattice(const string test_case,
 
     } else if (test_case == "karman") {
 
-        m_dim_x = 3 * m_dim_y;
+        m_dim_x = 2 * m_dim_y;
 
     } else if (test_case == "collision" ||
                test_case == "box"       ||
@@ -209,22 +210,41 @@ size_t Lattice<model_>::get_n_particles() {
 template<Model model_>
 void Lattice<model_>::init_random() {
 
-    // Loop over all cells
-#pragma omp parallel for
-    for (size_t cell = 0; cell < m_num_cells; ++cell) {
+    Bitset::Block* __restrict__ write = m_node_state_cpu.ptr();
 
-        // Check weather the cell is a fluid cell
-        if (m_cell_type_cpu[cell] == bool(CellType::FLUID)) {
+    // Loop over bunches of cells
+    const size_t num_cell_blocks = ((m_num_cells - 1) / Bitset::BITS_PER_BLOCK) + 1;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, num_cell_blocks), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t cell_block = r.begin(); cell_block != r.end(); ++cell_block)
+    {
+        Bitset outputs(Bitset::BITS_PER_BLOCK * NUM_DIR);
 
-            // Loop over all nodes in the fluid cell.
-            for (int dir = 0; dir < NUM_DIR; ++dir) {
+        // Loop over cells in cell block
+#pragma unroll
+        for (int local_cell = 0; local_cell < Bitset::BITS_PER_BLOCK; ++local_cell) {
 
-                // Set random states for the nodes in the fluid cell
-                m_node_state_cpu[cell + dir * m_num_cells] =
-                        bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
+            const size_t global_cell = cell_block * Bitset::BITS_PER_BLOCK + local_cell;
+
+            // Check weather the cell is a fluid cell
+            if (m_cell_type_cpu[global_cell] == bool(CellType::FLUID)) {
+
+                // Loop over all nodes in the fluid cell
+#pragma unroll
+                for (int dir = 0; dir < NUM_DIR; ++dir) {
+
+                    // Set random states for the nodes in the fluid cell
+                    outputs[local_cell + dir * Bitset::BITS_PER_BLOCK] =
+                            bool(random_uniform() > (1.0 - (1.0 / NUM_DIR)));
+                }
             }
-	    }
-	}
+
+        } // for local cell
+
+#pragma unroll
+        for (int dir = 0; dir < NUM_DIR; ++dir)
+            write[cell_block * NUM_DIR + dir] = outputs(dir);
+
+    }}); // for cell block
 }
 
 // Applies boundary conditions for a peridoc domain, i.e. no boundaries over
@@ -265,15 +285,16 @@ void Lattice<model_>::apply_bc_karman_vortex_street() {
 
     // Apply boundary conditions for a pipe flow, i.e. reflecting boundaries at the upper and the
     // lower edge of the rectangular domain
-    apply_bc_pipe();
+//    apply_bc_pipe();
+    apply_bc_periodic();
 
     // Define the position and size of the barrier
-    int  center_x = m_dim_x / 4;
+    int  center_x = m_dim_x / 2;
     int  center_y = m_dim_y / 2; // + 1 / 10 * m_dim_y;
     Real diameter = m_dim_y / 3;
 
     // Loop over all cells
-#pragma omp parallel for
+//#pragma omp parallel for
     for (size_t cell = 0; cell < m_num_cells; ++cell) {
 
         // Get the position of the current cell
@@ -409,15 +430,15 @@ void Lattice<model_>::print_info() {
 
     printf("Parameter for test case \"%s\":\n", m_test_case.c_str());
     printf("\n");
-    printf("Reynolds number             Re   = %10.2f\n", m_Re);
-    printf("Mach number                 Ma   = %10.2f\n", m_Ma_s);
-    printf("Density                     rho  = %10.2f\n", m_rho);
-    printf("Velocity                    u    = %10.2f\n", m_u);
-    printf("Sound speed                 c    = %10.2f\n", m_c);
-    printf("Scaled sound speed          c_s  = %10.2f\n", m_c_s);
-    printf("Viscosity                   nu   = %10.2f\n", m_nu);
-    printf("Scaled viscosity            nu_s = %10.2f\n", m_nu_s);
-    printf("Galilean breaking factor    g    = %10.2f\n", m_g);
+    printf("Reynolds number             Re   = %10.4f\n", m_Re);
+    printf("Mach number                 Ma   = %10.4f\n", m_Ma_s);
+    printf("Density                     rho  = %10.4f\n", m_rho);
+    printf("Velocity                    u    = %10.4f\n", m_u);
+    printf("Sound speed                 c    = %10.4f\n", m_c);
+    printf("Scaled sound speed          c_s  = %10.4f\n", m_c_s);
+    printf("Viscosity                   nu   = %10.4f\n", m_nu);
+    printf("Scaled viscosity            nu_s = %10.4f\n", m_nu_s);
+    printf("Galilean breaking factor    g    = %10.4f\n", m_g);
     printf("\n");
     printf("Number of cells in x direction: %d\n", m_dim_x);
     printf("Number of cells in y direction: %d\n", m_dim_y);
@@ -454,8 +475,6 @@ void Lattice<model_>::copy_data_to_output_buffer()
 template<Model model_>
 size_t Lattice<model_>::get_initial_forcing()
 {
-    // size_t equilibrium_forcing = get_equilibrium_forcing();
-
     return (size_t)(0.01 * m_num_cells);
 }
 
@@ -463,8 +482,12 @@ size_t Lattice<model_>::get_initial_forcing()
 // in order to compensate boundary layer shear force.
 template<Model model_>
 size_t Lattice<model_>::get_equilibrium_forcing()
-{
-    Real forcing = (8.0 * m_nu_s * m_Ma_s * m_c_s) / pow((Real)m_dim_y, 2.0);
+{   
+    const Real c_w = 1.1;
+
+//    const Real forcing = (8.0 * m_nu_s * m_Ma_s * m_c_s) / pow((Real)m_dim_y, 2.0);
+    const Real forcing = (c_w * m_u * m_u * m_dim_y) / (2.0 * m_num_cells);
+    cout << "forcing = " << ceil(0.5 * m_num_cells * forcing) << endl;
 
     return ceil(0.5 * m_num_cells * forcing);
 }

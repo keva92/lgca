@@ -50,16 +50,30 @@ KarmanView::KarmanView(QWidget *parent) :
     m_lattice->apply_bc_karman_vortex_street();
 
     // Initialize the lattice gas automaton with particles
-    m_lattice->init_pipe();
+    m_lattice->init_random();
     m_num_particles = m_lattice->get_n_particles();
+
+    // Accelerate the flow
+    m_forcing = m_lattice->get_initial_forcing();
+    m_lattice->copy_data_to_output_buffer();
+    m_lattice->post_process();
+    m_mean_velocity = m_lattice->get_mean_velocity();
+    while (m_mean_velocity[0] < m_lattice->u()) {
+
+        // Apply a body force to the particles
+        m_lattice->apply_body_force(m_forcing);
+        m_lattice->copy_data_to_output_buffer();
+        m_lattice->post_process();
+        m_mean_velocity = m_lattice->get_mean_velocity();
+    }
+
+    // Calculate the number of particles to revert in the context of body force in order to
+    // keep the flow up
+    m_forcing = m_lattice->get_equilibrium_forcing();
 
     // Necessary to set up on-line visualization
     m_lattice->copy_data_to_output_buffer();
     m_lattice->post_process();
-
-    // Calculate the number of particles to revert in the context of body force in order to
-    // accelerate the flow
-    m_forcing = m_lattice->get_initial_forcing();
 
     // Setup visualization pipeline
     this->setup_visual();
@@ -112,16 +126,6 @@ void KarmanView::run()
         m_ui->reLineEdit->setText(QString::number(m_lattice->dim_y() / 3 * m_mean_velocity[0] / m_lattice->nu_s(), 'f', /*prec=*/2));
         m_ui->maLineEdit->setText(QString::number(m_mean_velocity[0] / m_lattice->c_s()                          , 'f', /*prec=*/2));
 
-        if (m_mean_velocity[0] < m_lattice->u()) {
-
-            // Reduce the forcing once the flow has been accelerated strong enough
-            if (m_mean_velocity[0] > 0.9 * m_lattice->u())
-                m_forcing = m_lattice->get_equilibrium_forcing();
-
-            // Apply a body force to the particles
-            m_lattice->apply_body_force(m_forcing);
-        }
-
         auto sim_start = steady_clock::now();
 
 #pragma unroll
@@ -129,6 +133,7 @@ void KarmanView::run()
 
             // Perform the collision and propagation step on the lattice gas automaton
             m_lattice->collide_and_propagate();
+            m_lattice->apply_body_force(m_forcing);
             m_steps++;
         }
 
@@ -313,6 +318,7 @@ void KarmanView::setup_visual()
 //    m_lut->SetHueRange       (2.0/3.0, 0.0); // Blue to red rainbow
 //    m_lut->SetSaturationRange(1.0, 1.0);
 //    m_lut->SetValueRange     (1.0, 1.0);
+    m_lut->SetVectorModeToMagnitude(); // Does this have any effect?
     m_lut->Build();
     m_mapper    ->SetLookupTable(m_lut);
     m_scalar_bar->SetLookupTable(m_lut);
