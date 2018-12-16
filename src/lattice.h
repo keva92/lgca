@@ -100,11 +100,11 @@ protected:
     //
     // [X_COMP_CELL_0|Y_COMP_CELL_0|X_COMP_CELL_1|Y_COMP_CELL_1|X_COMP_CELL_2|...]
 
-    // Momentum vectors (1st momentum) related to the single cells (non-averaged)
-    Real* m_cell_momentum_cpu;
+    // Velocity vectors related to the single cells (non-averaged)
+    Real* m_cell_velocity_cpu;
 
-    // Coarse grained momentum vectors (averaged over neighbor cells)
-    Real* m_mean_momentum_cpu;
+    // Coarse grained velocity vectors (averaged over neighbor cells)
+    Real* m_mean_velocity_cpu;
 
     // Random bits for collision
     Bitset m_rnd_cpu;
@@ -227,11 +227,11 @@ public:
           Real*  mean_density()       { assert(m_mean_density_cpu);  return  m_mean_density_cpu; }
     const Real*  mean_density() const { assert(m_mean_density_cpu);  return  m_mean_density_cpu; }
 
-          Real* cell_momentum()       { assert(m_cell_momentum_cpu); return m_cell_momentum_cpu; }
-    const Real* cell_momentum() const { assert(m_cell_momentum_cpu); return m_cell_momentum_cpu; }
+          Real* cell_velocity()       { assert(m_cell_velocity_cpu); return m_cell_velocity_cpu; }
+    const Real* cell_velocity() const { assert(m_cell_velocity_cpu); return m_cell_velocity_cpu; }
 
-          Real* mean_momentum()       { assert(m_mean_momentum_cpu); return m_mean_momentum_cpu; }
-    const Real* mean_momentum() const { assert(m_mean_momentum_cpu); return m_mean_momentum_cpu; }
+          Real* mean_velocity()       { assert(m_mean_velocity_cpu); return m_mean_velocity_cpu; }
+    const Real* mean_velocity() const { assert(m_mean_velocity_cpu); return m_mean_velocity_cpu; }
 
     Real cell_density(const int x, const int y) { assert(m_cell_density_cpu); return m_cell_density_cpu[y * m_dim_x + x]; }
     Real mean_density(const int x, const int y) { assert(m_mean_density_cpu); return m_mean_density_cpu[y * m_dim_x + x]; }

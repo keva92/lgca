@@ -67,9 +67,9 @@ public slots:
     void rescale();
 
     void view_cell_density();
-    void view_cell_momentum();
+    void view_cell_velocity();
     void view_mean_density();
-    void view_mean_momentum();
+    void view_mean_velocity();
 
 private:
 
@@ -81,10 +81,10 @@ private:
 
     // Simulation parameters
     static constexpr Model        MODEL       = Model::FHP_I;
-    static constexpr unsigned int PP_INTERVAL = 100;
+    static constexpr unsigned int PP_INTERVAL = 2000;
     static constexpr int          CG_RADIUS   = 16;
            const     string       OUTPUT_DIR    = "./";
-           const     string       OUTPUT_FORMAT = "vti";
+           const     string       OUTPUT_FORMAT = "png";
 
     // Simulation variables
     size_t            m_steps;

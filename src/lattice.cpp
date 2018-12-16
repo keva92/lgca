@@ -487,7 +487,6 @@ size_t Lattice<model_>::get_equilibrium_forcing()
 
 //    const Real forcing = (8.0 * m_nu_s * m_Ma_s * m_c_s) / pow((Real)m_dim_y, 2.0);
     const Real forcing = (c_w * m_u * m_u * m_dim_y) / (2.0 * m_num_cells);
-    cout << "forcing = " << ceil(0.5 * m_num_cells * forcing) << endl;
 
     return ceil(0.5 * m_num_cells * forcing);
 }

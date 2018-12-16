@@ -70,7 +70,7 @@ IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattic
     vtkAOSDataArrayTemplate<float>* cell_momentum = vtkAOSDataArrayTemplate<float>::New();
     cell_momentum->SetName("Cell momentum");
     cell_momentum->SetNumberOfComponents(3);
-    cell_momentum->SetArray((float*)(m_lattice->cell_momentum()), /*size=*/3 * m_lattice->num_cells(), /*save=*/1);
+    cell_momentum->SetArray((float*)(m_lattice->cell_velocity()), /*size=*/3 * m_lattice->num_cells(), /*save=*/1);
 //    m_cell_image_data->GetCellData()->AddArray(cell_momentum);
     m_cell_image_data->GetCellData()->SetVectors(cell_momentum);
     cell_momentum->Delete();
@@ -79,7 +79,7 @@ IoVti<model_>::IoVti(LatticeType* lattice, const std::string scalars) : m_lattic
     vtkAOSDataArrayTemplate<float>* mean_momentum = vtkAOSDataArrayTemplate<float>::New();
     mean_momentum->SetName("Mean momentum");
     mean_momentum->SetNumberOfComponents(3);
-    mean_momentum->SetArray((float*)(m_lattice->mean_momentum()), /*size=*/3 * m_lattice->num_coarse_cells(), /*save=*/1);
+    mean_momentum->SetArray((float*)(m_lattice->mean_velocity()), /*size=*/3 * m_lattice->num_coarse_cells(), /*save=*/1);
 //    m_mean_image_data->GetPointData()->AddArray(mean_momentum);
     m_mean_image_data->GetPointData()->SetVectors(mean_momentum);
     mean_momentum->Delete();

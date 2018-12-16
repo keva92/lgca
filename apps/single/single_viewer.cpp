@@ -68,9 +68,9 @@ SingleView::SingleView(QWidget *parent) :
     connect(m_ui->pauseButton,             SIGNAL(clicked()), this, SLOT(stop()));
     connect(m_ui->rescaleButton,           SIGNAL(clicked()), this, SLOT(rescale()));
     connect(m_ui->cellDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_cell_density()));
-    connect(m_ui->cellMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_cell_momentum()));
+    connect(m_ui->cellMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_cell_velocity()));
     connect(m_ui->meanDensityRadioButton,  SIGNAL(clicked()), this, SLOT(view_mean_density()));
-    connect(m_ui->meanMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_mean_momentum()));
+    connect(m_ui->meanMomentumRadioButton, SIGNAL(clicked()), this, SLOT(view_mean_velocity()));
 }
 
 SingleView::~SingleView()
@@ -183,7 +183,7 @@ void SingleView::view_cell_density()
     m_ren->ResetCamera();
 }
 
-void SingleView::view_cell_momentum()
+void SingleView::view_cell_velocity()
 {
     m_vti_io_handler->set_scalars("Cell momentum");
 
@@ -209,7 +209,7 @@ void SingleView::view_mean_density()
     m_ren->ResetCamera();
 }
 
-void SingleView::view_mean_momentum()
+void SingleView::view_mean_velocity()
 {
     m_vti_io_handler->set_scalars("Mean momentum");
 

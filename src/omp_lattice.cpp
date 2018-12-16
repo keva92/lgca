@@ -384,9 +384,9 @@ void OMP_Lattice<model_>::cell_post_process()
             Real cell_vel_y = cell_momentum_y / Real(cell_density > 0 ? cell_density : 1);
             Real cell_vel_z = cell_momentum_z / Real(cell_density > 0 ? cell_density : 1);
 
-            this->m_cell_momentum_cpu[global_cell * 3 + 0] = cell_vel_x;
-            this->m_cell_momentum_cpu[global_cell * 3 + 1] = cell_vel_y;
-            this->m_cell_momentum_cpu[global_cell * 3 + 2] = cell_vel_z;
+            this->m_cell_velocity_cpu[global_cell * 3 + 0] = cell_vel_x;
+            this->m_cell_velocity_cpu[global_cell * 3 + 1] = cell_vel_y;
+            this->m_cell_velocity_cpu[global_cell * 3 + 2] = cell_vel_z;
 
         } // for local cell
 
@@ -440,17 +440,17 @@ void OMP_Lattice<model_>::mean_post_process()
                     n_exist_neighbors++;
 
                     mean_density    += this->m_cell_density_cpu [neighbor_idx        ];
-                    mean_momentum_x += this->m_cell_momentum_cpu[neighbor_idx * 3 + 0];
-                    mean_momentum_y += this->m_cell_momentum_cpu[neighbor_idx * 3 + 1];
+                    mean_momentum_x += this->m_cell_velocity_cpu[neighbor_idx * 3 + 0];
+                    mean_momentum_y += this->m_cell_velocity_cpu[neighbor_idx * 3 + 1];
                 }
             }
         }
 
         // Write the computed coarse grained quantities to the related data arrays
         this->m_mean_density_cpu [coarse_cell        ] = mean_density    / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[coarse_cell * 3 + 0] = mean_momentum_x / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[coarse_cell * 3 + 1] = mean_momentum_y / ((Real) n_exist_neighbors);
-        this->m_mean_momentum_cpu[coarse_cell * 3 + 2] = mean_momentum_z / ((Real) n_exist_neighbors);
+        this->m_mean_velocity_cpu[coarse_cell * 3 + 0] = mean_momentum_x / ((Real) n_exist_neighbors);
+        this->m_mean_velocity_cpu[coarse_cell * 3 + 1] = mean_momentum_y / ((Real) n_exist_neighbors);
+        this->m_mean_velocity_cpu[coarse_cell * 3 + 2] = mean_momentum_z / ((Real) n_exist_neighbors);
 
     }}); // for coarse_cell
 }
@@ -462,8 +462,8 @@ void OMP_Lattice<model_>::allocate_memory()
     // Allocate host memory
     this->m_cell_density_cpu   = (Real*)malloc(    this->m_num_cells        * sizeof(Real));
     this->m_mean_density_cpu   = (Real*)malloc(    this->m_num_coarse_cells * sizeof(Real));
-    this->m_cell_momentum_cpu  = (Real*)malloc(3 * this->m_num_cells        * sizeof(Real));
-    this->m_mean_momentum_cpu  = (Real*)malloc(3 * this->m_num_coarse_cells * sizeof(Real));
+    this->m_cell_velocity_cpu  = (Real*)malloc(3 * this->m_num_cells        * sizeof(Real));
+    this->m_mean_velocity_cpu  = (Real*)malloc(3 * this->m_num_coarse_cells * sizeof(Real));
 
     this->m_node_state_cpu.resize    (this->m_num_nodes);
     this->m_node_state_tmp_cpu.resize(this->m_num_nodes);
@@ -479,13 +479,13 @@ void OMP_Lattice<model_>::free_memory()
     // Free CPU memory
     free(this->m_cell_density_cpu);
     free(this->m_mean_density_cpu);
-    free(this->m_cell_momentum_cpu);
-    free(this->m_mean_momentum_cpu);
+    free(this->m_cell_velocity_cpu);
+    free(this->m_mean_velocity_cpu);
 
     this->m_cell_density_cpu    = NULL;
     this->m_mean_density_cpu    = NULL;
-    this->m_cell_momentum_cpu   = NULL;
-    this->m_mean_momentum_cpu   = NULL;
+    this->m_cell_velocity_cpu   = NULL;
+    this->m_mean_velocity_cpu   = NULL;
 }
 
 // Computes the mean velocity of the lattice.
@@ -511,8 +511,8 @@ std::vector<Real> OMP_Lattice<model_>::get_mean_velocity() {
 
 			if (cell_density > 1.0e-06) {
 
-                sum_x_vel += this->m_cell_momentum_cpu[n * 3 + 0] / cell_density;
-                sum_y_vel += this->m_cell_momentum_cpu[n * 3 + 1] / cell_density;
+                sum_x_vel += this->m_cell_velocity_cpu[n * 3 + 0] / cell_density;
+                sum_y_vel += this->m_cell_velocity_cpu[n * 3 + 1] / cell_density;
 			}
 
 #ifdef DEBUG

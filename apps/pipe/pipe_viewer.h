@@ -73,9 +73,9 @@ public slots:
     void rescale();
 
     void view_cell_density();
-    void view_cell_momentum();
+    void view_cell_velocity();
     void view_mean_density();
-    void view_mean_momentum();
+    void view_mean_velocity();
     void view_streamlines();
 
 private slots:
